@@ -1,8 +1,20 @@
 import { useState } from 'react';
-import type { UserRole } from './types';
+import type { UserRole, IssueType, Ticket } from './types';
+import IssueSelectionPage from './pages/issue-selection-page';
+import CreateTicketPage from './pages/create-ticket-page';
+
+type StudentView = 'home' | 'issue-selection' | 'create-ticket';
 
 function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
+  const [studentView, setStudentView] = useState<StudentView>('home');
+  const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+
+  const handleRoleChange = (role: UserRole) => {
+    setCurrentRole(role);
+    setStudentView('home');
+    setSelectedIssue(null);
+  };
 
   const styles = {
     app: {
@@ -108,7 +120,20 @@ function App() {
       fontSize: '1.1rem',
       lineHeight: 1.8,
       maxWidth: '500px',
-      margin: '0 auto',
+      margin: '0 auto 2rem',
+    },
+    createTicketButton: {
+      padding: '1rem 2rem',
+      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      fontWeight: 600,
+      transition: 'all 0.2s',
+      boxShadow: '0 4px 8px rgba(59, 130, 246, 0.3)',
+      marginTop: '1rem',
     },
   };
 
@@ -121,13 +146,13 @@ function App() {
           <p style={styles.subtitle}>Facility Feedback & Helpdesk System</p>
         </div>
         <div style={styles.roles}>
-          <button style={styles.roleBtn(currentRole === 'student')} onClick={() => setCurrentRole('student')}>
+          <button style={styles.roleBtn(currentRole === 'student')} onClick={() => handleRoleChange('student')}>
             Student
           </button>
-          <button style={styles.roleBtn(currentRole === 'staff')} onClick={() => setCurrentRole('staff')}>
+          <button style={styles.roleBtn(currentRole === 'staff')} onClick={() => handleRoleChange('staff')}>
             Staff
           </button>
-          <button style={styles.roleBtn(currentRole === 'admin')} onClick={() => setCurrentRole('admin')}>
+          <button style={styles.roleBtn(currentRole === 'admin')} onClick={() => handleRoleChange('admin')}>
             Department Admin
           </button>
         </div>
@@ -138,20 +163,62 @@ function App() {
         {/* Student Page */}
         {currentRole === 'student' && (
           <>
-            <div style={styles.header}>
-              <div style={styles.badge('student')}>Student</div>
-              <h2 style={styles.pageTitle}>Trang Sinh viên</h2>
-              <p style={styles.description}>
-                Bạn đang ở trang dành cho Sinh viên
-              </p>
-            </div>
-            <div style={styles.infoBox}>
-              <div style={styles.icon}>👨‍🎓</div>
-              <h3 style={styles.infoTitle}>Chức năng dành cho Sinh viên</h3>
-              <p style={styles.infoText}>
-                Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
-              </p>
-            </div>
+            {studentView === 'home' && (
+              <>
+                <div style={styles.header}>
+                  <div style={styles.badge('student')}>Student</div>
+                  <h2 style={styles.pageTitle}>Trang Sinh viên</h2>
+                  <p style={styles.description}>
+                    Bạn đang ở trang dành cho Sinh viên
+                  </p>
+                </div>
+                <div style={styles.infoBox}>
+                  <div style={styles.icon}>👨‍🎓</div>
+                  <h3 style={styles.infoTitle}>Chức năng dành cho Sinh viên</h3>
+                  <p style={styles.infoText}>
+                    Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
+                  </p>
+                  <button
+                    style={styles.createTicketButton}
+                    onClick={() => setStudentView('issue-selection')}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 16px rgba(59, 130, 246, 0.4)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
+                    }}
+                  >
+                    ➕ Tạo Ticket Mới
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {studentView === 'issue-selection' && (
+              <IssueSelectionPage
+                onSelectIssue={(issueType) => {
+                  setSelectedIssue(issueType);
+                  setStudentView('create-ticket');
+                }}
+                onBack={() => setStudentView('home')}
+              />
+            )}
+            
+            {studentView === 'create-ticket' && selectedIssue && (
+              <CreateTicketPage
+                issueType={selectedIssue}
+                onBack={() => setStudentView('issue-selection')}
+                onSubmit={(ticket) => {
+                  // Handle ticket submission
+                  console.log('Ticket submitted:', ticket);
+                  alert('Ticket đã được gửi thành công! 🎉');
+                  setStudentView('home');
+                  setSelectedIssue(null);
+                }}
+              />
+            )}
           </>
         )}
 

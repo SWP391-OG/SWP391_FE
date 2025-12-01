@@ -21,17 +21,34 @@ export interface Room {
   createdAt: string;
 }
 
-// Ticket types (for future use)
+// Issue types
+export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'classroom' | 'other';
+
+export interface IssueType {
+  id: string;
+  name: string;
+  category: IssueCategory;
+  icon: string;
+  description: string;
+  examples?: string[];
+}
+
+// Ticket types
 export interface Ticket {
   id: string;
   title: string;
   description: string;
-  category: 'facility' | 'wifi' | 'equipment';
+  issueType: IssueType;
+  category: IssueCategory;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  location?: string;
+  roomNumber?: string;
+  images?: string[];
   createdBy: string;
   assignedTo?: string;
   createdAt: string;
+  updatedAt?: string;
   slaDeadline: string;
 }
 
