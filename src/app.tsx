@@ -2,18 +2,22 @@ import { useState } from 'react';
 import type { UserRole, IssueType, Ticket } from './types';
 import IssueSelectionPage from './pages/issue-selection-page';
 import CreateTicketPage from './pages/create-ticket-page';
+import TicketListPage from './pages/ticket-list-page';
+import TicketDetailModal from './components/ticket-detail-modal';
 
-type StudentView = 'home' | 'issue-selection' | 'create-ticket';
+type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
 
 function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [studentView, setStudentView] = useState<StudentView>('home');
   const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
     setStudentView('home');
     setSelectedIssue(null);
+    setSelectedTicket(null);
   };
 
   const styles = {
@@ -135,6 +139,20 @@ function App() {
       boxShadow: '0 4px 8px rgba(59, 130, 246, 0.3)',
       marginTop: '1rem',
     },
+    viewTicketsButton: {
+      padding: '1rem 2rem',
+      background: 'linear-gradient(135deg, #10b981, #059669)',
+      color: 'white',
+      border: 'none',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '1rem',
+      fontWeight: 600,
+      transition: 'all 0.2s',
+      boxShadow: '0 4px 8px rgba(16, 185, 129, 0.3)',
+      marginTop: '1rem',
+      marginLeft: '1rem',
+    },
   };
 
   return (
@@ -178,20 +196,36 @@ function App() {
                   <p style={styles.infoText}>
                     Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
                   </p>
-                  <button
-                    style={styles.createTicketButton}
-                    onClick={() => setStudentView('issue-selection')}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 16px rgba(59, 130, 246, 0.4)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
-                    }}
-                  >
-                    ➕ Tạo Ticket Mới
-                  </button>
+                  <div>
+                    <button
+                      style={styles.createTicketButton}
+                      onClick={() => setStudentView('issue-selection')}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(59, 130, 246, 0.4)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
+                      }}
+                    >
+                      ➕ Tạo Ticket Mới
+                    </button>
+                    <button
+                      style={styles.viewTicketsButton}
+                      onClick={() => setStudentView('ticket-list')}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(16, 185, 129, 0.4)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.3)';
+                      }}
+                    >
+                      📋 Xem Danh Sách Ticket
+                    </button>
+                  </div>
                 </div>
               </>
             )}
@@ -219,7 +253,22 @@ function App() {
                 }}
               />
             )}
+            
+            {studentView === 'ticket-list' && (
+              <TicketListPage
+                onViewDetail={(ticket) => setSelectedTicket(ticket)}
+                onBack={() => setStudentView('home')}
+              />
+            )}
           </>
+        )}
+        
+        {/* Ticket Detail Modal */}
+        {selectedTicket && (
+          <TicketDetailModal
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+          />
         )}
 
         {/* Staff Page */}
