@@ -11,80 +11,6 @@ const AdminPage = () => {
   const [departments, setDepartments] = useState<Department[]>(mockDepartments);
   const [rooms, setRooms] = useState<Room[]>(mockRooms);
 
-  const styles = {
-    page: {
-      maxWidth: '1400px',
-      margin: '0 auto',
-      padding: '2rem',
-    },
-    header: {
-      marginBottom: '2rem',
-      textAlign: 'center' as const,
-    },
-    badge: {
-      display: 'inline-block',
-      padding: '0.5rem 1.5rem',
-      borderRadius: '20px',
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      marginBottom: '1rem',
-      textTransform: 'uppercase' as const,
-      letterSpacing: '0.5px',
-      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-      color: 'white',
-    },
-    title: {
-      fontSize: '2rem',
-      margin: '0.5rem 0',
-      color: '#1f2937',
-    },
-    description: {
-      fontSize: '1rem',
-      color: '#6b7280',
-      maxWidth: '800px',
-      margin: '0.5rem auto',
-      lineHeight: 1.6,
-    },
-    tabs: {
-      display: 'flex',
-      gap: '1rem',
-      marginBottom: '2rem',
-      borderBottom: '2px solid #e5e7eb',
-    },
-    tabBtn: {
-      padding: '1rem 1.5rem',
-      border: 'none',
-      background: 'transparent',
-      color: '#6b7280',
-      fontSize: '1rem',
-      fontWeight: 500,
-      cursor: 'pointer',
-      borderBottom: '3px solid transparent',
-      transition: 'all 0.3s ease',
-      position: 'relative' as const,
-      bottom: '-2px',
-    },
-    tabBtnActive: {
-      padding: '1rem 1.5rem',
-      border: 'none',
-      background: 'transparent',
-      color: '#f97316',
-      fontSize: '1rem',
-      fontWeight: 600,
-      cursor: 'pointer',
-      borderBottom: '3px solid #f97316',
-      transition: 'all 0.3s ease',
-      position: 'relative' as const,
-      bottom: '-2px',
-    },
-    content: {
-      background: 'white',
-      borderRadius: '12px',
-      padding: '2rem',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    },
-  };
-
   const handleAddDepartment = (dept: Omit<Department, 'id' | 'createdAt'>) => {
     const newDept: Department = {
       ...dept,
@@ -125,31 +51,41 @@ const AdminPage = () => {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
-        <div style={styles.badge}>Department Admin</div>
-        <h2 style={styles.title}>Admin Dashboard</h2>
-        <p style={styles.description}>
+    <div className="max-w-[1400px] mx-auto p-8">
+      <div className="mb-8 text-center">
+        <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br from-amber-500 to-amber-600 text-white">
+          Department Admin
+        </div>
+        <h2 className="text-2xl my-2 text-gray-800">Admin Dashboard</h2>
+        <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
           Chào mừng quản trị viên! Quản lý phòng/bộ phận, cấu hình hệ thống và giám sát hoạt động.
         </p>
       </div>
 
-      <div style={styles.tabs}>
+      <div className="flex gap-4 mb-8 border-b-2 border-gray-200">
         <button
-          style={activeTab === 'departments' ? styles.tabBtnActive : styles.tabBtn}
+          className={`py-4 px-6 border-none bg-transparent text-base font-medium cursor-pointer border-b-[3px] transition-all duration-300 ease-in-out relative -bottom-0.5 ${
+            activeTab === 'departments'
+              ? 'text-orange-500 font-semibold border-orange-500'
+              : 'text-gray-500 border-transparent hover:text-gray-700'
+          }`}
           onClick={() => setActiveTab('departments')}
         >
           📋 Quản lý Bộ phận
         </button>
         <button
-          style={activeTab === 'rooms' ? styles.tabBtnActive : styles.tabBtn}
+          className={`py-4 px-6 border-none bg-transparent text-base font-medium cursor-pointer border-b-[3px] transition-all duration-300 ease-in-out relative -bottom-0.5 ${
+            activeTab === 'rooms'
+              ? 'text-orange-500 font-semibold border-orange-500'
+              : 'text-gray-500 border-transparent hover:text-gray-700'
+          }`}
           onClick={() => setActiveTab('rooms')}
         >
           🏢 Quản lý Phòng
         </button>
       </div>
 
-      <div style={styles.content}>
+      <div className="bg-white rounded-xl p-8 shadow-sm">
         {activeTab === 'departments' && (
           <DepartmentManagement
             departments={departments}

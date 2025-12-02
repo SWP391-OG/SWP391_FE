@@ -6,81 +6,39 @@ interface NavbarProps {
 }
 
 const Navbar = ({ currentRole, onRoleChange }: NavbarProps) => {
-  const styles = {
-    navbar: {
-      background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-      color: 'white',
-      padding: '1rem 2rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    },
-    brand: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-    },
-    title: {
-      margin: 0,
-      fontSize: '1.8rem',
-      fontWeight: 700,
-      color: 'white',
-    },
-    subtitle: {
-      margin: '0.25rem 0 0 0',
-      fontSize: '0.85rem',
-      opacity: 0.9,
-      fontWeight: 400,
-    },
-    roles: {
-      display: 'flex',
-      gap: '0.75rem',
-    },
-    roleBtn: {
-      padding: '0.6rem 1.2rem',
-      border: '2px solid rgba(255, 255, 255, 0.3)',
-      background: 'rgba(255, 255, 255, 0.1)',
-      color: 'white',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '0.95rem',
-      fontWeight: 500,
-      transition: 'all 0.3s ease',
-    },
-    roleBtnActive: {
-      padding: '0.6rem 1.2rem',
-      border: '2px solid white',
-      background: 'white',
-      color: '#f97316',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      transition: 'all 0.3s ease',
-    },
-  };
-
   return (
-    <nav style={styles.navbar}>
-      <div style={styles.brand}>
-        <h1 style={styles.title}>FPTInsight</h1>
-        <p style={styles.subtitle}>Facility Feedback & Helpdesk System</p>
+    <nav className="bg-gradient-to-br from-orange-500 to-orange-600 text-white py-4 px-8 flex justify-between items-center shadow-md">
+      <div className="flex flex-col">
+        <h1 className="m-0 text-[1.8rem] font-bold text-white">FPTInsight</h1>
+        <p className="mt-1 mb-0 text-[0.85rem] opacity-90 font-normal">Facility Feedback & Helpdesk System</p>
       </div>
-      <div style={styles.roles}>
+      <div className="flex gap-3">
         <button
-          style={currentRole === 'student' ? styles.roleBtnActive : styles.roleBtn}
+          className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+            currentRole === 'student'
+              ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+              : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+          }`}
           onClick={() => onRoleChange('student')}
         >
           Student
         </button>
         <button
-          style={currentRole === 'staff' ? styles.roleBtnActive : styles.roleBtn}
+          className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+            currentRole === 'staff'
+              ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+              : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+          }`}
           onClick={() => onRoleChange('staff')}
         >
           Staff
         </button>
         <button
-          style={currentRole === 'admin' ? styles.roleBtnActive : styles.roleBtn}
+          className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+            currentRole === 'admin'
+              ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+              : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+          }`}
           onClick={() => onRoleChange('admin')}
         >
           Department Admin

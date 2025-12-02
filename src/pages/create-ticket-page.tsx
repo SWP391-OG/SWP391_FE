@@ -98,232 +98,6 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
     }, 1000);
   };
 
-  const styles = {
-    page: {
-      maxWidth: '900px',
-      margin: '0 auto',
-      padding: '2rem',
-    },
-    header: {
-      marginBottom: '2rem',
-      textAlign: 'center' as const,
-    },
-    backButton: {
-      padding: '0.75rem 1.5rem',
-      background: '#e5e7eb',
-      color: '#374151',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '0.95rem',
-      fontWeight: 500,
-      marginBottom: '1.5rem',
-      transition: 'all 0.2s',
-    },
-    issueTypeBox: {
-      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-      color: 'white',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      marginBottom: '2rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '1rem',
-    },
-    issueIcon: {
-      fontSize: '3rem',
-    },
-    issueInfo: {
-      flex: 1,
-    },
-    issueTitle: {
-      fontSize: '1.5rem',
-      fontWeight: 600,
-      margin: '0 0 0.5rem 0',
-    },
-    issueDescription: {
-      fontSize: '0.95rem',
-      opacity: 0.9,
-      margin: 0,
-    },
-    form: {
-      background: 'white',
-      borderRadius: '12px',
-      padding: '2rem',
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      border: '1px solid #e5e7eb',
-    },
-    formGroup: {
-      marginBottom: '1.5rem',
-    },
-    label: {
-      display: 'block',
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      color: '#374151',
-      marginBottom: '0.5rem',
-    },
-    required: {
-      color: '#ef4444',
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      fontSize: '1rem',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      transition: 'all 0.2s',
-      boxSizing: 'border-box' as const,
-    },
-    textarea: {
-      width: '100%',
-      padding: '0.75rem',
-      fontSize: '1rem',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      transition: 'all 0.2s',
-      minHeight: '120px',
-      resize: 'vertical' as const,
-      fontFamily: 'inherit',
-      boxSizing: 'border-box' as const,
-    },
-    select: {
-      width: '100%',
-      padding: '0.75rem',
-      fontSize: '1rem',
-      border: '2px solid #e5e7eb',
-      borderRadius: '8px',
-      transition: 'all 0.2s',
-      background: 'white',
-      cursor: 'pointer',
-      boxSizing: 'border-box' as const,
-    },
-    imageUploadContainer: {
-      border: '2px dashed #d1d5db',
-      borderRadius: '8px',
-      padding: '2rem',
-      textAlign: 'center' as const,
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-      background: '#f9fafb',
-    },
-    imageUploadContainerHover: {
-      borderColor: '#3b82f6',
-      background: '#eff6ff',
-    },
-    fileInput: {
-      display: 'none',
-    },
-    uploadIcon: {
-      fontSize: '3rem',
-      marginBottom: '1rem',
-    },
-    uploadText: {
-      color: '#6b7280',
-      fontSize: '0.95rem',
-      marginBottom: '0.5rem',
-    },
-    uploadHint: {
-      color: '#9ca3af',
-      fontSize: '0.85rem',
-    },
-    imagePreviewContainer: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: '1rem',
-      marginTop: '1rem',
-    },
-    imagePreviewWrapper: {
-      position: 'relative' as const,
-      borderRadius: '8px',
-      overflow: 'hidden',
-      border: '2px solid #e5e7eb',
-      aspectRatio: '1',
-    },
-    imagePreview: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover' as const,
-    },
-    removeImageButton: {
-      position: 'absolute' as const,
-      top: '0.5rem',
-      right: '0.5rem',
-      background: 'rgba(239, 68, 68, 0.9)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '50%',
-      width: '28px',
-      height: '28px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontWeight: 'bold',
-      transition: 'all 0.2s',
-    },
-    gridRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '1rem',
-    },
-    helpText: {
-      fontSize: '0.85rem',
-      color: '#6b7280',
-      marginTop: '0.5rem',
-    },
-    priorityGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(4, 1fr)',
-      gap: '0.75rem',
-    },
-    priorityOption: (selected: boolean) => ({
-      padding: '0.75rem',
-      border: selected ? '2px solid #3b82f6' : '2px solid #e5e7eb',
-      borderRadius: '8px',
-      background: selected ? '#eff6ff' : 'white',
-      cursor: 'pointer',
-      textAlign: 'center' as const,
-      transition: 'all 0.2s',
-      fontWeight: selected ? 600 : 400,
-      color: selected ? '#3b82f6' : '#374151',
-    }),
-    buttonGroup: {
-      display: 'flex',
-      gap: '1rem',
-      marginTop: '2rem',
-    },
-    submitButton: {
-      flex: 1,
-      padding: '1rem 2rem',
-      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: 600,
-      transition: 'all 0.2s',
-      boxShadow: '0 2px 4px rgba(59, 130, 246, 0.3)',
-    },
-    submitButtonDisabled: {
-      opacity: 0.6,
-      cursor: 'not-allowed',
-    },
-    cancelButton: {
-      padding: '1rem 2rem',
-      background: '#f3f4f6',
-      color: '#374151',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: 600,
-      transition: 'all 0.2s',
-    },
-  };
-
   const priorityLabels = {
     low: { label: 'Thấp', emoji: '🟢' },
     medium: { label: 'Trung bình', emoji: '🟡' },
@@ -334,32 +108,26 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
   const isFormValid = formData.title.trim() !== '' && formData.description.trim() !== '';
 
   return (
-    <div style={styles.page}>
+    <div className="max-w-[900px] mx-auto p-8">
       <button 
-        style={styles.backButton}
+        className="py-3 px-6 bg-gray-200 text-gray-700 border-none rounded-lg cursor-pointer text-[0.95rem] font-medium mb-6 transition-all duration-200 hover:bg-gray-300"
         onClick={onBack}
-        onMouseOver={(e) => {
-          e.currentTarget.style.background = '#d1d5db';
-        }}
-        onMouseOut={(e) => {
-          e.currentTarget.style.background = '#e5e7eb';
-        }}
       >
         ← Quay lại chọn loại vấn đề
       </button>
 
-      <div style={styles.issueTypeBox}>
-        <div style={styles.issueIcon}>{issueType.icon}</div>
-        <div style={styles.issueInfo}>
-          <h2 style={styles.issueTitle}>{issueType.name}</h2>
-          <p style={styles.issueDescription}>{issueType.description}</p>
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
+        <div className="text-5xl">{issueType.icon}</div>
+        <div className="flex-1">
+          <h2 className="text-2xl font-semibold my-0 mb-2">{issueType.name}</h2>
+          <p className="text-[0.95rem] opacity-90 m-0">{issueType.description}</p>
         </div>
       </div>
 
-      <form style={styles.form} onSubmit={handleSubmit}>
-        <div style={styles.formGroup}>
-          <label style={styles.label}>
-            Tiêu đề <span style={styles.required}>*</span>
+      <form className="bg-white rounded-xl p-8 shadow-sm border border-gray-200" onSubmit={handleSubmit}>
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Tiêu đề <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -367,115 +135,104 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
             value={formData.title}
             onChange={handleInputChange}
             placeholder="Ví dụ: Máy chiếu phòng 501 không hoạt động"
-            style={styles.input}
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
             required
           />
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>
-            Mô tả chi tiết <span style={styles.required}>*</span>
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Mô tả chi tiết <span className="text-red-500">*</span>
           </label>
           <textarea
             name="description"
             value={formData.description}
             onChange={handleInputChange}
             placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-            style={styles.textarea}
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 min-h-[120px] resize-y font-[inherit] box-border focus:outline-none focus:border-blue-500"
             required
           />
-          <div style={styles.helpText}>
+          <div className="text-[0.85rem] text-gray-500 mt-2">
             Vui lòng mô tả chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn
           </div>
         </div>
 
-        <div style={styles.gridRow}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Địa điểm</label>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
             <input
               type="text"
               name="location"
               value={formData.location}
               onChange={handleInputChange}
               placeholder="Ví dụ: Tòa nhà Alpha"
-              style={styles.input}
+              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
             />
           </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Số phòng</label>
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số phòng</label>
             <input
               type="text"
               name="roomNumber"
               value={formData.roomNumber}
               onChange={handleInputChange}
               placeholder="Ví dụ: 501"
-              style={styles.input}
+              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
             />
           </div>
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Mức độ ưu tiên</label>
-          <div style={styles.priorityGrid}>
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Mức độ ưu tiên</label>
+          <div className="grid grid-cols-4 gap-3">
             {(Object.keys(priorityLabels) as Array<keyof typeof priorityLabels>).map((key) => (
               <div
                 key={key}
-                style={styles.priorityOption(formData.priority === key)}
+                className={`py-3 px-3 rounded-lg text-center transition-all duration-200 cursor-pointer ${
+                  formData.priority === key
+                    ? 'border-2 border-blue-500 bg-blue-50 font-semibold text-blue-500'
+                    : 'border-2 border-gray-200 bg-white font-normal text-gray-700 hover:border-gray-300'
+                }`}
                 onClick={() => setFormData((prev) => ({ ...prev, priority: key }))}
               >
-                <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>
+                <div className="text-2xl mb-1">
                   {priorityLabels[key].emoji}
                 </div>
-                <div style={{ fontSize: '0.85rem' }}>{priorityLabels[key].label}</div>
+                <div className="text-[0.85rem]">{priorityLabels[key].label}</div>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={styles.formGroup}>
-          <label style={styles.label}>Hình ảnh (Tùy chọn)</label>
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh (Tùy chọn)</label>
           <div
-            style={styles.imageUploadContainer}
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-all duration-200 bg-gray-50 hover:border-blue-500 hover:bg-blue-50"
             onClick={() => document.getElementById('imageUpload')?.click()}
-            onMouseOver={(e) => {
-              Object.assign(e.currentTarget.style, styles.imageUploadContainerHover);
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.borderColor = '#d1d5db';
-              e.currentTarget.style.background = '#f9fafb';
-            }}
           >
-            <div style={styles.uploadIcon}>📸</div>
-            <div style={styles.uploadText}>Nhấp để tải lên hình ảnh</div>
-            <div style={styles.uploadHint}>PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
+            <div className="text-5xl mb-4">📸</div>
+            <div className="text-gray-500 text-[0.95rem] mb-2">Nhấp để tải lên hình ảnh</div>
+            <div className="text-gray-400 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
             <input
               id="imageUpload"
               type="file"
               accept="image/*"
               multiple
               onChange={handleImageUpload}
-              style={styles.fileInput}
+              className="hidden"
             />
           </div>
 
           {imagePreview.length > 0 && (
-            <div style={styles.imagePreviewContainer}>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mt-4">
               {imagePreview.map((preview, index) => (
-                <div key={index} style={styles.imagePreviewWrapper}>
-                  <img src={preview} alt={`Preview ${index + 1}`} style={styles.imagePreview} />
+                <div key={index} className="relative rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
+                  <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    style={styles.removeImageButton}
+                    className="absolute top-2 right-2 bg-red-500/90 text-white border-none rounded-full w-7 h-7 cursor-pointer text-base flex items-center justify-center font-bold transition-all duration-200 hover:bg-red-600 hover:scale-110"
                     onClick={() => removeImage(index)}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.background = 'rgba(239, 68, 68, 1)';
-                      e.currentTarget.style.transform = 'scale(1.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
                   >
                     ×
                   </button>
@@ -485,39 +242,22 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
           )}
         </div>
 
-        <div style={styles.buttonGroup}>
+        <div className="flex gap-4 mt-8">
           <button
             type="button"
-            style={styles.cancelButton}
+            className="py-4 px-8 bg-gray-100 text-gray-700 border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 hover:bg-gray-200"
             onClick={onBack}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = '#e5e7eb';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = '#f3f4f6';
-            }}
           >
             Hủy
           </button>
           <button
             type="submit"
-            style={{
-              ...styles.submitButton,
-              ...((!isFormValid || isSubmitting) && styles.submitButtonDisabled),
-            }}
+            className={`flex-1 py-4 px-8 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_2px_4px_rgba(59,130,246,0.3)] ${
+              !isFormValid || isSubmitting
+                ? 'opacity-60 cursor-not-allowed bg-blue-400'
+                : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:translate-y-[-2px] hover:shadow-[0_4px_8px_rgba(59,130,246,0.4)]'
+            }`}
             disabled={!isFormValid || isSubmitting}
-            onMouseOver={(e) => {
-              if (isFormValid && !isSubmitting) {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.4)';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (isFormValid && !isSubmitting) {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(59, 130, 246, 0.3)';
-              }
-            }}
           >
             {isSubmitting ? 'Đang gửi...' : 'Gửi Ticket'}
           </button>
@@ -528,6 +268,3 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
 };
 
 export default CreateTicketPage;
-
-
-

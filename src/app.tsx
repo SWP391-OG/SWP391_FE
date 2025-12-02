@@ -20,208 +20,86 @@ function App() {
     setSelectedTicket(null);
   };
 
-  const styles = {
-    app: {
-      minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #f9fafb, #ffffff)',
-    },
-    navbar: {
-      background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-      color: 'white',
-      padding: '1rem 2rem',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-    },
-    brand: {
-      display: 'flex',
-      flexDirection: 'column' as const,
-    },
-    title: {
-      margin: 0,
-      fontSize: '1.8rem',
-      fontWeight: 700,
-      color: 'white',
-    },
-    subtitle: {
-      margin: '0.25rem 0 0 0',
-      fontSize: '0.85rem',
-      opacity: 0.9,
-      fontWeight: 400,
-    },
-    roles: {
-      display: 'flex',
-      gap: '0.75rem',
-    },
-    roleBtn: (active: boolean) => ({
-      padding: '0.6rem 1.2rem',
-      border: active ? '2px solid white' : '2px solid rgba(255, 255, 255, 0.3)',
-      background: active ? 'white' : 'rgba(255, 255, 255, 0.1)',
-      color: active ? '#f97316' : 'white',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '0.95rem',
-      fontWeight: active ? 600 : 500,
-    }),
-    page: {
-      maxWidth: '1400px',
-      margin: '0 auto',
-      padding: '2rem',
-    },
-    header: {
-      marginBottom: '2rem',
-      textAlign: 'center' as const,
-    },
-    badge: (role: UserRole) => ({
-      display: 'inline-block',
-      padding: '0.5rem 1.5rem',
-      borderRadius: '20px',
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      marginBottom: '1rem',
-      textTransform: 'uppercase' as const,
-      letterSpacing: '0.5px',
-      background: role === 'student' ? 'linear-gradient(135deg, #3b82f6, #2563eb)' :
-                  role === 'staff' ? 'linear-gradient(135deg, #10b981, #059669)' :
-                  'linear-gradient(135deg, #f59e0b, #d97706)',
-      color: 'white',
-    }),
-    pageTitle: {
-      fontSize: '2rem',
-      margin: '0.5rem 0',
-      color: '#1f2937',
-    },
-    description: {
-      fontSize: '1rem',
-      color: '#6b7280',
-      maxWidth: '800px',
-      margin: '0.5rem auto',
-      lineHeight: 1.6,
-    },
-    infoBox: {
-      background: 'white',
-      borderRadius: '12px',
-      padding: '3rem 2rem',
-      textAlign: 'center' as const,
-      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-      maxWidth: '700px',
-      margin: '2rem auto',
-      border: '2px solid #f3f4f6',
-    },
-    icon: {
-      fontSize: '5rem',
-      marginBottom: '1.5rem',
-    },
-    infoTitle: {
-      fontSize: '1.75rem',
-      color: '#1f2937',
-      marginBottom: '1rem',
-      fontWeight: 700,
-    },
-    infoText: {
-      color: '#6b7280',
-      fontSize: '1.1rem',
-      lineHeight: 1.8,
-      maxWidth: '500px',
-      margin: '0 auto 2rem',
-    },
-    createTicketButton: {
-      padding: '1rem 2rem',
-      background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: 600,
-      transition: 'all 0.2s',
-      boxShadow: '0 4px 8px rgba(59, 130, 246, 0.3)',
-      marginTop: '1rem',
-    },
-    viewTicketsButton: {
-      padding: '1rem 2rem',
-      background: 'linear-gradient(135deg, #10b981, #059669)',
-      color: 'white',
-      border: 'none',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontSize: '1rem',
-      fontWeight: 600,
-      transition: 'all 0.2s',
-      boxShadow: '0 4px 8px rgba(16, 185, 129, 0.3)',
-      marginTop: '1rem',
-      marginLeft: '1rem',
-    },
+  const getBadgeGradient = (role: UserRole) => {
+    if (role === 'student') return 'from-blue-500 to-blue-600';
+    if (role === 'staff') return 'from-emerald-500 to-emerald-600';
+    return 'from-amber-500 to-amber-600';
   };
 
   return (
-    <div style={styles.app}>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Navbar */}
-      <nav style={styles.navbar}>
-        <div style={styles.brand}>
-          <h1 style={styles.title}>FPTInsight</h1>
-          <p style={styles.subtitle}>Facility Feedback & Helpdesk System</p>
+      <nav className="bg-gradient-to-br from-orange-500 to-orange-600 text-white py-4 px-8 flex justify-between items-center shadow-md">
+        <div className="flex flex-col">
+          <h1 className="m-0 text-[1.8rem] font-bold text-white">FPTInsight</h1>
+          <p className="mt-1 mb-0 text-[0.85rem] opacity-90 font-normal">Facility Feedback & Helpdesk System</p>
         </div>
-        <div style={styles.roles}>
-          <button style={styles.roleBtn(currentRole === 'student')} onClick={() => handleRoleChange('student')}>
+        <div className="flex gap-3">
+          <button
+            className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+              currentRole === 'student'
+                ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+                : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+            }`}
+            onClick={() => handleRoleChange('student')}
+          >
             Student
           </button>
-          <button style={styles.roleBtn(currentRole === 'staff')} onClick={() => handleRoleChange('staff')}>
+          <button
+            className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+              currentRole === 'staff'
+                ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+                : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+            }`}
+            onClick={() => handleRoleChange('staff')}
+          >
             Staff
           </button>
-          <button style={styles.roleBtn(currentRole === 'admin')} onClick={() => handleRoleChange('admin')}>
+          <button
+            className={`py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 ${
+              currentRole === 'admin'
+                ? 'border-2 border-white bg-white text-orange-500 font-semibold'
+                : 'border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20'
+            }`}
+            onClick={() => handleRoleChange('admin')}
+          >
             Department Admin
           </button>
         </div>
       </nav>
 
       {/* Content */}
-      <div style={styles.page}>
+      <div className="max-w-[1400px] mx-auto p-8">
         {/* Student Page */}
         {currentRole === 'student' && (
           <>
             {studentView === 'home' && (
               <>
-                <div style={styles.header}>
-                  <div style={styles.badge('student')}>Student</div>
-                  <h2 style={styles.pageTitle}>Trang Sinh viên</h2>
-                  <p style={styles.description}>
+                <div className="mb-8 text-center">
+                  <div className={`inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br ${getBadgeGradient('student')} text-white`}>
+                    Student
+                  </div>
+                  <h2 className="text-2xl my-2 text-gray-800">Trang Sinh viên</h2>
+                  <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
                     Bạn đang ở trang dành cho Sinh viên
                   </p>
                 </div>
-                <div style={styles.infoBox}>
-                  <div style={styles.icon}>👨‍🎓</div>
-                  <h3 style={styles.infoTitle}>Chức năng dành cho Sinh viên</h3>
-                  <p style={styles.infoText}>
+                <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
+                  <div className="text-[5rem] mb-6">👨‍🎓</div>
+                  <h3 className="text-[1.75rem] text-gray-800 mb-4 font-bold">Chức năng dành cho Sinh viên</h3>
+                  <p className="text-gray-500 text-lg leading-[1.8] max-w-[500px] mx-auto mb-8">
                     Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
                   </p>
                   <div>
                     <button
-                      style={styles.createTicketButton}
+                      className="py-4 px-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(59,130,246,0.3)] mt-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(59,130,246,0.4)]"
                       onClick={() => setStudentView('issue-selection')}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(59, 130, 246, 0.4)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(59, 130, 246, 0.3)';
-                      }}
                     >
                       ➕ Tạo Ticket Mới
                     </button>
                     <button
-                      style={styles.viewTicketsButton}
+                      className="py-4 px-8 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(16,185,129,0.3)] mt-4 ml-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(16,185,129,0.4)]"
                       onClick={() => setStudentView('ticket-list')}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 8px 16px rgba(16, 185, 129, 0.4)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(16, 185, 129, 0.3)';
-                      }}
                     >
                       📋 Xem Danh Sách Ticket
                     </button>
@@ -274,17 +152,19 @@ function App() {
         {/* Staff Page */}
         {currentRole === 'staff' && (
           <>
-            <div style={styles.header}>
-              <div style={styles.badge('staff')}>Staff</div>
-              <h2 style={styles.pageTitle}>Trang Nhân viên</h2>
-              <p style={styles.description}>
+            <div className="mb-8 text-center">
+              <div className={`inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br ${getBadgeGradient('staff')} text-white`}>
+                Staff
+              </div>
+              <h2 className="text-2xl my-2 text-gray-800">Trang Nhân viên</h2>
+              <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
                 Bạn đang ở trang dành cho Nhân viên
               </p>
             </div>
-            <div style={styles.infoBox}>
-              <div style={styles.icon}>👨‍💼</div>
-              <h3 style={styles.infoTitle}>Chức năng dành cho Nhân viên</h3>
-              <p style={styles.infoText}>
+            <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
+              <div className="text-[5rem] mb-6">👨‍💼</div>
+              <h3 className="text-[1.75rem] text-gray-800 mb-4 font-bold">Chức năng dành cho Nhân viên</h3>
+              <p className="text-gray-500 text-lg leading-[1.8] max-w-[500px] mx-auto">
                 Nhân viên có thể tiếp nhận, xử lý và cập nhật trạng thái các ticket theo SLA.
               </p>
             </div>
@@ -294,17 +174,19 @@ function App() {
         {/* Admin Page */}
         {currentRole === 'admin' && (
           <>
-            <div style={styles.header}>
-              <div style={styles.badge('admin')}>Department Admin</div>
-              <h2 style={styles.pageTitle}>Admin Dashboard</h2>
-              <p style={styles.description}>
+            <div className="mb-8 text-center">
+              <div className={`inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br ${getBadgeGradient('admin')} text-white`}>
+                Department Admin
+              </div>
+              <h2 className="text-2xl my-2 text-gray-800">Admin Dashboard</h2>
+              <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
                 Chào mừng quản trị viên! Quản lý phòng/bộ phận, cấu hình hệ thống và giám sát hoạt động.
               </p>
             </div>
-            <div style={styles.infoBox}>
-              <div style={styles.icon}>👨‍💼</div>
-              <h3 style={styles.infoTitle}>Chức năng dành cho Admin</h3>
-              <p style={styles.infoText}>
+            <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
+              <div className="text-[5rem] mb-6">👨‍💼</div>
+              <h3 className="text-[1.75rem] text-gray-800 mb-4 font-bold">Chức năng dành cho Admin</h3>
+              <p className="text-gray-500 text-lg leading-[1.8] max-w-[500px] mx-auto">
                 Quản trị viên có quyền quản lý CRUD phòng/bộ phận, cấu hình hệ thống và giám sát toàn bộ hoạt động.
               </p>
             </div>

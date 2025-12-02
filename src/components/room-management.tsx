@@ -21,193 +21,6 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
   });
   const [facilityInput, setFacilityInput] = useState('');
 
-  const styles = {
-    container: { width: '100%' },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-    },
-    title: { margin: 0, fontSize: '1.5rem', color: '#1f2937' },
-    btnPrimary: {
-      background: 'linear-gradient(135deg, #f97316, #ea580c)',
-      color: 'white',
-      border: 'none',
-      padding: '0.75rem 1.5rem',
-      borderRadius: '8px',
-      fontWeight: 600,
-      cursor: 'pointer',
-    },
-    modalOverlay: {
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      padding: '1rem',
-    },
-    modalContent: {
-      background: 'white',
-      borderRadius: '12px',
-      width: '100%',
-      maxWidth: '600px',
-      maxHeight: '90vh',
-      overflowY: 'auto' as const,
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-    },
-    modalHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1.5rem',
-      borderBottom: '1px solid #e5e7eb',
-    },
-    closeBtn: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      cursor: 'pointer',
-      color: '#6b7280',
-      padding: '0.25rem',
-    },
-    form: { padding: '1.5rem' },
-    formGroup: { marginBottom: '1.5rem' },
-    label: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      fontWeight: 600,
-      color: '#374151',
-      fontSize: '0.9rem',
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '1rem',
-    },
-    select: {
-      width: '100%',
-      padding: '0.75rem',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '1rem',
-    },
-    facilityInput: {
-      display: 'flex',
-      gap: '0.5rem',
-    },
-    facilityTags: {
-      display: 'flex',
-      flexWrap: 'wrap' as const,
-      gap: '0.5rem',
-      marginTop: '0.75rem',
-    },
-    tag: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.4rem 0.75rem',
-      background: '#f3f4f6',
-      border: '1px solid #d1d5db',
-      borderRadius: '6px',
-      fontSize: '0.875rem',
-      color: '#374151',
-    },
-    tagBtn: {
-      background: 'none',
-      border: 'none',
-      cursor: 'pointer',
-      color: '#6b7280',
-      fontSize: '1rem',
-      padding: 0,
-    },
-    formActions: {
-      display: 'flex',
-      gap: '1rem',
-      justifyContent: 'flex-end',
-      marginTop: '2rem',
-    },
-    btnSecondary: {
-      background: '#f3f4f6',
-      color: '#4b5563',
-      border: '1px solid #d1d5db',
-      padding: '0.75rem 1.5rem',
-      borderRadius: '8px',
-      fontWeight: 600,
-      cursor: 'pointer',
-    },
-    tableContainer: {
-      overflowX: 'auto' as const,
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb',
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse' as const,
-      background: 'white',
-    },
-    th: {
-      background: '#f9fafb',
-      padding: '1rem',
-      textAlign: 'left' as const,
-      fontWeight: 600,
-      color: '#374151',
-      borderBottom: '2px solid #e5e7eb',
-    },
-    td: {
-      padding: '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      color: '#4b5563',
-    },
-    tdBold: {
-      padding: '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      color: '#1f2937',
-      fontWeight: 600,
-    },
-    statusBadge: {
-      display: 'inline-block',
-      padding: '0.4rem 0.75rem',
-      borderRadius: '6px',
-      fontSize: '0.875rem',
-      fontWeight: 600,
-    },
-    statusActive: {
-      background: '#d1fae5',
-      color: '#065f46',
-    },
-    statusMaintenance: {
-      background: '#fef3c7',
-      color: '#92400e',
-    },
-    statusInactive: {
-      background: '#fee2e2',
-      color: '#991b1b',
-    },
-    actionButtons: { display: 'flex', gap: '0.5rem' },
-    btnIcon: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.2rem',
-      cursor: 'pointer',
-      padding: '0.5rem',
-      borderRadius: '6px',
-    },
-    emptyState: {
-      textAlign: 'center' as const,
-      padding: '3rem',
-      color: '#9ca3af',
-      fontStyle: 'italic',
-    },
-  };
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -272,34 +85,52 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
 
   const getStatusStyle = (status: Room['status']) => {
     const badges = {
-      active: { style: styles.statusActive, text: 'Hoạt động' },
-      maintenance: { style: styles.statusMaintenance, text: 'Bảo trì' },
-      inactive: { style: styles.statusInactive, text: 'Không hoạt động' },
+      active: { className: 'bg-emerald-100 text-emerald-700', text: 'Hoạt động' },
+      maintenance: { className: 'bg-amber-100 text-amber-800', text: 'Bảo trì' },
+      inactive: { className: 'bg-red-100 text-red-800', text: 'Không hoạt động' },
     };
     return badges[status];
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Danh sách Phòng</h3>
-        <button style={styles.btnPrimary} onClick={() => setIsFormOpen(true)}>
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="m-0 text-2xl text-gray-800">Danh sách Phòng</h3>
+        <button 
+          className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-none py-3 px-6 rounded-lg font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => setIsFormOpen(true)}
+        >
           ➕ Thêm Phòng
         </button>
       </div>
 
       {isFormOpen && (
-        <div style={styles.modalOverlay} onClick={resetForm}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.title}>{editingRoom ? 'Chỉnh sửa Phòng' : 'Thêm Phòng mới'}</h3>
-              <button style={styles.closeBtn} onClick={resetForm}>✕</button>
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
+          onClick={resetForm}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="m-0 text-2xl text-gray-800">
+                {editingRoom ? 'Chỉnh sửa Phòng' : 'Thêm Phòng mới'}
+              </h3>
+              <button 
+                className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700"
+                onClick={resetForm}
+              >
+                ✕
+              </button>
             </div>
-            <form onSubmit={handleSubmit} style={styles.form}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Tên phòng *</label>
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Tên phòng *
+                </label>
                 <input
-                  style={styles.input}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                   type="text"
                   required
                   value={formData.name}
@@ -307,10 +138,12 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
                   placeholder="VD: Alpha 501"
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Bộ phận *</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Bộ phận *
+                </label>
                 <select
-                  style={styles.select}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500 cursor-pointer"
                   required
                   value={formData.departmentId}
                   onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
@@ -323,10 +156,12 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
                   ))}
                 </select>
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Sức chứa *</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Sức chứa *
+                </label>
                 <input
-                  style={styles.input}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                   type="number"
                   required
                   min="1"
@@ -335,10 +170,12 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
                   placeholder="Số người"
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Trạng thái *</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Trạng thái *
+                </label>
                 <select
-                  style={styles.select}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500 cursor-pointer"
                   required
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as Room['status'] })}
@@ -348,35 +185,57 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
                   <option value="inactive">Không hoạt động</option>
                 </select>
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Cơ sở vật chất</label>
-                <div style={styles.facilityInput}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Cơ sở vật chất
+                </label>
+                <div className="flex gap-2">
                   <input
-                    style={styles.input}
+                    className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                     type="text"
                     value={facilityInput}
                     onChange={(e) => setFacilityInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFacility())}
                     placeholder="VD: Projector, WiFi..."
                   />
-                  <button type="button" style={styles.btnSecondary} onClick={addFacility}>
+                  <button 
+                    type="button" 
+                    className="bg-gray-100 text-gray-600 border border-gray-300 py-3 px-6 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+                    onClick={addFacility}
+                  >
                     Thêm
                   </button>
                 </div>
-                <div style={styles.facilityTags}>
+                <div className="flex flex-wrap gap-2 mt-3">
                   {formData.facilities.map((facility) => (
-                    <span key={facility} style={styles.tag}>
+                    <span 
+                      key={facility} 
+                      className="inline-flex items-center gap-2 py-2 px-3 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700"
+                    >
                       {facility}
-                      <button type="button" style={styles.tagBtn} onClick={() => removeFacility(facility)}>✕</button>
+                      <button 
+                        type="button" 
+                        className="bg-none border-none cursor-pointer text-gray-500 text-base p-0 hover:text-gray-700"
+                        onClick={() => removeFacility(facility)}
+                      >
+                        ✕
+                      </button>
                     </span>
                   ))}
                 </div>
               </div>
-              <div style={styles.formActions}>
-                <button type="button" style={styles.btnSecondary} onClick={resetForm}>
+              <div className="flex gap-4 justify-end mt-8">
+                <button 
+                  type="button" 
+                  className="bg-gray-100 text-gray-600 border border-gray-300 py-3 px-6 rounded-lg font-semibold cursor-pointer hover:bg-gray-200"
+                  onClick={resetForm}
+                >
                   Hủy
                 </button>
-                <button type="submit" style={styles.btnPrimary}>
+                <button 
+                  type="submit" 
+                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-none py-3 px-6 rounded-lg font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                >
                   {editingRoom ? 'Cập nhật' : 'Thêm mới'}
                 </button>
               </div>
@@ -385,22 +244,34 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
         </div>
       )}
 
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full border-collapse bg-white">
           <thead>
             <tr>
-              <th style={styles.th}>Tên Phòng</th>
-              <th style={styles.th}>Bộ phận</th>
-              <th style={styles.th}>Sức chứa</th>
-              <th style={styles.th}>Cơ sở vật chất</th>
-              <th style={styles.th}>Trạng thái</th>
-              <th style={styles.th}>Thao tác</th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Tên Phòng
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Bộ phận
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Sức chứa
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Cơ sở vật chất
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Trạng thái
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Thao tác
+              </th>
             </tr>
           </thead>
           <tbody>
             {rooms.length === 0 ? (
               <tr>
-                <td colSpan={6} style={styles.emptyState}>
+                <td colSpan={6} className="text-center p-12 text-gray-400 italic">
                   Chưa có phòng nào. Nhấn "Thêm Phòng" để tạo mới.
                 </td>
               </tr>
@@ -409,32 +280,43 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
                 const statusBadge = getStatusStyle(room.status);
                 return (
                   <tr key={room.id}>
-                    <td style={styles.tdBold}>{room.name}</td>
-                    <td style={styles.td}>{getDepartmentName(room.departmentId)}</td>
-                    <td style={styles.td}>{room.capacity} người</td>
-                    <td style={styles.td}>
-                      <div style={styles.facilityTags}>
+                    <td className="p-4 border-b border-gray-200 text-gray-800 font-semibold">
+                      {room.name}
+                    </td>
+                    <td className="p-4 border-b border-gray-200 text-gray-600">
+                      {getDepartmentName(room.departmentId)}
+                    </td>
+                    <td className="p-4 border-b border-gray-200 text-gray-600">
+                      {room.capacity} người
+                    </td>
+                    <td className="p-4 border-b border-gray-200 text-gray-600">
+                      <div className="flex flex-wrap gap-2">
                         {room.facilities.map((f) => (
-                          <span key={f} style={styles.tag}>{f}</span>
+                          <span 
+                            key={f} 
+                            className="inline-flex items-center gap-2 py-2 px-3 bg-gray-100 border border-gray-300 rounded-md text-sm text-gray-700"
+                          >
+                            {f}
+                          </span>
                         ))}
                       </div>
                     </td>
-                    <td style={styles.td}>
-                      <span style={{ ...styles.statusBadge, ...statusBadge.style }}>
+                    <td className="p-4 border-b border-gray-200 text-gray-600">
+                      <span className={`inline-block py-2 px-3 rounded-md text-sm font-semibold ${statusBadge.className}`}>
                         {statusBadge.text}
                       </span>
                     </td>
-                    <td style={styles.td}>
-                      <div style={styles.actionButtons}>
+                    <td className="p-4 border-b border-gray-200 text-gray-600">
+                      <div className="flex gap-2">
                         <button
-                          style={styles.btnIcon}
+                          className="bg-none border-none text-xl cursor-pointer p-2 rounded-md hover:bg-gray-100"
                           onClick={() => handleEdit(room)}
                           title="Chỉnh sửa"
                         >
                           ✏️
                         </button>
                         <button
-                          style={styles.btnIcon}
+                          className="bg-none border-none text-xl cursor-pointer p-2 rounded-md hover:bg-gray-100"
                           onClick={() => handleDelete(room.id)}
                           title="Xóa"
                         >
@@ -454,4 +336,3 @@ const RoomManagement = ({ rooms, departments, onAdd, onUpdate, onDelete }: RoomM
 };
 
 export default RoomManagement;
-

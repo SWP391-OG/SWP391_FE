@@ -55,281 +55,24 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
     return '#10b981';
   };
 
-  const styles = {
-    overlay: {
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '2rem',
-    },
-    modal: {
-      background: 'white',
-      borderRadius: '16px',
-      maxWidth: '900px',
-      width: '100%',
-      maxHeight: '90vh',
-      overflow: 'auto',
-      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-      position: 'relative' as const,
-    },
-    modalHeader: {
-      padding: '2rem',
-      borderBottom: '2px solid #f3f4f6',
-      position: 'sticky' as const,
-      top: 0,
-      background: 'white',
-      zIndex: 10,
-    },
-    closeButton: {
-      position: 'absolute' as const,
-      top: '1.5rem',
-      right: '1.5rem',
-      background: '#f3f4f6',
-      border: 'none',
-      borderRadius: '50%',
-      width: '40px',
-      height: '40px',
-      cursor: 'pointer',
-      fontSize: '1.5rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s',
-      color: '#6b7280',
-    },
-    ticketId: {
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      color: '#6b7280',
-      marginBottom: '0.5rem',
-    },
-    ticketTitle: {
-      fontSize: '1.75rem',
-      fontWeight: 700,
-      color: '#1f2937',
-      margin: '0 0 1rem 0',
-      paddingRight: '3rem',
-    },
-    badgeRow: {
-      display: 'flex',
-      gap: '0.75rem',
-      flexWrap: 'wrap' as const,
-      marginBottom: '1rem',
-    },
-    badge: (bgColor: string, textColor: string = 'white') => ({
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-      padding: '0.5rem 1rem',
-      borderRadius: '20px',
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      background: bgColor,
-      color: textColor,
-    }),
-    modalBody: {
-      padding: '2rem',
-    },
-    section: {
-      marginBottom: '2rem',
-    },
-    sectionTitle: {
-      fontSize: '1.25rem',
-      fontWeight: 700,
-      color: '#1f2937',
-      marginBottom: '1rem',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '0.5rem',
-    },
-    sectionContent: {
-      fontSize: '1rem',
-      color: '#4b5563',
-      lineHeight: 1.8,
-    },
-    infoGrid: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '1rem',
-    },
-    infoItem: {
-      background: '#f9fafb',
-      padding: '1rem',
-      borderRadius: '8px',
-    },
-    infoLabel: {
-      fontSize: '0.85rem',
-      fontWeight: 600,
-      color: '#6b7280',
-      marginBottom: '0.25rem',
-    },
-    infoValue: {
-      fontSize: '1rem',
-      color: '#1f2937',
-      fontWeight: 500,
-    },
-    slaCard: {
-      background: 'linear-gradient(135deg, #f9fafb 0%, #ffffff 100%)',
-      border: '2px solid #e5e7eb',
-      borderRadius: '12px',
-      padding: '1.5rem',
-      marginBottom: '1.5rem',
-    },
-    slaHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1rem',
-    },
-    slaTitle: {
-      fontSize: '1.1rem',
-      fontWeight: 700,
-      color: '#1f2937',
-    },
-    slaStatus: (color: string) => ({
-      padding: '0.5rem 1rem',
-      borderRadius: '20px',
-      fontSize: '0.9rem',
-      fontWeight: 600,
-      background: color,
-      color: 'white',
-    }),
-    progressBar: {
-      width: '100%',
-      height: '12px',
-      background: '#e5e7eb',
-      borderRadius: '6px',
-      overflow: 'hidden',
-      marginBottom: '1rem',
-      position: 'relative' as const,
-    },
-    progressFill: (width: number, color: string) => ({
-      width: `${width}%`,
-      height: '100%',
-      background: color,
-      transition: 'width 0.3s ease',
-      borderRadius: '6px',
-    }),
-    slaStats: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '1rem',
-      marginTop: '1rem',
-    },
-    slaStat: {
-      textAlign: 'center' as const,
-    },
-    slaStatLabel: {
-      fontSize: '0.85rem',
-      color: '#6b7280',
-      marginBottom: '0.25rem',
-    },
-    slaStatValue: {
-      fontSize: '1.5rem',
-      fontWeight: 700,
-      color: '#1f2937',
-    },
-    slaStatUnit: {
-      fontSize: '0.9rem',
-      fontWeight: 400,
-      color: '#6b7280',
-    },
-    timeline: {
-      position: 'relative' as const,
-      paddingLeft: '2rem',
-    },
-    timelineLine: {
-      position: 'absolute' as const,
-      left: '0.5rem',
-      top: '1rem',
-      bottom: '1rem',
-      width: '2px',
-      background: '#e5e7eb',
-    },
-    timelineItem: {
-      position: 'relative' as const,
-      paddingBottom: '1.5rem',
-    },
-    timelineItemLast: {
-      paddingBottom: 0,
-    },
-    timelineDot: (color: string) => ({
-      position: 'absolute' as const,
-      left: '-1.5rem',
-      top: '0.25rem',
-      width: '1rem',
-      height: '1rem',
-      borderRadius: '50%',
-      background: color,
-      border: '3px solid white',
-      boxShadow: '0 0 0 2px ' + color,
-    }),
-    timelineContent: {
-      background: '#f9fafb',
-      padding: '1rem',
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb',
-    },
-    timelineTitle: {
-      fontSize: '1rem',
-      fontWeight: 600,
-      color: '#1f2937',
-      marginBottom: '0.25rem',
-    },
-    timelineDescription: {
-      fontSize: '0.9rem',
-      color: '#6b7280',
-      marginBottom: '0.5rem',
-    },
-    timelineMeta: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      fontSize: '0.85rem',
-      color: '#9ca3af',
-    },
-    imageGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-      gap: '1rem',
-    },
-    imageWrapper: {
-      borderRadius: '8px',
-      overflow: 'hidden',
-      border: '2px solid #e5e7eb',
-      aspectRatio: '1',
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover' as const,
-    },
-  };
-
   // Status colors
   const statusColors = {
-    open: { bg: '#dbeafe', text: '#1e40af' },
-    'in-progress': { bg: '#fef3c7', text: '#92400e' },
-    resolved: { bg: '#d1fae5', text: '#065f46' },
-    closed: { bg: '#f3f4f6', text: '#374151' },
+    open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
   };
 
   // Priority colors
   const priorityColors = {
-    low: { bg: '#d1fae5', text: '#065f46' },
-    medium: { bg: '#fef3c7', text: '#92400e' },
-    high: { bg: '#fed7aa', text: '#9a3412' },
-    urgent: { bg: '#fecaca', text: '#991b1b' },
+    low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
+    high: { bg: 'bg-orange-100', text: 'text-orange-700' },
+    urgent: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Event colors
-  const eventColors = {
+  const eventColors: Record<SLAEvent['eventType'], string> = {
     created: '#3b82f6',
     assigned: '#8b5cf6',
     in_progress: '#f59e0b',
@@ -367,54 +110,57 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
   };
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={styles.modalHeader}>
+    <div 
+      className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex items-center justify-center z-[1000] p-8"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white rounded-2xl max-w-[900px] w-full max-h-[90vh] overflow-auto shadow-[0_20px_60px_rgba(0,0,0,0.3)] relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-8 border-b-2 border-gray-100 sticky top-0 bg-white z-10">
           <button
-            style={styles.closeButton}
+            className="absolute top-6 right-6 bg-gray-100 border-none rounded-full w-10 h-10 cursor-pointer text-2xl flex items-center justify-center transition-all duration-200 text-gray-500 hover:bg-gray-200"
             onClick={onClose}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = '#e5e7eb';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = '#f3f4f6';
-            }}
           >
             ×
           </button>
           
-          <div style={styles.ticketId}>{ticket.id}</div>
-          <h2 style={styles.ticketTitle}>{ticket.title}</h2>
+          <div className="text-sm font-semibold text-gray-500 mb-2">{ticket.id}</div>
+          <h2 className="text-[1.75rem] font-bold text-gray-800 m-0 mb-4 pr-12">{ticket.title}</h2>
           
-          <div style={styles.badgeRow}>
-            <span style={styles.badge(statusColors[ticket.status].bg, statusColors[ticket.status].text)}>
+          <div className="flex gap-3 flex-wrap mb-4">
+            <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${statusColors[ticket.status].bg} ${statusColors[ticket.status].text}`}>
               {ticket.status === 'open' && '🔵 Mở'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
               {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
               {ticket.status === 'closed' && '⚫ Đã đóng'}
             </span>
-            <span style={styles.badge(priorityColors[ticket.priority].bg, priorityColors[ticket.priority].text)}>
+            <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
               {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
               {ticket.priority === 'high' && '🟠 Cao'}
               {ticket.priority === 'medium' && '🟡 Trung bình'}
               {ticket.priority === 'low' && '🟢 Thấp'}
             </span>
-            <span style={styles.badge('#f3f4f6', '#1f2937')}>
+            <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
               {ticket.issueType.icon} {ticket.issueType.name}
             </span>
           </div>
         </div>
 
-        <div style={styles.modalBody}>
+        <div className="p-8">
           {/* SLA Tracking */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               ⏱️ SLA Tracking
             </h3>
-            <div style={styles.slaCard}>
-              <div style={styles.slaHeader}>
-                <div style={styles.slaTitle}>Tiến Độ Xử Lý</div>
-                <div style={styles.slaStatus(getSLAColor())}>
+            <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="text-lg font-bold text-gray-800">Tiến Độ Xử Lý</div>
+                <div 
+                  className="py-2 px-4 rounded-full text-sm font-semibold text-white"
+                  style={{ backgroundColor: getSLAColor() }}
+                >
                   {slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Quá hạn'}
                   {!slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Đang xử lý'}
                   {ticket.status === 'resolved' && new Date(ticket.updatedAt || '') <= new Date(ticket.slaDeadline) && 'Hoàn thành đúng hạn'}
@@ -423,30 +169,39 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
                 </div>
               </div>
               
-              <div style={styles.progressBar}>
-                <div style={styles.progressFill(slaProgress.progress, getSLAColor())}></div>
+              <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden mb-4 relative">
+                <div 
+                  className="h-full transition-all duration-300 rounded-md"
+                  style={{ 
+                    width: `${slaProgress.progress}%`, 
+                    backgroundColor: getSLAColor() 
+                  }}
+                ></div>
               </div>
               
-              <div style={styles.slaStats}>
-                <div style={styles.slaStat}>
-                  <div style={styles.slaStatLabel}>Tổng thời gian SLA</div>
-                  <div style={styles.slaStatValue}>
+              <div className="grid grid-cols-3 gap-4 mt-4">
+                <div className="text-center">
+                  <div className="text-[0.85rem] text-gray-500 mb-1">Tổng thời gian SLA</div>
+                  <div className="text-2xl font-bold text-gray-800">
                     {formatHours(slaProgress.hoursTotal).split(' ')[0]}
-                    <span style={styles.slaStatUnit}>{formatHours(slaProgress.hoursTotal).split(' ')[1] || ''}</span>
+                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursTotal).split(' ')[1] || ''}</span>
                   </div>
                 </div>
-                <div style={styles.slaStat}>
-                  <div style={styles.slaStatLabel}>Đã trôi qua</div>
-                  <div style={styles.slaStatValue}>
+                <div className="text-center">
+                  <div className="text-[0.85rem] text-gray-500 mb-1">Đã trôi qua</div>
+                  <div className="text-2xl font-bold text-gray-800">
                     {formatHours(slaProgress.hoursElapsed).split(' ')[0]}
-                    <span style={styles.slaStatUnit}>{formatHours(slaProgress.hoursElapsed).split(' ')[1] || ''}</span>
+                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursElapsed).split(' ')[1] || ''}</span>
                   </div>
                 </div>
-                <div style={styles.slaStat}>
-                  <div style={styles.slaStatLabel}>Còn lại</div>
-                  <div style={{ ...styles.slaStatValue, color: getSLAColor() }}>
+                <div className="text-center">
+                  <div className="text-[0.85rem] text-gray-500 mb-1">Còn lại</div>
+                  <div 
+                    className="text-2xl font-bold"
+                    style={{ color: getSLAColor() }}
+                  >
                     {formatHours(slaProgress.hoursRemaining).split(' ')[0]}
-                    <span style={styles.slaStatUnit}>{formatHours(slaProgress.hoursRemaining).split(' ')[1] || ''}</span>
+                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursRemaining).split(' ')[1] || ''}</span>
                   </div>
                 </div>
               </div>
@@ -454,45 +209,49 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
           </div>
 
           {/* Description */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>📝 Mô Tả Chi Tiết</h3>
-            <div style={styles.sectionContent}>{ticket.description}</div>
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              📝 Mô Tả Chi Tiết
+            </h3>
+            <div className="text-base text-gray-600 leading-[1.8]">{ticket.description}</div>
           </div>
 
           {/* Information */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>ℹ️ Thông Tin</h3>
-            <div style={styles.infoGrid}>
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              ℹ️ Thông Tin
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
               {ticket.location && (
-                <div style={styles.infoItem}>
-                  <div style={styles.infoLabel}>Địa điểm</div>
-                  <div style={styles.infoValue}>{ticket.location}</div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Địa điểm</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.location}</div>
                 </div>
               )}
               {ticket.roomNumber && (
-                <div style={styles.infoItem}>
-                  <div style={styles.infoLabel}>Số phòng</div>
-                  <div style={styles.infoValue}>{ticket.roomNumber}</div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Số phòng</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.roomNumber}</div>
                 </div>
               )}
-              <div style={styles.infoItem}>
-                <div style={styles.infoLabel}>Ngày tạo</div>
-                <div style={styles.infoValue}>{formatDateTime(ticket.createdAt)}</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Ngày tạo</div>
+                <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.createdAt)}</div>
               </div>
-              <div style={styles.infoItem}>
-                <div style={styles.infoLabel}>Deadline SLA</div>
-                <div style={styles.infoValue}>{formatDateTime(ticket.slaDeadline)}</div>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Deadline SLA</div>
+                <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.slaDeadline)}</div>
               </div>
               {ticket.assignedTo && (
-                <div style={styles.infoItem}>
-                  <div style={styles.infoLabel}>Người xử lý</div>
-                  <div style={styles.infoValue}>{ticket.assignedTo}</div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Người xử lý</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.assignedTo}</div>
                 </div>
               )}
               {ticket.updatedAt && (
-                <div style={styles.infoItem}>
-                  <div style={styles.infoLabel}>Cập nhật lần cuối</div>
-                  <div style={styles.infoValue}>{formatDateTime(ticket.updatedAt)}</div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Cập nhật lần cuối</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.updatedAt)}</div>
                 </div>
               )}
             </div>
@@ -500,12 +259,14 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
 
           {/* Images */}
           {ticket.images && ticket.images.length > 0 && (
-            <div style={styles.section}>
-              <h3 style={styles.sectionTitle}>🖼️ Hình Ảnh</h3>
-              <div style={styles.imageGrid}>
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                🖼️ Hình Ảnh
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
                 {ticket.images.map((image, index) => (
-                  <div key={index} style={styles.imageWrapper}>
-                    <img src={image} alt={`Ticket image ${index + 1}`} style={styles.image} />
+                  <div key={index} className="rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
+                    <img src={image} alt={`Ticket image ${index + 1}`} className="w-full h-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -513,20 +274,28 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
           )}
 
           {/* Timeline */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>📅 Lịch Sử Xử Lý</h3>
-            <div style={styles.timeline}>
-              <div style={styles.timelineLine}></div>
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              📅 Lịch Sử Xử Lý
+            </h3>
+            <div className="relative pl-8">
+              <div className="absolute left-2 top-4 bottom-4 w-0.5 bg-gray-200"></div>
               {slaEvents.map((event, index) => (
                 <div 
                   key={event.id} 
-                  style={index === slaEvents.length - 1 ? styles.timelineItemLast : styles.timelineItem}
+                  className={index === slaEvents.length - 1 ? 'relative' : 'relative pb-6'}
                 >
-                  <div style={styles.timelineDot(eventColors[event.eventType])}></div>
-                  <div style={styles.timelineContent}>
-                    <div style={styles.timelineTitle}>{event.title}</div>
-                    <div style={styles.timelineDescription}>{event.description}</div>
-                    <div style={styles.timelineMeta}>
+                  <div 
+                    className="absolute -left-6 top-1 w-4 h-4 rounded-full border-[3px] border-white"
+                    style={{ 
+                      backgroundColor: eventColors[event.eventType],
+                      boxShadow: `0 0 0 2px ${eventColors[event.eventType]}`
+                    }}
+                  ></div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <div className="text-base font-semibold text-gray-800 mb-1">{event.title}</div>
+                    <div className="text-sm text-gray-500 mb-2">{event.description}</div>
+                    <div className="flex justify-between text-[0.85rem] text-gray-400">
                       <span>👤 {event.performedBy}</span>
                       <span>{formatDateTime(event.timestamp)}</span>
                     </div>
@@ -535,7 +304,7 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
               ))}
               
               {slaEvents.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '2rem', color: '#9ca3af' }}>
+                <div className="text-center py-8 text-gray-400">
                   Chưa có lịch sử xử lý
                 </div>
               )}
@@ -548,4 +317,3 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
 };
 
 export default TicketDetailModal;
-
