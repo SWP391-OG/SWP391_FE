@@ -1,4 +1,4 @@
-import type { Ticket } from '../types';
+import type { Ticket, SLATracking, SLATimelineEvent, UserRole } from '../types';
 import { issueTypes } from './issueTypes';
 
 // Helper function to calculate SLA deadline based on priority
@@ -14,143 +14,6 @@ const calculateSLADeadline = (createdAt: string, priority: Ticket['priority']): 
   created.setHours(created.getHours() + slaHours[priority]);
   return created.toISOString();
 };
-
-// Generate mock tickets
-export const mockTickets: Ticket[] = [
-  {
-    id: 'TKT-001',
-    title: 'Máy chiếu phòng 501 không hoạt động',
-    description: 'Máy chiếu trong phòng 501 không bật được, đã thử nhiều lần nhưng vẫn không có tín hiệu. Ảnh hưởng đến việc học của lớp.',
-    issueType: issueTypes[2], // Equipment broken
-    category: 'equipment',
-    priority: 'high',
-    status: 'in-progress',
-    location: 'Tòa nhà Alpha',
-    roomNumber: '501',
-    images: [],
-    createdBy: 'student-001',
-    assignedTo: 'staff-005',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), 'high'),
-  },
-  {
-    id: 'TKT-002',
-    title: 'WiFi tầng 3 không kết nối được',
-    description: 'Tất cả sinh viên ở tầng 3 đều không thể kết nối WiFi. Đã thử khởi động lại thiết bị nhưng vẫn không được.',
-    issueType: issueTypes[1], // WiFi issue
-    category: 'wifi',
-    priority: 'urgent',
-    status: 'open',
-    location: 'Tòa nhà Beta',
-    roomNumber: '',
-    images: [],
-    createdBy: 'student-002',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), // 1 hour ago
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(), 'urgent'),
-  },
-  {
-    id: 'TKT-003',
-    title: 'Điều hòa phòng 302 hỏng',
-    description: 'Điều hòa trong phòng 302 không làm lạnh, phòng rất nóng khiến sinh viên khó tập trung học.',
-    issueType: issueTypes[0], // Facility broken
-    category: 'facility',
-    priority: 'medium',
-    status: 'resolved',
-    location: 'Tòa nhà Alpha',
-    roomNumber: '302',
-    images: [],
-    createdBy: 'student-003',
-    assignedTo: 'staff-003',
-    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(), // 3 days ago
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(), 'medium'),
-  },
-  {
-    id: 'TKT-004',
-    title: 'Phòng 401 chưa được dọn dẹp',
-    description: 'Phòng học 401 chưa được vệ sinh, bàn ghế bẩn và có nhiều rác.',
-    issueType: issueTypes[3], // Classroom dirty
-    category: 'classroom',
-    priority: 'low',
-    status: 'open',
-    location: 'Tòa nhà Alpha',
-    roomNumber: '401',
-    images: [],
-    createdBy: 'student-004',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), 'low'),
-  },
-  {
-    id: 'TKT-005',
-    title: 'Thiếu bàn ghế phòng 205',
-    description: 'Phòng 205 chỉ có 25 bàn ghế nhưng lớp có 35 sinh viên, cần bổ sung thêm 10 bộ bàn ghế.',
-    issueType: issueTypes[4], // Facility lack
-    category: 'facility',
-    priority: 'medium',
-    status: 'in-progress',
-    location: 'Tòa nhà Beta',
-    roomNumber: '205',
-    images: [],
-    createdBy: 'student-005',
-    assignedTo: 'staff-002',
-    createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(), // 30 hours ago
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(), 'medium'),
-  },
-  {
-    id: 'TKT-006',
-    title: 'Mất điện phòng 101',
-    description: 'Phòng 101 bị mất điện hoàn toàn, không thể sử dụng máy chiếu và đèn.',
-    issueType: issueTypes[5], // Electricity issue
-    category: 'facility',
-    priority: 'urgent',
-    status: 'resolved',
-    location: 'Tòa nhà Alpha',
-    roomNumber: '101',
-    images: [],
-    createdBy: 'student-006',
-    assignedTo: 'staff-001',
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // 2 days ago
-    updatedAt: new Date(Date.now() - 46 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), 'urgent'),
-  },
-  {
-    id: 'TKT-007',
-    title: 'Vòi nước nhà vệ sinh tầng 2 hỏng',
-    description: 'Vòi nước trong nhà vệ sinh nam tầng 2 bị hỏng, nước chảy liên tục không tắt được.',
-    issueType: issueTypes[6], // Water issue
-    category: 'facility',
-    priority: 'high',
-    status: 'closed',
-    location: 'Tòa nhà Beta',
-    roomNumber: '',
-    images: [],
-    createdBy: 'student-007',
-    assignedTo: 'staff-004',
-    createdAt: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(), // 4 days ago
-    updatedAt: new Date(Date.now() - 90 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(), 'high'),
-  },
-  {
-    id: 'TKT-008',
-    title: 'Loa phòng 601 không có tiếng',
-    description: 'Loa trong phòng 601 không phát ra tiếng, giáo viên phải nói rất to.',
-    issueType: issueTypes[2], // Equipment broken
-    category: 'equipment',
-    priority: 'medium',
-    status: 'open',
-    location: 'Tòa nhà Alpha',
-    roomNumber: '601',
-    images: [],
-    createdBy: 'student-008',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
-    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    slaDeadline: calculateSLADeadline(new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), 'medium'),
-  },
-];
 
 // SLA Timeline Events
 export interface SLAEvent {
@@ -422,3 +285,236 @@ export const mockSLAEvents: Record<string, SLAEvent[]> = {
     },
   ],
 };
+
+// Helper function to generate SLA tracking from events
+const generateSLATracking = (
+  ticketId: string,
+  createdAt: string,
+  slaDeadline: string,
+  events: SLAEvent[]
+): SLATracking => {
+  const now = new Date();
+  const deadline = new Date(slaDeadline);
+  const created = new Date(createdAt);
+  
+  const acknowledgedEvent = events.find(e => e.eventType === 'assigned');
+  const startedEvent = events.find(e => e.eventType === 'in_progress');
+  const resolvedEvent = events.find(e => e.eventType === 'resolved');
+  const closedEvent = events.find(e => e.eventType === 'closed');
+  
+  const acknowledgedAt = acknowledgedEvent?.timestamp;
+  const startedAt = startedEvent?.timestamp;
+  const resolvedAt = resolvedEvent?.timestamp;
+  const closedAt = closedEvent?.timestamp;
+  
+  const responseTime = acknowledgedAt 
+    ? Math.round((new Date(acknowledgedAt).getTime() - created.getTime()) / (1000 * 60))
+    : undefined;
+  
+  const resolutionTime = resolvedAt
+    ? Math.round((new Date(resolvedAt).getTime() - created.getTime()) / (1000 * 60))
+    : undefined;
+  
+  const isOverdue = now > deadline && !resolvedAt;
+  const overdueBy = isOverdue 
+    ? Math.round((now.getTime() - deadline.getTime()) / (1000 * 60))
+    : undefined;
+  
+  // Convert SLAEvent to SLATimelineEvent
+  const timeline: SLATimelineEvent[] = events.map((event, index) => {
+    const prevEvent = index > 0 ? events[index - 1] : null;
+    const duration = prevEvent
+      ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEvent.timestamp).getTime()) / (1000 * 60))
+      : undefined;
+    
+    // Map eventType to status
+    const statusMap: Record<string, SLATimelineEvent['status']> = {
+      'created': 'open',
+      'assigned': 'acknowledged',
+      'in_progress': 'in-progress',
+      'resolved': 'resolved',
+      'closed': 'closed',
+      'comment': 'in-progress',
+    };
+    
+    return {
+      id: event.id,
+      timestamp: event.timestamp,
+      status: statusMap[event.eventType] || 'open',
+      actor: event.performedBy,
+      actorRole: event.performedByRole as UserRole,
+      action: event.title,
+      note: event.description,
+      duration,
+    };
+  });
+  
+  return {
+    createdAt,
+    acknowledgedAt,
+    startedAt,
+    resolvedAt,
+    closedAt,
+    deadline: slaDeadline,
+    responseTime,
+    resolutionTime,
+    isOverdue,
+    overdueBy,
+    timeline,
+  };
+};
+
+// Generate mock tickets
+const ticketData = [
+  {
+    id: 'TKT-001',
+    title: 'Máy chiếu phòng 501 không hoạt động',
+    description: 'Máy chiếu trong phòng 501 không bật được, đã thử nhiều lần nhưng vẫn không có tín hiệu. Ảnh hưởng đến việc học của lớp.',
+    issueType: issueTypes[2],
+    category: 'equipment' as const,
+    priority: 'high' as const,
+    status: 'in-progress' as const,
+    location: 'Tòa nhà Alpha',
+    roomNumber: '501',
+    images: [] as string[],
+    createdBy: 'student-001',
+    createdByName: 'Nguyễn Văn A',
+    assignedTo: 'staff-005',
+    assignedToName: 'Trần Văn B',
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-002',
+    title: 'WiFi tầng 3 không kết nối được',
+    description: 'Tất cả sinh viên ở tầng 3 đều không thể kết nối WiFi. Đã thử khởi động lại thiết bị nhưng vẫn không được.',
+    issueType: issueTypes[1],
+    category: 'wifi' as const,
+    priority: 'urgent' as const,
+    status: 'open' as const,
+    location: 'Tòa nhà Beta',
+    roomNumber: '',
+    images: [] as string[],
+    createdBy: 'student-002',
+    createdByName: 'Lê Thị C',
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-003',
+    title: 'Điều hòa phòng 302 hỏng',
+    description: 'Điều hòa trong phòng 302 không làm lạnh, phòng rất nóng khiến sinh viên khó tập trung học.',
+    issueType: issueTypes[0],
+    category: 'facility' as const,
+    priority: 'medium' as const,
+    status: 'resolved' as const,
+    location: 'Tòa nhà Alpha',
+    roomNumber: '302',
+    images: [] as string[],
+    createdBy: 'student-003',
+    createdByName: 'Phạm Văn D',
+    assignedTo: 'staff-003',
+    assignedToName: 'Hoàng Văn E',
+    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-004',
+    title: 'Phòng 401 chưa được dọn dẹp',
+    description: 'Phòng học 401 chưa được vệ sinh, bàn ghế bẩn và có nhiều rác.',
+    issueType: issueTypes[3],
+    category: 'classroom' as const,
+    priority: 'low' as const,
+    status: 'open' as const,
+    location: 'Tòa nhà Alpha',
+    roomNumber: '401',
+    images: [] as string[],
+    createdBy: 'student-004',
+    createdByName: 'Vũ Thị F',
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-005',
+    title: 'Thiếu bàn ghế phòng 205',
+    description: 'Phòng 205 chỉ có 25 bàn ghế nhưng lớp có 35 sinh viên, cần bổ sung thêm 10 bộ bàn ghế.',
+    issueType: issueTypes[4],
+    category: 'facility' as const,
+    priority: 'medium' as const,
+    status: 'in-progress' as const,
+    location: 'Tòa nhà Beta',
+    roomNumber: '205',
+    images: [] as string[],
+    createdBy: 'student-005',
+    createdByName: 'Đỗ Văn G',
+    assignedTo: 'staff-002',
+    assignedToName: 'Bùi Thị H',
+    createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-006',
+    title: 'Mất điện phòng 101',
+    description: 'Phòng 101 bị mất điện hoàn toàn, không thể sử dụng máy chiếu và đèn.',
+    issueType: issueTypes[5],
+    category: 'facility' as const,
+    priority: 'urgent' as const,
+    status: 'resolved' as const,
+    location: 'Tòa nhà Alpha',
+    roomNumber: '101',
+    images: [] as string[],
+    createdBy: 'student-006',
+    createdByName: 'Đinh Văn I',
+    assignedTo: 'staff-001',
+    assignedToName: 'Lý Văn K',
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 46 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-007',
+    title: 'Vòi nước nhà vệ sinh tầng 2 hỏng',
+    description: 'Vòi nước trong nhà vệ sinh nam tầng 2 bị hỏng, nước chảy liên tục không tắt được.',
+    issueType: issueTypes[6],
+    category: 'facility' as const,
+    priority: 'high' as const,
+    status: 'closed' as const,
+    location: 'Tòa nhà Beta',
+    roomNumber: '',
+    images: [] as string[],
+    createdBy: 'student-007',
+    createdByName: 'Mai Thị L',
+    assignedTo: 'staff-004',
+    assignedToName: 'Ngô Văn M',
+    createdAt: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 90 * 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'TKT-008',
+    title: 'Loa phòng 601 không có tiếng',
+    description: 'Loa trong phòng 601 không phát ra tiếng, giáo viên phải nói rất to.',
+    issueType: issueTypes[2],
+    category: 'equipment' as const,
+    priority: 'medium' as const,
+    status: 'open' as const,
+    location: 'Tòa nhà Alpha',
+    roomNumber: '601',
+    images: [] as string[],
+    createdBy: 'student-008',
+    createdByName: 'Phan Văn N',
+    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+  },
+];
+
+// Generate complete tickets with SLA tracking
+export const mockTickets: Ticket[] = ticketData.map(ticket => {
+  const slaDeadline = calculateSLADeadline(ticket.createdAt, ticket.priority);
+  const events = mockSLAEvents[ticket.id] || [];
+  const slaTracking = generateSLATracking(ticket.id, ticket.createdAt, slaDeadline, events);
+  
+  return {
+    ...ticket,
+    slaDeadline,
+    slaTracking,
+  };
+});
