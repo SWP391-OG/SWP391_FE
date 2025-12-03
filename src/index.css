@@ -1,30 +1,26 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #213547;
-  background-color: #ffffff;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-width: 320px;
-}
+@layer base {
+  * {
+    @apply m-0 p-0 box-border;
+  }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
-}
+  body {
+    @apply m-0 font-sans text-gray-800 bg-white antialiased min-w-[320px];
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
 
-h1, h2, h3, h4, h5, h6 {
-  line-height: 1.2;
-}
+  #root {
+    @apply w-full min-h-screen;
+  }
 
-button {
-  font-family: inherit;
+  h1, h2, h3, h4, h5, h6 {
+    @apply leading-tight;
+  }
+
+  button {
+    @apply font-sans;
+  }
 }

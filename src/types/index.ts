@@ -1,23 +1,40 @@
 // User roles
 export type UserRole = 'student' | 'staff' | 'admin';
 
-// Department/Room types
+// Department types
 export interface Department {
   id: string;
   name: string;
   description: string;
   location: string;
-  managerId?: string;
+  adminId?: string; // User ID của admin quản lý department này
+  staffIds: string[]; // Array các User IDs của staff trong department
   createdAt: string;
 }
 
-export interface Room {
+// Location types (thay thế Room)
+export interface Location {
   id: string;
   name: string;
-  departmentId: string;
-  capacity: number;
-  facilities: string[];
-  status: 'active' | 'maintenance' | 'inactive';
+  description?: string;
+  type: 'classroom' | 'wc' | 'hall' | 'corridor' | 'other';
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
+// Category types
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  slaResolveHours: number; // SLA in hours (theo DB design)
+  defaultPriority: Priority;
+  departmentId: string; // Department responsible
+  status: 'active' | 'inactive';
   createdAt: string;
 }
 
@@ -26,8 +43,8 @@ export interface Ticket {
   id: string;
   title: string;
   description: string;
-  category: 'facility' | 'wifi' | 'equipment';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  categoryId: string;
+  priority: Priority;
   status: 'open' | 'in-progress' | 'resolved' | 'closed';
   createdBy: string;
   assignedTo?: string;
