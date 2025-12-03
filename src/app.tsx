@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import type { UserRole, Department, Location, Category, Priority, IssueType, Ticket } from './types';
+import type { UserRole, User,  Department, Location, Category, Priority, IssueType, Ticket } from './types';
 import { mockDepartments, mockLocations, mockCategories } from './data/mockData';
 import ITStaffPage from './pages/it-staff-page';
 import FacilityStaffPage from './pages/facility-staff-page';
+
 import IssueSelectionPage from './pages/issue-selection-page';
 import CreateTicketPage from './pages/create-ticket-page';
 import TicketListPage from './pages/ticket-list-page';
 import TicketDetailModal from './components/ticket-detail-modal';
+import LoginModal from './components/login-modal';
 
 type StaffType = 'it' | 'facility';
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [staffType, setStaffType] = useState<StaffType>('it');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
@@ -58,8 +62,40 @@ function App() {
     setStudentView('home');
     setSelectedIssue(null);
     setSelectedTicket(null);
+    setShowStaffDropdown(false);
   };
 
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    setCurrentRole(user.role);
+    setStudentView('home');
+    setSelectedIssue(null);
+    setSelectedTicket(null);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+  };
+  const getBadgeGradient = (role: UserRole) => {
+    if (role === 'student') return 'from-blue-500 to-blue-600';
+    if (role === 'it-staff' || role === 'facility-staff') return 'from-emerald-500 to-emerald-600';
+    return 'from-amber-500 to-amber-600';
+  };
+
+  const getRoleName = (role: UserRole) => {
+    switch (role) {
+      case 'student':
+        return 'Sinh viên';
+      case 'it-staff':
+        return 'IT Staff';
+      case 'facility-staff':
+        return 'Facility Staff';
+      case 'admin':
+        return 'Department Admin';
+      default:
+        return role;
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Navbar */}
@@ -144,9 +180,46 @@ function App() {
             >
               Admin
             </button>
+             {currentUser ? (
+            <>
+              <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-lg">
+                <div className="text-right">
+                  <div className="text-sm font-semibold">{currentUser.fullName}</div>
+                  <div className="text-xs opacity-80">{currentUser.email}</div>
+                </div>
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
+                  {currentUser.role === 'student' ? '👨‍🎓' : 
+                   currentUser.role === 'it-staff' ? '👨‍💻' : 
+                   currentUser.role === 'facility-staff' ? '👨‍🔧' : '👨‍💼'}
+                </div>
+              </div>
+              <button
+                className="py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20"
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </button>
+            </>
+          ) : (
+            <button
+              className="py-2.5 px-6 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white bg-white text-orange-500 font-semibold hover:bg-white/90 shadow-lg"
+              onClick={() => setShowLoginModal(true)}
+            >
+              🔐 Đăng nhập
+            </button>
+          )}
           </div>
+
         </div>
       </nav>
+
+      {/* Login Modal */}
+      {showLoginModal && (
+        <LoginModal
+          onClose={() => setShowLoginModal(false)}
+          onLogin={handleLogin}
+        />
+      )}
 
       {/* Content */}
       <div>
@@ -229,11 +302,13 @@ function App() {
           </div>
         )}
 
+
         {/* Staff Pages */}
         {currentRole === 'staff' && (
           <>
             {staffType === 'it' && <ITStaffPage />}
             {staffType === 'facility' && <FacilityStaffPage />}
+
           </>
         )}
 
