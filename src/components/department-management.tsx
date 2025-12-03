@@ -18,147 +18,6 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
     managerId: '',
   });
 
-  const styles = {
-    container: { width: '100%' },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-    },
-    title: { margin: 0, fontSize: '1.5rem', color: '#1f2937' },
-    btnPrimary: {
-      background: 'linear-gradient(135deg, #f97316, #ea580c)',
-      color: 'white',
-      border: 'none',
-      padding: '0.75rem 1.5rem',
-      borderRadius: '8px',
-      fontWeight: 600,
-      cursor: 'pointer',
-    },
-    modalOverlay: {
-      position: 'fixed' as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      padding: '1rem',
-    },
-    modalContent: {
-      background: 'white',
-      borderRadius: '12px',
-      width: '100%',
-      maxWidth: '600px',
-      maxHeight: '90vh',
-      overflowY: 'auto' as const,
-      boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-    },
-    modalHeader: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '1.5rem',
-      borderBottom: '1px solid #e5e7eb',
-    },
-    closeBtn: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      cursor: 'pointer',
-      color: '#6b7280',
-      padding: '0.25rem',
-    },
-    form: { padding: '1.5rem' },
-    formGroup: { marginBottom: '1.5rem' },
-    label: {
-      display: 'block',
-      marginBottom: '0.5rem',
-      fontWeight: 600,
-      color: '#374151',
-      fontSize: '0.9rem',
-    },
-    input: {
-      width: '100%',
-      padding: '0.75rem',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '1rem',
-    },
-    textarea: {
-      width: '100%',
-      padding: '0.75rem',
-      border: '1px solid #d1d5db',
-      borderRadius: '8px',
-      fontSize: '1rem',
-      resize: 'vertical' as const,
-      fontFamily: 'inherit',
-    },
-    formActions: {
-      display: 'flex',
-      gap: '1rem',
-      justifyContent: 'flex-end',
-      marginTop: '2rem',
-    },
-    btnSecondary: {
-      background: '#f3f4f6',
-      color: '#4b5563',
-      border: '1px solid #d1d5db',
-      padding: '0.75rem 1.5rem',
-      borderRadius: '8px',
-      fontWeight: 600,
-      cursor: 'pointer',
-    },
-    tableContainer: {
-      overflowX: 'auto' as const,
-      borderRadius: '8px',
-      border: '1px solid #e5e7eb',
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse' as const,
-      background: 'white',
-    },
-    th: {
-      background: '#f9fafb',
-      padding: '1rem',
-      textAlign: 'left' as const,
-      fontWeight: 600,
-      color: '#374151',
-      borderBottom: '2px solid #e5e7eb',
-    },
-    td: {
-      padding: '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      color: '#4b5563',
-    },
-    tdBold: {
-      padding: '1rem',
-      borderBottom: '1px solid #e5e7eb',
-      color: '#1f2937',
-      fontWeight: 600,
-    },
-    actionButtons: { display: 'flex', gap: '0.5rem' },
-    btnIcon: {
-      background: 'none',
-      border: 'none',
-      fontSize: '1.2rem',
-      cursor: 'pointer',
-      padding: '0.5rem',
-      borderRadius: '6px',
-    },
-    emptyState: {
-      textAlign: 'center' as const,
-      padding: '3rem',
-      color: '#9ca3af',
-      fontStyle: 'italic',
-    },
-  };
-
   const resetForm = () => {
     setFormData({ name: '', description: '', location: '', managerId: '' });
     setEditingDept(null);
@@ -193,26 +52,44 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>Danh sách Bộ phận</h3>
-        <button style={styles.btnPrimary} onClick={() => setIsFormOpen(true)}>
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="m-0 text-2xl text-gray-800">Danh sách Bộ phận</h3>
+        <button 
+          className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-none py-3 px-6 rounded-lg font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={() => setIsFormOpen(true)}
+        >
           ➕ Thêm Bộ phận
         </button>
       </div>
 
       {isFormOpen && (
-        <div style={styles.modalOverlay} onClick={resetForm}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.modalHeader}>
-              <h3 style={styles.title}>{editingDept ? 'Chỉnh sửa Bộ phận' : 'Thêm Bộ phận mới'}</h3>
-              <button style={styles.closeBtn} onClick={resetForm}>✕</button>
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
+          onClick={resetForm}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-6 border-b border-gray-200">
+              <h3 className="m-0 text-2xl text-gray-800">
+                {editingDept ? 'Chỉnh sửa Bộ phận' : 'Thêm Bộ phận mới'}
+              </h3>
+              <button 
+                className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700"
+                onClick={resetForm}
+              >
+                ✕
+              </button>
             </div>
-            <form onSubmit={handleSubmit} style={styles.form}>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Tên bộ phận *</label>
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Tên bộ phận *
+                </label>
                 <input
-                  style={styles.input}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                   type="text"
                   required
                   value={formData.name}
@@ -220,10 +97,12 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
                   placeholder="VD: IT Department"
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Mô tả *</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Mô tả *
+                </label>
                 <textarea
-                  style={styles.textarea}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base resize-y font-[inherit] focus:outline-none focus:border-blue-500"
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -231,10 +110,12 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
                   rows={3}
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Vị trí *</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Vị trí *
+                </label>
                 <input
-                  style={styles.input}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                   type="text"
                   required
                   value={formData.location}
@@ -242,21 +123,30 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
                   placeholder="VD: Tầng 5, Tòa nhà Alpha"
                 />
               </div>
-              <div style={styles.formGroup}>
-                <label style={styles.label}>Mã Quản lý</label>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Mã Quản lý
+                </label>
                 <input
-                  style={styles.input}
+                  className="w-full py-3 px-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:border-blue-500"
                   type="text"
                   value={formData.managerId}
                   onChange={(e) => setFormData({ ...formData, managerId: e.target.value })}
                   placeholder="VD: staff-001"
                 />
               </div>
-              <div style={styles.formActions}>
-                <button type="button" style={styles.btnSecondary} onClick={resetForm}>
+              <div className="flex gap-4 justify-end mt-8">
+                <button 
+                  type="button" 
+                  className="bg-gray-100 text-gray-600 border border-gray-300 py-3 px-6 rounded-lg font-semibold cursor-pointer hover:bg-gray-200"
+                  onClick={resetForm}
+                >
                   Hủy
                 </button>
-                <button type="submit" style={styles.btnPrimary}>
+                <button 
+                  type="submit" 
+                  className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-none py-3 px-6 rounded-lg font-semibold cursor-pointer hover:opacity-90 transition-opacity"
+                >
                   {editingDept ? 'Cập nhật' : 'Thêm mới'}
                 </button>
               </div>
@@ -265,42 +155,60 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
         </div>
       )}
 
-      <div style={styles.tableContainer}>
-        <table style={styles.table}>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="w-full border-collapse bg-white">
           <thead>
             <tr>
-              <th style={styles.th}>Tên Bộ phận</th>
-              <th style={styles.th}>Mô tả</th>
-              <th style={styles.th}>Vị trí</th>
-              <th style={styles.th}>Mã Quản lý</th>
-              <th style={styles.th}>Thao tác</th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Tên Bộ phận
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Mô tả
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Vị trí
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Mã Quản lý
+              </th>
+              <th className="bg-gray-50 p-4 text-left font-semibold text-gray-700 border-b-2 border-gray-200">
+                Thao tác
+              </th>
             </tr>
           </thead>
           <tbody>
             {departments.length === 0 ? (
               <tr>
-                <td colSpan={5} style={styles.emptyState}>
+                <td colSpan={5} className="text-center p-12 text-gray-400 italic">
                   Chưa có bộ phận nào. Nhấn "Thêm Bộ phận" để tạo mới.
                 </td>
               </tr>
             ) : (
               departments.map((dept) => (
                 <tr key={dept.id}>
-                  <td style={styles.tdBold}>{dept.name}</td>
-                  <td style={styles.td}>{dept.description}</td>
-                  <td style={styles.td}>{dept.location}</td>
-                  <td style={styles.td}>{dept.managerId || '-'}</td>
-                  <td style={styles.td}>
-                    <div style={styles.actionButtons}>
+                  <td className="p-4 border-b border-gray-200 text-gray-800 font-semibold">
+                    {dept.name}
+                  </td>
+                  <td className="p-4 border-b border-gray-200 text-gray-600">
+                    {dept.description}
+                  </td>
+                  <td className="p-4 border-b border-gray-200 text-gray-600">
+                    {dept.location}
+                  </td>
+                  <td className="p-4 border-b border-gray-200 text-gray-600">
+                    {dept.managerId || '-'}
+                  </td>
+                  <td className="p-4 border-b border-gray-200 text-gray-600">
+                    <div className="flex gap-2">
                       <button
-                        style={styles.btnIcon}
+                        className="bg-none border-none text-xl cursor-pointer p-2 rounded-md hover:bg-gray-100"
                         onClick={() => handleEdit(dept)}
                         title="Chỉnh sửa"
                       >
                         ✏️
                       </button>
                       <button
-                        style={styles.btnIcon}
+                        className="bg-none border-none text-xl cursor-pointer p-2 rounded-md hover:bg-gray-100"
                         onClick={() => handleDelete(dept.id)}
                         title="Xóa"
                       >
@@ -319,4 +227,3 @@ const DepartmentManagement = ({ departments, onAdd, onUpdate, onDelete }: Depart
 };
 
 export default DepartmentManagement;
-

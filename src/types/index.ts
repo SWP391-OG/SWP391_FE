@@ -38,17 +38,63 @@ export interface Category {
   createdAt: string;
 }
 
-// Ticket types (for future use)
+// Issue types
+export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'classroom' | 'other';
+
+export interface IssueType {
+  id: string;
+  name: string;
+  category: IssueCategory;
+  icon: string;
+  description: string;
+  examples?: string[];
+}
+
+// SLA Tracking types
+export interface SLATimelineEvent {
+  id: string;
+  timestamp: string;
+  status: 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed';
+  actor: string;
+  actorRole: UserRole;
+  action: string;
+  note?: string;
+  duration?: number; // Duration in minutes from previous event
+}
+
+export interface SLATracking {
+  createdAt: string;
+  acknowledgedAt?: string;
+  startedAt?: string;
+  resolvedAt?: string;
+  closedAt?: string;
+  deadline: string;
+  responseTime?: number; // Time to acknowledge in minutes
+  resolutionTime?: number; // Time to resolve in minutes
+  isOverdue: boolean;
+  overdueBy?: number; // Minutes overdue
+  timeline: SLATimelineEvent[];
+}
+
+// Ticket types
 export interface Ticket {
   id: string;
   title: string;
   description: string;
-  categoryId: string;
-  priority: Priority;
-  status: 'open' | 'in-progress' | 'resolved' | 'closed';
+  issueType: IssueType;
+  category: IssueCategory;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed';
+  location?: string;
+  roomNumber?: string;
+  images?: string[];
   createdBy: string;
+  createdByName?: string;
   assignedTo?: string;
+  assignedToName?: string;
   createdAt: string;
+  updatedAt?: string;
   slaDeadline: string;
+  slaTracking: SLATracking;
 }
 

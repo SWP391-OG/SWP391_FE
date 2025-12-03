@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import type { UserRole, Department, Location, Category, Priority } from './types';
+import type { UserRole, Department, Location, Category, Priority, IssueType, Ticket } from './types';
 import { mockDepartments, mockLocations, mockCategories } from './data/mockData';
 import ITStaffPage from './pages/it-staff-page';
 import FacilityStaffPage from './pages/facility-staff-page';
-import StudentPage from './pages/student-page';
+import IssueSelectionPage from './pages/issue-selection-page';
+import CreateTicketPage from './pages/create-ticket-page';
+import TicketListPage from './pages/ticket-list-page';
+import TicketDetailModal from './components/ticket-detail-modal';
 
 type StaffType = 'it' | 'facility';
+type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
 
 function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
@@ -42,6 +46,19 @@ function App() {
     type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
     status: 'active' as 'active' | 'inactive',
   });
+  
+  // Student page state
+  const [studentView, setStudentView] = useState<StudentView>('home');
+  const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+
+  const handleRoleChange = (role: UserRole) => {
+    setCurrentRole(role);
+    setShowStaffDropdown(false);
+    setStudentView('home');
+    setSelectedIssue(null);
+    setSelectedTicket(null);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
@@ -60,10 +77,7 @@ function App() {
                   ? 'border-white bg-white text-orange-500'
                   : 'border-white/30 bg-white/10 hover:bg-white/20'
               }`}
-              onClick={() => {
-                setCurrentRole('student');
-                setShowStaffDropdown(false);
-              }}
+              onClick={() => handleRoleChange('student')}
             >
               Student
             </button>
@@ -80,7 +94,7 @@ function App() {
                   if (currentRole === 'staff') {
                     setShowStaffDropdown(!showStaffDropdown);
                   } else {
-                    setCurrentRole('staff');
+                    handleRoleChange('staff');
                     setShowStaffDropdown(true);
                   }
                 }}
@@ -126,10 +140,7 @@ function App() {
                   ? 'border-white bg-white text-orange-500'
                   : 'border-white/30 bg-white/10 hover:bg-white/20'
               }`}
-              onClick={() => {
-                setCurrentRole('admin');
-                setShowStaffDropdown(false);
-              }}
+              onClick={() => handleRoleChange('admin')}
             >
               Admin
             </button>
@@ -140,7 +151,83 @@ function App() {
       {/* Content */}
       <div>
         {/* Student Page */}
-        {currentRole === 'student' && <StudentPage />}
+        {currentRole === 'student' && (
+          <div className="max-w-[1400px] mx-auto p-8">
+            {studentView === 'home' && (
+              <>
+                <div className="mb-8 text-center">
+                  <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    Student
+                  </div>
+                  <h2 className="text-2xl my-2 text-gray-800">Trang Sinh viên</h2>
+                  <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
+                    Bạn đang ở trang dành cho Sinh viên
+                  </p>
+                </div>
+                <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
+                  <div className="text-[5rem] mb-6">👨‍🎓</div>
+                  <h3 className="text-[1.75rem] text-gray-800 mb-4 font-bold">Chức năng dành cho Sinh viên</h3>
+                  <p className="text-gray-500 text-lg leading-[1.8] max-w-[500px] mx-auto mb-8">
+                    Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
+                  </p>
+                  <div>
+                    <button
+                      className="py-4 px-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(59,130,246,0.3)] mt-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(59,130,246,0.4)]"
+                      onClick={() => setStudentView('issue-selection')}
+                    >
+                      ➕ Tạo Ticket Mới
+                    </button>
+                    <button
+                      className="py-4 px-8 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(16,185,129,0.3)] mt-4 ml-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(16,185,129,0.4)]"
+                      onClick={() => setStudentView('ticket-list')}
+                    >
+                      📋 Xem Danh Sách Ticket
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {studentView === 'issue-selection' && (
+              <IssueSelectionPage
+                onSelectIssue={(issueType) => {
+                  setSelectedIssue(issueType);
+                  setStudentView('create-ticket');
+                }}
+                onBack={() => setStudentView('home')}
+              />
+            )}
+            
+            {studentView === 'create-ticket' && selectedIssue && (
+              <CreateTicketPage
+                issueType={selectedIssue}
+                onBack={() => setStudentView('issue-selection')}
+                onSubmit={(ticket) => {
+                  // Handle ticket submission
+                  console.log('Ticket submitted:', ticket);
+                  alert('Ticket đã được gửi thành công! 🎉');
+                  setStudentView('home');
+                  setSelectedIssue(null);
+                }}
+              />
+            )}
+            
+            {studentView === 'ticket-list' && (
+              <TicketListPage
+                onViewDetail={(ticket) => setSelectedTicket(ticket)}
+                onBack={() => setStudentView('home')}
+              />
+            )}
+            
+            {/* Ticket Detail Modal */}
+            {selectedTicket && (
+              <TicketDetailModal
+                ticket={selectedTicket}
+                onClose={() => setSelectedTicket(null)}
+              />
+            )}
+          </div>
+        )}
 
         {/* Staff Pages */}
         {currentRole === 'staff' && (
@@ -868,6 +955,7 @@ function App() {
               )}
                 </div>
               </div>
+            </div>
 
             {/* Modal Form for Category */}
             {isFormOpen && activeTab === 'categories' && (
@@ -1680,7 +1768,6 @@ function App() {
                 </div>
               </div>
             )}
-            </div>
           </>
         )}
       </div>
