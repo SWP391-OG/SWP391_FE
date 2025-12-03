@@ -1,5 +1,16 @@
 // User roles
-export type UserRole = 'student' | 'staff' | 'admin';
+export type UserRole = 'student' | 'it-staff' | 'facility-staff' | 'admin';
+
+// User authentication
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+  fullName: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+}
 
 // Department/Room types
 export interface Department {
