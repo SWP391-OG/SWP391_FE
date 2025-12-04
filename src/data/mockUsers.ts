@@ -9,6 +9,7 @@ export const mockUsers: User[] = [
     email: 'studentA@fpt.edu.vn',
     role: 'student',
     status: 'active',
+    createdAt: '2024-01-15T08:00:00Z',
   },
   {
     id: 'user-002',
@@ -18,6 +19,7 @@ export const mockUsers: User[] = [
     email: 'tranb@fpt.edu.vn',
     role: 'it-staff',
     status: 'active',
+    createdAt: '2024-01-14T08:00:00Z',
   },
   {
     id: 'user-003',
@@ -27,6 +29,7 @@ export const mockUsers: User[] = [
     email: 'lec@fpt.edu.vn',
     role: 'facility-staff',
     status: 'active',
+    createdAt: '2024-01-13T08:00:00Z',
   },
   {
     id: 'user-004',
@@ -36,6 +39,7 @@ export const mockUsers: User[] = [
     email: 'phamd@fpt.edu.vn',
     role: 'admin',
     status: 'active',
+    createdAt: '2024-01-12T08:00:00Z',
   },
 ];
 

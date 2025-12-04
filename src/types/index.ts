@@ -1,5 +1,5 @@
 // User roles
-export type UserRole = 'student' | 'it-staff' | 'facility-staff' | 'admin';
+export type UserRole = 'student' | 'teacher' | 'it-staff' | 'facility-staff' | 'admin';
 
 // User authentication
 export type UserStatus = 'active' | 'inactive' | 'banned';
@@ -13,6 +13,7 @@ export interface User {
   role: UserRole;
   status: UserStatus; // Trạng thái tài khoản: active, inactive, banned
   avatar?: string;
+  createdAt?: string; // Thời gian tạo tài khoản
 }
 
 // Department types
@@ -32,6 +33,7 @@ export interface Location {
   name: string;
   description?: string;
   type: 'classroom' | 'wc' | 'hall' | 'corridor' | 'other';
+  floor?: string; // Tầng: "G" (Tầng Trệt), "1", "2", etc.
   status: 'active' | 'inactive';
   createdAt: string;
 }

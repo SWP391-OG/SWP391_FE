@@ -1,7 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { UserRole, User, Department, Location, Category, Priority, IssueType, Ticket } from './types';
 import { mockDepartments, mockLocations, mockCategories, mockTickets } from './data/mockData';
 import { mockUsers } from './data/mockUsers';
+import { 
+  loadUsers, saveUsers, 
+  loadCategories, saveCategories, 
+  loadDepartments, saveDepartments, 
+  loadLocations, saveLocations, 
+  loadTickets, saveTickets 
+} from './utils/localStorage';
 import ITStaffPage from './pages/it-staff-page';
 import FacilityStaffPage from './pages/facility-staff-page';
 
@@ -25,12 +32,43 @@ function App() {
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [staffType, setStaffType] = useState<StaffType>('it');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users'>('categories');
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
-  const [departments, setDepartments] = useState<Department[]>(mockDepartments);
-  const [locations, setLocations] = useState<Location[]>(mockLocations);
-  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [activeTab, setActiveTab] = useState<'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users'>('tickets');
+  const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
+  
+  // Tự động mở submenu khi chọn staff hoặc users
+  useEffect(() => {
+    if (activeTab === 'staff' || activeTab === 'users') {
+      setShowMembersSubmenu(true);
+    }
+  }, [activeTab]);
+  
+  // Initialize state from localStorage or mockData
+  const [categories, setCategories] = useState<Category[]>(() => loadCategories());
+  const [departments, setDepartments] = useState<Department[]>(() => loadDepartments());
+  const [locations, setLocations] = useState<Location[]>(() => loadLocations());
+  const [tickets, setTickets] = useState<Ticket[]>(() => loadTickets());
+  const [users, setUsers] = useState<User[]>(() => loadUsers());
+  
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    saveCategories(categories);
+  }, [categories]);
+  
+  useEffect(() => {
+    saveDepartments(departments);
+  }, [departments]);
+  
+  useEffect(() => {
+    saveLocations(locations);
+  }, [locations]);
+  
+  useEffect(() => {
+    saveTickets(tickets);
+  }, [tickets]);
+  
+  useEffect(() => {
+    saveUsers(users);
+  }, [users]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
@@ -58,8 +96,10 @@ function App() {
     name: '',
     description: '',
     type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
+    floor: '',
     status: 'active' as 'active' | 'inactive',
   });
+  const [locationFilterFloor, setLocationFilterFloor] = useState<string>('all');
   const [staffFormData, setStaffFormData] = useState({
     username: '',
     password: '',
@@ -76,6 +116,11 @@ function App() {
     role: 'student' as UserRole,
   });
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
+  
+  // Pagination state
+  const [usersPage, setUsersPage] = useState(1);
+  const [staffPage, setStaffPage] = useState(1);
+  const itemsPerPage = 10;
   
   // Student page state
   const [studentView, setStudentView] = useState<StudentView>('home');
@@ -213,17 +258,49 @@ function App() {
     adminDepartments.forEach(dept => {
       dept.staffIds.forEach(id => staffIds.add(id));
     });
-    return users.filter(user => 
-      (user.role === 'it-staff' || user.role === 'facility-staff') && 
-      staffIds.has(user.id)
-    );
+    return users
+      .filter(user => 
+        (user.role === 'it-staff' || user.role === 'facility-staff') && 
+        staffIds.has(user.id)
+      )
+      .sort((a, b) => {
+        // Sắp xếp theo createdAt (mới nhất trước)
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime; // Mới nhất trước
+      });
   }, [users, adminDepartments, currentRole]);
+  
+  // Paginated staff users
+  const paginatedStaffUsers = useMemo(() => {
+    const startIndex = (staffPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return adminStaffUsers.slice(startIndex, endIndex);
+  }, [adminStaffUsers, staffPage]);
+  
+  const totalStaffPages = Math.ceil(adminStaffUsers.length / itemsPerPage);
 
   // Filter student users (chủ yếu là sinh viên)
   const studentUsers = useMemo(() => {
     if (currentRole !== 'admin') return [];
-    return users.filter(user => user.role === 'student');
+    return users
+      .filter(user => user.role === 'student' || user.role === 'teacher')
+      .sort((a, b) => {
+        // Sắp xếp theo createdAt (mới nhất trước)
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime; // Mới nhất trước
+      });
   }, [users, currentRole]);
+  
+  // Paginated student users
+  const paginatedStudentUsers = useMemo(() => {
+    const startIndex = (usersPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return studentUsers.slice(startIndex, endIndex);
+  }, [studentUsers, usersPage]);
+  
+  const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Get tickets created by a specific user
   const getUserTickets = (userId: string) => {
@@ -325,7 +402,7 @@ function App() {
               alt="FPTechnical Logo" 
               className="h-10 w-auto object-contain"
             />
-          </div>
+    </div>
           <div className="flex gap-3">
             {/* Student Button */}
             <button
@@ -566,36 +643,7 @@ function App() {
                     Quản lý hệ thống
                   </h3>
                   <nav className="flex flex-col gap-1">
-                    <button
-                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                        activeTab === 'categories'
-                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
-                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                      onClick={() => setActiveTab('categories')}
-                    >
-                      Quản lý Category
-                    </button>
-                    <button
-                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                        activeTab === 'departments'
-                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
-                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                      onClick={() => setActiveTab('departments')}
-                    >
-                      Quản lý Bộ phận
-                    </button>
-                    <button
-                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                        activeTab === 'locations'
-                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
-                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                      onClick={() => setActiveTab('locations')}
-                    >
-                      Quản lý Địa điểm
-                    </button>
+                    {/* 1. Quản lý Tickets - Đầu tiên */}
                     <button
                       className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
                         activeTab === 'tickets'
@@ -606,60 +654,92 @@ function App() {
                     >
                       Quản lý Tickets
                     </button>
+                    
+                    {/* 2. Quản lý thành viên - Với submenu */}
+                    <div>
+                      <button
+                        className={`w-full py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 flex items-center justify-between ${
+                          (activeTab === 'staff' || activeTab === 'users')
+                            ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                            : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                        onClick={() => setShowMembersSubmenu(!showMembersSubmenu)}
+                      >
+                        <span>Quản lý thành viên</span>
+                        <span className={`transition-transform duration-200 text-xs ${showMembersSubmenu ? 'rotate-90' : ''}`}>
+                          ▶
+                        </span>
+                      </button>
+                      {showMembersSubmenu && (
+                        <div className="ml-4 mt-1 flex flex-col gap-1">
+                          <button
+                            className={`py-2 px-4 rounded-md cursor-pointer text-xs text-left transition-all duration-200 ${
+                              activeTab === 'staff'
+                                ? 'bg-orange-100 text-orange-700 font-semibold border-l-2 border-orange-600'
+                                : 'text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                            onClick={() => {
+                              setActiveTab('staff');
+                              setStaffPage(1);
+                              setShowMembersSubmenu(true);
+                            }}
+                          >
+                            Quản lý Staff
+                          </button>
+                          <button
+                            className={`py-2 px-4 rounded-md cursor-pointer text-xs text-left transition-all duration-200 ${
+                              activeTab === 'users'
+                                ? 'bg-orange-100 text-orange-700 font-semibold border-l-2 border-orange-600'
+                                : 'text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900'
+                            }`}
+                            onClick={() => {
+                              setActiveTab('users');
+                              setUsersPage(1);
+                              setShowMembersSubmenu(true);
+                            }}
+                          >
+                            Quản lý Người dùng
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 3. Quản lý Danh mục */}
                     <button
                       className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                        activeTab === 'staff'
+                        activeTab === 'categories'
                           ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
                           : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
                       }`}
-                      onClick={() => setActiveTab('staff')}
+                      onClick={() => setActiveTab('categories')}
                     >
-                      Quản lý Staff
+                      Quản lý Danh mục
                     </button>
+                    
+                    {/* 4. Quản lý Bộ phận */}
                     <button
                       className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                        activeTab === 'users'
+                        activeTab === 'departments'
                           ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
                           : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
                       }`}
-                      onClick={() => setActiveTab('users')}
+                      onClick={() => setActiveTab('departments')}
                     >
-                      Quản lý Người dùng
+                      Quản lý Bộ phận
+                    </button>
+                    
+                    {/* 5. Quản lý Địa điểm */}
+                    <button
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                        activeTab === 'locations'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                      onClick={() => setActiveTab('locations')}
+                    >
+                      Quản lý Địa điểm
                     </button>
                   </nav>
-                  
-                  {/* Stats */}
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h4 className="m-0 mb-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">
-                      Thống kê
-                    </h4>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Categories:</span>
-                        <span className="font-semibold text-gray-900">{adminCategories.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Departments:</span>
-                        <span className="font-semibold text-gray-900">{adminDepartments.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Locations:</span>
-                        <span className="font-semibold text-gray-900">{locations.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Tickets:</span>
-                        <span className="font-semibold text-gray-900">{adminTickets.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Staff:</span>
-                        <span className="font-semibold text-gray-900">{adminStaffUsers.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Users:</span>
-                        <span className="font-semibold text-gray-900">{studentUsers.length}</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
                 {/* Content Area */}
@@ -731,14 +811,6 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
-                        }}>Icon</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
                         }}>Tên Category</th>
                         <th style={{
                           background: '#f9fafb',
@@ -797,23 +869,10 @@ function App() {
                             <td style={{
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
-                              fontSize: '2rem',
-                            }}>{cat.icon}</td>
-                            <td style={{
-                              padding: '1rem',
-                              borderBottom: '1px solid #e5e7eb',
                               color: '#1f2937',
                               fontWeight: 600,
                             }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{
-                                  width: '12px',
-                                  height: '12px',
-                                  borderRadius: '50%',
-                                  background: cat.color,
-                                }}></div>
-                                {cat.name}
-    </div>
+                              {cat.name}
                             </td>
                             <td style={{
                               padding: '1rem',
@@ -1013,22 +1072,6 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
-                        }}>Admin ID</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Staff IDs</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
                         }}>Thao tác</th>
                       </tr>
                     </thead>
@@ -1051,33 +1094,6 @@ function App() {
                             borderBottom: '1px solid #e5e7eb',
                             color: '#4b5563',
                           }}>{dept.location}</td>
-                          <td style={{
-                            padding: '1rem',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#4b5563',
-                          }}>{dept.adminId || '-'}</td>
-                          <td style={{
-                            padding: '1rem',
-                            borderBottom: '1px solid #e5e7eb',
-                            color: '#4b5563',
-                          }}>
-                            {dept.staffIds && dept.staffIds.length > 0 ? (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                {dept.staffIds.map((id) => (
-                                  <span key={id} style={{
-                                    padding: '0.25rem 0.5rem',
-                                    background: '#f3f4f6',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    fontSize: '0.75rem',
-                                    color: '#374151',
-                                  }}>
-                                    {id}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : '-'}
-                          </td>
                           <td style={{
                             padding: '1rem',
                             borderBottom: '1px solid #e5e7eb',
@@ -1186,6 +1202,7 @@ function App() {
                           name: '',
                           description: '',
                           type: 'classroom',
+                          floor: '',
                           status: 'active',
                         });
                         setIsFormOpen(true);
@@ -1193,6 +1210,44 @@ function App() {
                     >
                       Thêm Địa điểm
                     </button>
+                  </div>
+
+                  {/* Filter by Floor */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                  }}>
+                    <label style={{
+                      fontSize: '0.875rem',
+                      fontWeight: 600,
+                      color: '#374151',
+                    }}>
+                      Chọn Tầng:
+                    </label>
+                    <select
+                      value={locationFilterFloor}
+                      onChange={(e) => setLocationFilterFloor(e.target.value)}
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        background: 'white',
+                        minWidth: '150px',
+                      }}
+                    >
+                      <option value="all">Tất cả các tầng</option>
+                      <option value="G">Tầng Trệt (G)</option>
+                      <option value="1">Tầng 1</option>
+                      <option value="2">Tầng 2</option>
+                      <option value="3">Tầng 3</option>
+                      <option value="4">Tầng 4</option>
+                      <option value="5">Tầng 5</option>
+                      <option value="6">Tầng 6</option>
+                    </select>
                   </div>
 
                   <table style={{
@@ -1218,7 +1273,7 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
-                        }}>Mô tả</th>
+                        }}>Tầng</th>
                         <th style={{
                           background: '#f9fafb',
                           padding: '1rem',
@@ -1246,7 +1301,12 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {locations.map((location) => {
+                      {locations
+                        .filter((location) => {
+                          if (locationFilterFloor === 'all') return true;
+                          return location.floor === locationFilterFloor;
+                        })
+                        .map((location) => {
                         const typeInfo = {
                           classroom: { text: 'Phòng học', icon: '🏫' },
                           wc: { text: 'Nhà vệ sinh', icon: '🚻' },
@@ -1260,6 +1320,13 @@ function App() {
                           inactive: { bg: '#fee2e2', color: '#991b1b', text: 'Không hoạt động' },
                         }[location.status];
 
+                        // Format floor display
+                        const formatFloor = (floor?: string) => {
+                          if (!floor) return '-';
+                          if (floor === 'G') return 'Tầng Trệt (G)';
+                          return `Tầng ${floor}`;
+                        };
+
                         return (
                           <tr key={location.id}>
                             <td style={{
@@ -1272,19 +1339,14 @@ function App() {
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
                               color: '#4b5563',
-                            }}>{location.description || '-'}</td>
+                              fontWeight: 500,
+                            }}>{formatFloor(location.floor)}</td>
                             <td style={{
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
+                              color: '#4b5563',
                             }}>
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.5rem',
-                              }}>
-                                <span>{typeInfo.icon}</span>
-                                <span>{typeInfo.text}</span>
-                              </span>
+                              {typeInfo.text}
                             </td>
                             <td style={{
                               padding: '1rem',
@@ -1332,6 +1394,7 @@ function App() {
                                       name: location.name,
                                       description: location.description || '',
                                       type: location.type,
+                                      floor: location.floor || '',
                                       status: location.status,
                                     });
                                     setIsFormOpen(true);
@@ -1391,95 +1454,104 @@ function App() {
                     </h3>
                   </div>
 
-                  {/* Staff List */}
-                  <div style={{
-                    marginBottom: '1.5rem',
-                    padding: '1rem',
-                    background: '#f9fafb',
-                    borderRadius: '8px',
-                    border: '1px solid #e5e7eb',
-                  }}>
-                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', color: '#374151', fontWeight: 600 }}>
-                      👥 Staff trong Department
-                    </h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                      {adminStaffList.length > 0 ? (
-                        adminStaffList.map((staff) => (
-                          <div key={staff.id} style={{
-                            padding: '0.5rem 1rem',
-                            background: 'white',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '6px',
-                            fontSize: '0.875rem',
-                            color: '#374151',
-                          }}>
-                            <span style={{ fontWeight: 600 }}>{staff.name}</span>
-                            <span style={{ color: '#6b7280', marginLeft: '0.5rem' }}>({staff.departmentName})</span>
-                          </div>
-                        ))
-                      ) : (
-                        <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Chưa có staff nào</span>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Tickets Table */}
                   <table style={{
                     width: '100%',
                     borderCollapse: 'collapse',
                     border: '1px solid #e5e7eb',
                     borderRadius: '8px',
+                    overflow: 'hidden',
                   }}>
                     <thead>
                       <tr>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
                         }}>ID</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Tiêu đề</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Tiêu đề & Mô tả</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Vị trí</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '0.875rem 1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
                         }}>Trạng thái</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Ưu tiên</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Độ ưu tiên</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Được giao cho</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Người xử lý</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Thao tác</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Ngày tạo</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '0.875rem 1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Hành động</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1501,109 +1573,119 @@ function App() {
                             urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
                           }[ticket.priority];
 
+                          // Format date
+                          const formatDate = (dateString: string) => {
+                            const date = new Date(dateString);
+                            return new Intl.DateTimeFormat('vi-VN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            }).format(date);
+                          };
+
+                          // Get location name
+                          const location = locations.find(l => l.id === ticket.location);
+                          const locationName = location ? location.name : ticket.location || 'N/A';
+
+                          // Get assigned staff name
+                          const assignedStaff = adminStaffList.find(s => s.id === ticket.assignedTo);
+
                           return (
-                            <tr key={ticket.id}>
+                            <tr key={ticket.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                              {/* ID */}
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
-                                color: '#1f2937',
-                                fontWeight: 600,
+                                padding: '0.875rem 1rem',
+                                color: '#6b7280',
                                 fontSize: '0.875rem',
-                              }}>{ticket.id}</td>
+                                fontFamily: 'monospace',
+                              }}>
+                                {ticket.id.substring(0, 8)}
+                              </td>
+                              
+                              {/* Tiêu đề & Mô tả */}
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
+                                padding: '0.875rem 1rem',
                                 color: '#1f2937',
                                 maxWidth: '300px',
                               }}>
-                                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{ticket.title}</div>
-                                <div style={{ fontSize: '0.875rem', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
+                                  {ticket.title}
+                                </div>
+                                <div style={{ 
+                                  fontSize: '0.75rem', 
+                                  color: '#6b7280', 
+                                  overflow: 'hidden', 
+                                  textOverflow: 'ellipsis', 
+                                  whiteSpace: 'nowrap',
+                                  maxWidth: '280px',
+                                }}>
                                   {ticket.description}
                                 </div>
                               </td>
+                              
+                              {/* Vị trí */}
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
+                                padding: '0.875rem 1rem',
+                                color: '#4b5563',
+                                fontSize: '0.875rem',
+                              }}>
+                                {locationName}
+                              </td>
+                              
+                              {/* Trạng thái */}
+                              <td style={{
+                                padding: '0.875rem 1rem',
                               }}>
                                 <span style={{
-                                  padding: '0.4rem 0.75rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.875rem',
+                                  padding: '0.35rem 0.65rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
                                   fontWeight: 600,
                                   background: statusInfo.bg,
                                   color: statusInfo.color,
+                                  display: 'inline-block',
                                 }}>
                                   {statusInfo.text}
                                 </span>
                               </td>
+                              
+                              {/* Độ ưu tiên */}
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
+                                padding: '0.875rem 1rem',
                               }}>
                                 <span style={{
-                                  padding: '0.4rem 0.75rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.875rem',
+                                  padding: '0.35rem 0.65rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
                                   fontWeight: 600,
                                   background: priorityInfo.bg,
                                   color: priorityInfo.color,
+                                  display: 'inline-block',
                                 }}>
                                   {priorityInfo.text}
                                 </span>
                               </td>
+                              
+                              {/* Người xử lý */}
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
+                                padding: '0.875rem 1rem',
                                 color: '#4b5563',
+                                fontSize: '0.875rem',
                               }}>
-                                {ticket.assignedTo ? (
-                                  <div>
-                                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{ticket.assignedToName || ticket.assignedTo}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{ticket.assignedTo}</div>
-                                  </div>
-                                ) : (
-                                  <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Chưa được giao</span>
-                                )}
-                              </td>
-                              <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
-                              }}>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  {!ticket.assignedTo && adminStaffList.length > 0 && (
+                                {ticket.assignedTo && assignedStaff ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <span>{assignedStaff.name}</span>
                                     <select
                                       style={{
-                                        padding: '0.5rem 0.75rem',
+                                        padding: '0.25rem 0.5rem',
                                         border: '1px solid #d1d5db',
-                                        borderRadius: '6px',
-                                        fontSize: '0.875rem',
+                                        borderRadius: '4px',
+                                        fontSize: '0.75rem',
                                         cursor: 'pointer',
                                         background: 'white',
-                                      }}
-                                      value=""
-                                      onChange={(e) => {
-                                        if (e.target.value) {
-                                          handleAssignTicket(ticket.id, e.target.value);
-                                        }
-                                      }}
-                                    >
-                                      <option value="">Giao cho...</option>
-                                      {adminStaffList.map(staff => (
-                                        <option key={staff.id} value={staff.id}>
-                                          {staff.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  )}
-                                  {ticket.assignedTo && (
-                                    <select
-                                      style={{
-                                        padding: '0.5rem 0.75rem',
-                                        border: '1px solid #d1d5db',
-                                        borderRadius: '6px',
-                                        fontSize: '0.875rem',
-                                        cursor: 'pointer',
-                                        background: 'white',
+                                        color: '#6b7280',
                                       }}
                                       value={ticket.assignedTo}
                                       onChange={(e) => {
@@ -1611,6 +1693,7 @@ function App() {
                                           handleAssignTicket(ticket.id, e.target.value);
                                         }
                                       }}
+                                      onClick={(e) => e.stopPropagation()}
                                     >
                                       {adminStaffList.map(staff => (
                                         <option key={staff.id} value={staff.id}>
@@ -1618,75 +1701,78 @@ function App() {
                                         </option>
                                       ))}
                                     </select>
-                                  )}
-                                  <select
-                                    style={{
-                                      padding: '0.5rem 0.75rem',
-                                      border: '1px solid #d1d5db',
-                                      borderRadius: '6px',
-                                      fontSize: '0.875rem',
-                                      cursor: 'pointer',
-                                      background: 'white',
-                                    }}
-                                    value={ticket.priority}
-                                    onChange={(e) => {
-                                      handleUpdatePriority(ticket.id, e.target.value as 'low' | 'medium' | 'high' | 'urgent');
-                                    }}
-                                    title="Cập nhật độ ưu tiên"
-                                  >
-                                    <option value="low">Thấp</option>
-                                    <option value="medium">Trung bình</option>
-                                    <option value="high">Cao</option>
-                                    <option value="urgent">Khẩn cấp</option>
-                                  </select>
-                                  {ticket.status !== 'cancelled' && ticket.status !== 'closed' && (
-                                    <button
-                                      style={{
-                                        background: 'none',
-                                        border: '1px solid #dc2626',
-                                        padding: '0.5rem 1rem',
-                                        borderRadius: '6px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: 600,
-                                        cursor: 'pointer',
-                                        color: '#dc2626',
-                                      }}
-                                      onClick={() => {
-                                        if (confirm('Bạn có chắc chắn muốn hủy ticket này? Ticket sẽ bị ẩn khỏi danh sách "Cần làm" nhưng vẫn lưu trong hệ thống.')) {
-                                          handleCancelTicket(ticket.id);
-                                        }
-                                      }}
-                                      title="Hủy ticket (thay thế cho xóa)"
-                                    >
-                                      Hủy
-                                    </button>
-                                  )}
+                                  </div>
+                                ) : (
                                   <button
                                     style={{
-                                      background: 'none',
-                                      border: '1px solid #d1d5db',
-                                      padding: '0.5rem 1rem',
-                                      borderRadius: '6px',
-                                      fontSize: '0.875rem',
+                                      padding: '0.35rem 0.65rem',
+                                      border: '1px solid #f97316',
+                                      borderRadius: '4px',
+                                      fontSize: '0.75rem',
                                       fontWeight: 600,
                                       cursor: 'pointer',
-                                      color: '#374151',
+                                      background: 'white',
+                                      color: '#f97316',
                                     }}
-                                    onClick={() => {
-                                      setSelectedTicket(ticket);
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (adminStaffList.length > 0) {
+                                        const firstStaff = adminStaffList[0];
+                                        handleAssignTicket(ticket.id, firstStaff.id);
+                                      }
                                     }}
-                                    title="Xem chi tiết"
+                                    title="Giao việc"
                                   >
-                                    Xem
+                                    Assign +
                                   </button>
-                                </div>
+                                )}
+                              </td>
+                              
+                              {/* Ngày tạo */}
+                              <td style={{
+                                padding: '0.875rem 1rem',
+                                color: '#6b7280',
+                                fontSize: '0.75rem',
+                              }}>
+                                {formatDate(ticket.createdAt)}
+                              </td>
+                              
+                              {/* Hành động */}
+                              <td style={{
+                                padding: '0.875rem 1rem',
+                              }}>
+                                <button
+                                  style={{
+                                    background: '#f97316',
+                                    border: 'none',
+                                    padding: '0.5rem 1rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    color: 'white',
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#ea580c';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#f97316';
+                                  }}
+                                  onClick={() => {
+                                    setSelectedTicket(ticket);
+                                  }}
+                                  title="Xem chi tiết"
+                                >
+                                  Xem
+                                </button>
                               </td>
                             </tr>
                           );
                         })
                       ) : (
                         <tr>
-                          <td colSpan={6} style={{
+                          <td colSpan={8} style={{
                             padding: '2rem',
                             textAlign: 'center',
                             color: '#6b7280',
@@ -1810,7 +1896,7 @@ function App() {
                     </thead>
                     <tbody>
                       {adminStaffUsers.length > 0 ? (
-                        adminStaffUsers.map((staff: User) => {
+                        paginatedStaffUsers.map((staff: User) => {
                           const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
                           const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
                             'it-staff': { text: 'IT Staff', bg: '#dbeafe', color: '#1e40af' },
@@ -2008,41 +2094,11 @@ function App() {
               {activeTab === 'users' && (
                 <>
                   <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
                       Danh sách Người dùng ({studentUsers.length})
                     </h3>
-                    <button
-                      style={{
-                        background: '#f97316',
-                        color: 'white',
-                        border: 'none',
-                        padding: '0.625rem 1.25rem',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                      }}
-                      onClick={() => {
-                        setEditingUser(null);
-                        setUserFormData({
-                          username: '',
-                          password: '',
-                          fullName: '',
-                          email: '',
-                          role: 'student',
-                        });
-                        setIsFormOpen(true);
-                      }}
-                    >
-                      Thêm Người dùng
-                    </button>
                   </div>
 
                   <table style={{
@@ -2055,112 +2111,112 @@ function App() {
                       <tr>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Tên đăng nhập</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Mã SV</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
                         }}>Họ tên</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
                         }}>Email</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Vai trò</th>
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}>Trạng thái</th>
                         <th style={{
                           background: '#f9fafb',
-                          padding: '1rem',
+                          padding: '0.875rem 1rem',
                           textAlign: 'left',
                           fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: '#6b7280',
+                          borderBottom: '1px solid #e5e7eb',
                         }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
                       {studentUsers.length > 0 ? (
-                        studentUsers.map((user: User) => {
-                          const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
-                            'student': { text: 'Sinh viên', bg: '#dbeafe', color: '#1e40af' },
-                            'admin': { text: 'Admin', bg: '#fef3c7', color: '#92400e' },
-                          };
-                          const roleInfo = roleInfoMap[user.role] || { text: user.role, bg: '#f3f4f6', color: '#374151' };
-                          const statusInfoMap: Record<string, { text: string; bg: string; color: string }> = {
-                            'active': { text: 'Hoạt động', bg: '#d1fae5', color: '#065f46' },
-                            'inactive': { text: 'Ngừng hoạt động', bg: '#fee2e2', color: '#991b1b' },
-                            'banned': { text: 'Bị khóa', bg: '#fee2e2', color: '#991b1b' },
-                          };
-                          const statusInfo = statusInfoMap[user.status] || { text: user.status, bg: '#f3f4f6', color: '#374151' };
-                          const userTickets = getUserTickets(user.id);
-
+                        paginatedStudentUsers.map((user: User) => {
                           return (
                             <tr key={user.id}>
                               <td style={{
-                                padding: '1rem',
+                                padding: '0.875rem 1rem',
                                 borderBottom: '1px solid #e5e7eb',
                                 color: '#1f2937',
                                 fontWeight: 600,
+                                fontSize: '0.875rem',
                               }}>{user.username}</td>
                               <td style={{
-                                padding: '1rem',
+                                padding: '0.875rem 1rem',
                                 borderBottom: '1px solid #e5e7eb',
                                 color: '#1f2937',
+                                fontSize: '0.875rem',
                               }}>{user.fullName}</td>
                               <td style={{
-                                padding: '1rem',
+                                padding: '0.875rem 1rem',
                                 borderBottom: '1px solid #e5e7eb',
                                 color: '#4b5563',
+                                fontSize: '0.875rem',
                               }}>{user.email}</td>
                               <td style={{
-                                padding: '1rem',
+                                padding: '0.875rem 1rem',
                                 borderBottom: '1px solid #e5e7eb',
+                                fontSize: '0.875rem',
                               }}>
-                                <span style={{
-                                  padding: '0.4rem 0.75rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.875rem',
-                                  fontWeight: 600,
-                                  background: roleInfo.bg,
-                                  color: roleInfo.color,
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
                                 }}>
-                                  {roleInfo.text}
-                                </span>
+                                  <div style={{
+                                    width: '10px',
+                                    height: '10px',
+                                    borderRadius: '50%',
+                                    background: user.status === 'active' ? '#10b981' : '#ef4444',
+                                  }}></div>
+                                  <span style={{
+                                    color: user.status === 'active' ? '#10b981' : '#ef4444',
+                                    fontWeight: 600,
+                                    fontSize: '0.875rem',
+                                  }}>
+                                    {user.status === 'active' ? 'Hoạt động' : user.status === 'banned' ? 'Bị khóa' : 'Ngừng hoạt động'}
+                                  </span>
+                                </div>
                               </td>
                               <td style={{
-                                padding: '1rem',
-                                borderBottom: '1px solid #e5e7eb',
-                              }}>
-                                <span style={{
-                                  padding: '0.4rem 0.75rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.875rem',
-                                  fontWeight: 600,
-                                  background: statusInfo.bg,
-                                  color: statusInfo.color,
-                                }}>
-                                  {statusInfo.text}
-                                </span>
-                              </td>
-                              <td style={{
-                                padding: '1rem',
+                                padding: '0.875rem 1rem',
                                 borderBottom: '1px solid #e5e7eb',
                               }}>
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -2185,7 +2241,7 @@ function App() {
                                     onClick={() => {
                                       setSelectedUserForHistory(user);
                                     }}
-                                    title="Xem lịch sử"
+                                    title="Xem lịch sử ticket"
                                   >
                                     Lịch sử
                                   </button>
@@ -2215,7 +2271,7 @@ function App() {
                                           ));
                                         }
                                       }}
-                                      title="Khóa tài khoản"
+                                      title="Khóa tài khoản (Ban)"
                                     >
                                       Khóa
                                     </button>
@@ -2245,7 +2301,7 @@ function App() {
                                           ));
                                         }
                                       }}
-                                      title="Mở khóa"
+                                      title="Mở khóa (Unban)"
                                     >
                                       Mở khóa
                                     </button>
@@ -2257,10 +2313,11 @@ function App() {
                         })
                       ) : (
                         <tr>
-                          <td colSpan={6} style={{
+                          <td colSpan={5} style={{
                             padding: '2rem',
                             textAlign: 'center',
                             color: '#6b7280',
+                            fontSize: '0.875rem',
                           }}>
                             Chưa có người dùng nào
                           </td>
@@ -2268,6 +2325,57 @@ function App() {
                       )}
                     </tbody>
                   </table>
+                  
+                  {/* Pagination for Users */}
+                  {totalUsersPages > 1 && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginTop: '1.5rem',
+                    }}>
+                      <button
+                        onClick={() => setUsersPage(prev => Math.max(1, prev - 1))}
+                        disabled={usersPage === 1}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          background: usersPage === 1 ? '#f3f4f6' : 'white',
+                          color: usersPage === 1 ? '#9ca3af' : '#374151',
+                          cursor: usersPage === 1 ? 'not-allowed' : 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Trước
+                      </button>
+                      <span style={{
+                        padding: '0.5rem 1rem',
+                        fontSize: '0.875rem',
+                        color: '#374151',
+                      }}>
+                        Trang {usersPage} / {totalUsersPages}
+                      </span>
+                      <button
+                        onClick={() => setUsersPage(prev => Math.min(totalUsersPages, prev + 1))}
+                        disabled={usersPage === totalUsersPages}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          background: usersPage === totalUsersPages ? '#f3f4f6' : 'white',
+                          color: usersPage === totalUsersPages ? '#9ca3af' : '#374151',
+                          cursor: usersPage === totalUsersPages ? 'not-allowed' : 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: 500,
+                        }}
+                      >
+                        Sau
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
                 </div>
@@ -2347,59 +2455,6 @@ function App() {
                       setIsFormOpen(false);
                     }}
                   >
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '0.5rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          fontSize: '0.9rem',
-                        }}>
-                          Icon *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={categoryFormData.icon}
-                          onChange={(e) => setCategoryFormData({ ...categoryFormData, icon: e.target.value })}
-                          placeholder="📋"
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '1.5rem',
-                            textAlign: 'center',
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          marginBottom: '0.5rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          fontSize: '0.9rem',
-                        }}>
-                          Màu *
-                        </label>
-                        <input
-                          type="color"
-                          required
-                          value={categoryFormData.color}
-                          onChange={(e) => setCategoryFormData({ ...categoryFormData, color: e.target.value })}
-                          style={{
-                            width: '100%',
-                            height: '42px',
-                            padding: '0.25rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                          }}
-                        />
-                      </div>
-                    </div>
                     <div style={{ marginBottom: '1.5rem' }}>
                       <label style={{
                         display: 'block',
@@ -2751,11 +2806,43 @@ function App() {
                           fontSize: '1rem',
                         }}
                       >
-                        <option value="classroom">🏫 Phòng học</option>
-                        <option value="wc">🚻 Nhà vệ sinh</option>
-                        <option value="hall">🏛️ Sảnh</option>
-                        <option value="corridor">🚶 Hành lang</option>
-                        <option value="other">📍 Khác</option>
+                        <option value="classroom">Phòng học</option>
+                        <option value="wc">Nhà vệ sinh</option>
+                        <option value="hall">Sảnh</option>
+                        <option value="corridor">Hành lang</option>
+                        <option value="other">Khác</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Tầng *
+                      </label>
+                      <select
+                        required
+                        value={locationFormData.floor}
+                        onChange={(e) => setLocationFormData({ ...locationFormData, floor: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      >
+                        <option value="">Chọn tầng</option>
+                        <option value="G">Tầng Trệt (G)</option>
+                        <option value="1">Tầng 1</option>
+                        <option value="2">Tầng 2</option>
+                        <option value="3">Tầng 3</option>
+                        <option value="4">Tầng 4</option>
+                        <option value="5">Tầng 5</option>
+                        <option value="6">Tầng 6</option>
                       </select>
                     </div>
                     <div style={{ marginBottom: '1.5rem' }}>
@@ -2975,76 +3062,6 @@ function App() {
                         }}
                       />
                     </div>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: 600,
-                        color: '#374151',
-                        fontSize: '0.9rem',
-                      }}>
-                        Admin ID
-                      </label>
-                      <input
-                        type="text"
-                        value={deptFormData.adminId}
-                        onChange={(e) => setDeptFormData({ ...deptFormData, adminId: e.target.value })}
-                        placeholder="VD: admin-001"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '8px',
-                          fontSize: '1rem',
-                        }}
-                      />
-                    </div>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                      <label style={{
-                        display: 'block',
-                        marginBottom: '0.5rem',
-                        fontWeight: 600,
-                        color: '#374151',
-                        fontSize: '0.9rem',
-                      }}>
-                        Staff IDs (phân cách bằng dấu phẩy)
-                      </label>
-                      <input
-                        type="text"
-                        value={deptFormData.staffIds.join(', ')}
-                        onChange={(e) => {
-                          const staffIds = e.target.value
-                            .split(',')
-                            .map(id => id.trim())
-                            .filter(id => id.length > 0);
-                          setDeptFormData({ ...deptFormData, staffIds });
-                        }}
-                        placeholder="VD: staff-001, staff-002"
-                        style={{
-                          width: '100%',
-                          padding: '0.75rem',
-                          border: '1px solid #d1d5db',
-                          borderRadius: '8px',
-                          fontSize: '1rem',
-                        }}
-                      />
-                      {deptFormData.staffIds.length > 0 && (
-                        <div style={{ marginTop: '0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                          {deptFormData.staffIds.map((id) => (
-                            <span key={id} style={{
-                              padding: '0.25rem 0.5rem',
-                              background: '#f3f4f6',
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              color: '#374151',
-                            }}>
-                              {id}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                     <div style={{
                       display: 'flex',
                       gap: '1rem',
@@ -3156,8 +3173,10 @@ function App() {
                           email: staffFormData.email,
                           role: staffFormData.role,
                           status: 'active',
+                          createdAt: new Date().toISOString(),
                         };
                         setUsers([...users, newStaff]);
+                        setStaffPage(1); // Reset to first page
                         
                         // Add to department's staffIds
                         if (staffFormData.departmentId) {
@@ -3553,7 +3572,7 @@ function App() {
                         }}
                       >
                         <option value="student">Sinh viên</option>
-                        <option value="admin">Admin</option>
+                        <option value="teacher">Giảng viên</option>
                       </select>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
@@ -3610,3 +3629,4 @@ function App() {
 }
 
 export default App;
+
