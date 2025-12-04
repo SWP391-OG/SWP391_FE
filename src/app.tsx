@@ -10,6 +10,9 @@ import CreateTicketPage from './pages/create-ticket-page';
 import TicketListPage from './pages/ticket-list-page';
 import TicketDetailModal from './components/ticket-detail-modal';
 import LoginModal from './components/login-modal';
+import RegisterModal from './components/register-modal';
+import ForgotPasswordModal from './components/forgot-password-modal';
+import ProfileModal from './components/profile-modal';
 
 type StaffType = 'it' | 'facility';
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
@@ -18,6 +21,9 @@ function App() {
   // Login state (from dev branch)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   // Mock current user IDs (sẽ thay bằng authentication sau)
   const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
@@ -403,17 +409,20 @@ function App() {
             </button>
              {currentUser ? (
             <>
-              <div className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-lg">
+              <button
+                className="flex items-center gap-3 bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition-all cursor-pointer"
+                onClick={() => setShowProfileModal(true)}
+              >
                 <div className="text-right">
                   <div className="text-sm font-semibold">{currentUser.fullName}</div>
-                  <div className="text-xs opacity-80">{currentUser.email}</div>
+                  <div className="text-xs opacity-80">Xem hồ sơ</div>
                 </div>
                 <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
                   {currentUser.role === 'student' ? '👨‍🎓' : 
                    currentUser.role === 'it-staff' ? '👨‍💻' : 
                    currentUser.role === 'facility-staff' ? '👨‍🔧' : '👨‍💼'}
                 </div>
-              </div>
+              </button>
               <button
                 className="py-2.5 px-5 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white/30 bg-white/10 text-white font-medium hover:bg-white/20"
                 onClick={handleLogout}
@@ -422,12 +431,20 @@ function App() {
               </button>
             </>
           ) : (
-            <button
-              className="py-2.5 px-6 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white bg-white text-orange-500 font-semibold hover:bg-white/90 shadow-lg"
-              onClick={() => setShowLoginModal(true)}
-            >
-              🔐 Đăng nhập
-            </button>
+            <div className="flex gap-3">
+              <button
+                className="py-2.5 px-6 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white bg-transparent text-white font-semibold hover:bg-white/10"
+                onClick={() => setShowRegisterModal(true)}
+              >
+                📝 Đăng ký
+              </button>
+              <button
+                className="py-2.5 px-6 rounded-lg cursor-pointer text-[0.95rem] transition-all duration-300 border-2 border-white bg-white text-orange-500 font-semibold hover:bg-white/90 shadow-lg"
+                onClick={() => setShowLoginModal(true)}
+              >
+                🔐 Đăng nhập
+              </button>
+            </div>
           )}
           </div>
 
@@ -439,6 +456,44 @@ function App() {
         <LoginModal
           onClose={() => setShowLoginModal(false)}
           onLogin={handleLogin}
+          onShowRegister={() => {
+            setShowLoginModal(false);
+            setShowRegisterModal(true);
+          }}
+          onShowForgotPassword={() => {
+            setShowLoginModal(false);
+            setShowForgotPasswordModal(true);
+          }}
+        />
+      )}
+
+      {/* Register Modal */}
+      {showRegisterModal && (
+        <RegisterModal
+          onClose={() => setShowRegisterModal(false)}
+          onRegisterSuccess={() => {
+            setShowRegisterModal(false);
+            setShowLoginModal(true);
+          }}
+        />
+      )}
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <ForgotPasswordModal
+          onClose={() => setShowForgotPasswordModal(false)}
+          onResetSuccess={() => {
+            setShowForgotPasswordModal(false);
+            setShowLoginModal(true);
+          }}
+        />
+      )}
+
+      {/* Profile Modal */}
+      {showProfileModal && currentUser && (
+        <ProfileModal
+          user={currentUser}
+          onClose={() => setShowProfileModal(false)}
         />
       )}
 

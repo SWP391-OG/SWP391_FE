@@ -5,9 +5,11 @@ import { authenticateUser, mockUsers } from '../data/mockUsers';
 interface LoginModalProps {
   onClose: () => void;
   onLogin: (user: User) => void;
+  onShowRegister?: () => void;
+  onShowForgotPassword?: () => void;
 }
 
-const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
+const LoginModal = ({ onClose, onLogin, onShowRegister, onShowForgotPassword }: LoginModalProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -109,6 +111,17 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
+            {onShowForgotPassword && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={onShowForgotPassword}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -124,6 +137,22 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
             Đăng nhập
           </button>
         </form>
+
+        {/* Register Link */}
+        {onShowRegister && (
+          <div className="mt-4 text-center">
+            <p className="text-sm text-gray-600">
+              Chưa có tài khoản?{' '}
+              <button
+                type="button"
+                onClick={onShowRegister}
+                className="text-orange-600 hover:text-orange-700 font-semibold transition-colors"
+              >
+                Đăng ký ngay
+              </button>
+            </p>
+          </div>
+        )}
 
         {/* Demo Accounts */}
         <div className="mt-6 pt-6 border-t border-gray-200">
@@ -165,5 +194,6 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
 };
 
 export default LoginModal;
+
 
 

@@ -10,6 +10,7 @@ export interface User {
   password: string;
   fullName: string;
   email: string;
+  phoneNumber?: string; // Số điện thoại (optional)
   role: UserRole;
   status: UserStatus; // Trạng thái tài khoản: active, inactive, banned
   avatar?: string;
