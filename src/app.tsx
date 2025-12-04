@@ -494,6 +494,9 @@ function App() {
         <ProfileModal
           user={currentUser}
           onClose={() => setShowProfileModal(false)}
+          onUpdate={(updatedUser) => {
+            setCurrentUser(updatedUser);
+          }}
         />
       )}
 

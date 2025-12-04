@@ -127,3 +127,55 @@ export const resetPassword = (email: string, newPassword: string): ResetPassword
   };
 };
 
+interface UpdateUserData {
+  fullName?: string;
+  phoneNumber?: string;
+  email?: string;
+}
+
+interface UpdateUserResult {
+  success: boolean;
+  message?: string;
+  user?: User;
+}
+
+export const updateUser = (userId: string, data: UpdateUserData): UpdateUserResult => {
+  // Find user by id
+  const userIndex = mockUsers.findIndex((u) => u.id === userId);
+  
+  if (userIndex === -1) {
+    return {
+      success: false,
+      message: 'Người dùng không tồn tại!',
+    };
+  }
+
+  // Check if email is being changed and already exists
+  if (data.email && data.email !== mockUsers[userIndex].email) {
+    const emailExists = mockUsers.some((u) => u.email === data.email && u.id !== userId);
+    if (emailExists) {
+      return {
+        success: false,
+        message: 'Email đã được sử dụng bởi người dùng khác!',
+      };
+    }
+  }
+
+  // Update user data
+  if (data.fullName !== undefined) {
+    mockUsers[userIndex].fullName = data.fullName;
+  }
+  if (data.phoneNumber !== undefined) {
+    mockUsers[userIndex].phoneNumber = data.phoneNumber;
+  }
+  if (data.email !== undefined) {
+    mockUsers[userIndex].email = data.email;
+  }
+
+  return {
+    success: true,
+    message: 'Cập nhật thông tin thành công!',
+    user: mockUsers[userIndex],
+  };
+};
+
