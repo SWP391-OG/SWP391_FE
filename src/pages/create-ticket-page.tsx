@@ -116,12 +116,9 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
         ← Quay lại chọn loại vấn đề
       </button>
 
-      <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
-        <div className="text-5xl">{issueType.icon}</div>
-        <div className="flex-1">
-          <h2 className="text-2xl font-semibold my-0 mb-2">{issueType.name}</h2>
-          <p className="text-[0.95rem] opacity-90 m-0">{issueType.description}</p>
-        </div>
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8">
+        <h2 className="text-2xl font-semibold my-0 mb-2">{issueType.name}</h2>
+        <p className="text-[0.95rem] opacity-90 m-0">{issueType.description}</p>
       </div>
 
       <form className="bg-white rounded-xl p-8 shadow-sm border border-gray-200" onSubmit={handleSubmit}>
@@ -196,10 +193,7 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
                 }`}
                 onClick={() => setFormData((prev) => ({ ...prev, priority: key }))}
               >
-                <div className="text-2xl mb-1">
-                  {priorityLabels[key].emoji}
-                </div>
-                <div className="text-[0.85rem]">{priorityLabels[key].label}</div>
+                <div className="text-[0.95rem] font-medium">{priorityLabels[key].label}</div>
               </div>
             ))}
           </div>

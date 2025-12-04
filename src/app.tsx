@@ -132,6 +132,8 @@ function App() {
   const [studentView, setStudentView] = useState<StudentView>('home');
   const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [activeStudentTab, setActiveStudentTab] = useState<'processing' | 'completed'>('processing');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
@@ -584,36 +586,162 @@ function App() {
           <div className="max-w-[1400px] mx-auto p-8">
             {studentView === 'home' && (
               <>
-                <div className="mb-8 text-center">
-                  <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    Student
-                  </div>
-                  <h2 className="text-2xl my-2 text-gray-800">Trang Sinh viên</h2>
-                  <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
-                    Bạn đang ở trang dành cho Sinh viên
+                <div className="mb-6">
+                  <h1 className="text-3xl font-bold text-gray-800 mb-1">My requests</h1>
+                  <p className="text-lg text-gray-600">
+                    Xin chào, {currentUser?.name || 'Sinh viên'}!
                   </p>
                 </div>
-                <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
-                  <div className="text-[5rem] mb-6">👨‍🎓</div>
-                  <h3 className="text-[1.75rem] text-gray-800 mb-4 font-bold">Chức năng dành cho Sinh viên</h3>
-                  <p className="text-gray-500 text-lg leading-[1.8] max-w-[500px] mx-auto mb-8">
-                    Sinh viên có thể gửi phản ánh về cơ sở vật chất, WiFi, thiết bị và theo dõi trạng thái xử lý.
-                  </p>
-                  <div>
-                    <button
-                      className="py-4 px-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(59,130,246,0.3)] mt-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(59,130,246,0.4)]"
-                      onClick={() => setStudentView('issue-selection')}
-                    >
-                      Tạo Ticket Mới
-                    </button>
-                    <button
-                      className="py-4 px-8 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(16,185,129,0.3)] mt-4 ml-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(16,185,129,0.4)]"
-                      onClick={() => setStudentView('ticket-list')}
-                    >
-                      Xem Danh Sách Ticket
-                    </button>
+
+                <div className="flex gap-4 mb-6">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm ticket..."
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+                    />
                   </div>
+                  <button
+                    className="py-3 px-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_2px_4px_rgba(59,130,246,0.3)] hover:translate-y-[-1px] hover:shadow-[0_4px_8px_rgba(59,130,246,0.4)] whitespace-nowrap"
+                    onClick={() => setStudentView('issue-selection')}
+                  >
+                    + Tạo ticket mới
+                  </button>
                 </div>
+
+                {(() => {
+                  const studentTickets = tickets.filter(t => t.createdBy === currentUser?.id);
+                  
+                  const processingTickets = studentTickets.filter(t => 
+                    ['open', 'in-progress'].includes(t.status) &&
+                    (studentSearchQuery === '' || 
+                     t.title.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                     t.description.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+                  );
+                  
+                  const completedTickets = studentTickets.filter(t => 
+                    ['resolved', 'closed'].includes(t.status) &&
+                    (studentSearchQuery === '' || 
+                     t.title.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                     t.description.toLowerCase().includes(studentSearchQuery.toLowerCase()))
+                  );
+
+                  const displayTickets = activeStudentTab === 'processing' ? processingTickets : completedTickets;
+
+                  const statusColors = {
+                    open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+                    'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
+                    resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+                    closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
+                  };
+
+                  const statusLabels = {
+                    open: 'Mới tạo',
+                    'in-progress': 'Đang xử lý',
+                    resolved: 'Đã giải quyết',
+                    closed: 'Đã đóng',
+                  };
+
+                  const formatDate = (dateString: string) => {
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+                    
+                    if (diffInHours < 1) {
+                      return 'Vừa xong';
+                    } else if (diffInHours < 24) {
+                      return `${Math.floor(diffInHours)} giờ trước`;
+                    } else {
+                      const days = Math.floor(diffInHours / 24);
+                      return `${days} ngày trước`;
+                    }
+                  };
+
+                  return (
+                    <>
+                      <div className="flex gap-4 mb-6 border-b-2 border-gray-200">
+                        <button
+                          className={`py-3 px-6 text-base font-semibold transition-all duration-200 border-none bg-transparent cursor-pointer ${
+                            activeStudentTab === 'processing'
+                              ? 'text-blue-600 border-b-2 border-blue-600 -mb-[2px]'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                          onClick={() => setActiveStudentTab('processing')}
+                        >
+                          Đang xử lí ({processingTickets.length})
+                        </button>
+                        <button
+                          className={`py-3 px-6 text-base font-semibold transition-all duration-200 border-none bg-transparent cursor-pointer ${
+                            activeStudentTab === 'completed'
+                              ? 'text-blue-600 border-b-2 border-blue-600 -mb-[2px]'
+                              : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                          onClick={() => setActiveStudentTab('completed')}
+                        >
+                          Đã hoàn thành ({completedTickets.length})
+                        </button>
+                      </div>
+
+                      {displayTickets.length === 0 ? (
+                        <div className="text-center py-16 px-8 bg-white rounded-xl border-2 border-dashed border-gray-300">
+                          <div className="text-6xl mb-4">📋</div>
+                          <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                            {activeStudentTab === 'processing' ? 'Chưa có ticket đang xử lí' : 'Chưa có ticket hoàn thành'}
+                          </h3>
+                          <p className="text-base text-gray-500 mb-6">
+                            {activeStudentTab === 'processing' 
+                              ? 'Bạn chưa có ticket nào đang được xử lý'
+                              : 'Bạn chưa có ticket nào hoàn thành'}
+                          </p>
+                          {activeStudentTab === 'processing' && (
+                            <button
+                              className="py-3 px-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_2px_4px_rgba(59,130,246,0.3)] hover:translate-y-[-1px] hover:shadow-[0_4px_8px_rgba(59,130,246,0.4)]"
+                              onClick={() => setStudentView('issue-selection')}
+                            >
+                              Tạo ticket mới
+                            </button>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {displayTickets.map((ticket) => (
+                            <div
+                              key={ticket.id}
+                              className="bg-white rounded-xl p-5 border-2 border-gray-200 cursor-pointer transition-all duration-200 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5"
+                              onClick={() => setSelectedTicket(ticket)}
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-full text-xs font-semibold ${statusColors[ticket.status].bg} ${statusColors[ticket.status].text}`}>
+                                  {statusLabels[ticket.status]}
+                                </span>
+                                <span className="text-xs text-gray-500">{formatDate(ticket.createdAt)}</span>
+                              </div>
+                              
+                              <h3 className="text-lg font-semibold text-gray-800 mb-2 line-clamp-2">{ticket.title}</h3>
+                              
+                              <p className="text-sm text-gray-500 mb-3 line-clamp-2">{ticket.description}</p>
+                              
+                              <div className="flex flex-col gap-2 text-xs text-gray-600">
+                                <div className="flex items-center gap-1">
+                                  <span>{ticket.issueType.icon}</span>
+                                  <span>{ticket.issueType.name}</span>
+                                </div>
+                                {ticket.location && (
+                                  <div className="flex items-center gap-1">
+                                    <span>📍</span>
+                                    <span>{ticket.location} {ticket.roomNumber && `- ${ticket.roomNumber}`}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             )}
             

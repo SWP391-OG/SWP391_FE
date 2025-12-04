@@ -131,19 +131,19 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
           
           <div className="flex gap-3 flex-wrap mb-4">
             <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${statusColors[ticket.status].bg} ${statusColors[ticket.status].text}`}>
-              {ticket.status === 'open' && '🔵 Mở'}
-              {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
-              {ticket.status === 'closed' && '⚫ Đã đóng'}
+              {ticket.status === 'open' && 'Mở'}
+              {ticket.status === 'in-progress' && 'Đang xử lý'}
+              {ticket.status === 'resolved' && 'Đã giải quyết'}
+              {ticket.status === 'closed' && 'Đã đóng'}
             </span>
             <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
-              {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
-              {ticket.priority === 'high' && '🟠 Cao'}
-              {ticket.priority === 'medium' && '🟡 Trung bình'}
-              {ticket.priority === 'low' && '🟢 Thấp'}
+              {ticket.priority === 'urgent' && 'Khẩn cấp'}
+              {ticket.priority === 'high' && 'Cao'}
+              {ticket.priority === 'medium' && 'Trung bình'}
+              {ticket.priority === 'low' && 'Thấp'}
             </span>
             <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-              {ticket.issueType.icon} {ticket.issueType.name}
+              {ticket.issueType.name}
             </span>
           </div>
         </div>
