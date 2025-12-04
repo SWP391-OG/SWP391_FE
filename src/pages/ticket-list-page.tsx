@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Ticket } from '../types';
-import { mockTickets } from '../data/mockTickets';
+import { mockTickets } from '../data/mockData';
 
 interface TicketListPageProps {
   onViewDetail: (ticket: Ticket) => void;

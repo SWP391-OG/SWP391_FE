@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import type { UserRole, User,  Department, Location, Category, Priority, IssueType, Ticket } from './types';
-import { mockDepartments, mockLocations, mockCategories } from './data/mockData';
+import { useState, useMemo } from 'react';
+import type { UserRole, User, Department, Location, Category, Priority, IssueType, Ticket } from './types';
+import { mockDepartments, mockLocations, mockCategories, mockTickets } from './data/mockData';
+import { mockUsers } from './data/mockUsers';
 import ITStaffPage from './pages/it-staff-page';
 import FacilityStaffPage from './pages/facility-staff-page';
 
@@ -14,19 +15,28 @@ type StaffType = 'it' | 'facility';
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
 
 function App() {
+  // Login state (from dev branch)
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  
+  // Mock current user IDs (sẽ thay bằng authentication sau)
+  const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
+  
   const [currentRole, setCurrentRole] = useState<UserRole>('admin');
   const [staffType, setStaffType] = useState<StaffType>('it');
   const [showStaffDropdown, setShowStaffDropdown] = useState(false);
-  const [activeTab, setActiveTab] = useState<'categories' | 'departments' | 'locations'>('categories');
+  const [activeTab, setActiveTab] = useState<'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users'>('categories');
   const [categories, setCategories] = useState<Category[]>(mockCategories);
   const [departments, setDepartments] = useState<Department[]>(mockDepartments);
   const [locations, setLocations] = useState<Location[]>(mockLocations);
+  const [tickets, setTickets] = useState<Ticket[]>(mockTickets);
+  const [users, setUsers] = useState<User[]>(mockUsers);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingStaff, setEditingStaff] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [categoryFormData, setCategoryFormData] = useState({
     name: '',
     description: '',
@@ -50,6 +60,22 @@ function App() {
     type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
     status: 'active' as 'active' | 'inactive',
   });
+  const [staffFormData, setStaffFormData] = useState({
+    username: '',
+    password: '',
+    fullName: '',
+    email: '',
+    role: 'it-staff' as UserRole,
+    departmentId: '',
+  });
+  const [userFormData, setUserFormData] = useState({
+    username: '',
+    password: '',
+    fullName: '',
+    email: '',
+    role: 'student' as UserRole,
+  });
+  const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
   
   // Student page state
   const [studentView, setStudentView] = useState<StudentView>('home');
@@ -62,9 +88,19 @@ function App() {
     setStudentView('home');
     setSelectedIssue(null);
     setSelectedTicket(null);
-    setShowStaffDropdown(false);
   };
 
+  const handleStaffRoleChange = () => {
+    // Set role based on staffType
+    const role: UserRole = staffType === 'it' ? 'it-staff' : 'facility-staff';
+    setCurrentRole(role);
+    setShowStaffDropdown(false);
+    setStudentView('home');
+    setSelectedIssue(null);
+    setSelectedTicket(null);
+  };
+
+  // Login handlers (from dev branch)
   const handleLogin = (user: User) => {
     setCurrentUser(user);
     setCurrentRole(user.role);
@@ -76,6 +112,7 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
   };
+
   const getBadgeGradient = (role: UserRole) => {
     if (role === 'student') return 'from-blue-500 to-blue-600';
     if (role === 'it-staff' || role === 'facility-staff') return 'from-emerald-500 to-emerald-600';
@@ -96,14 +133,198 @@ function App() {
         return role;
     }
   };
+
+  // Filter departments by adminId - Admin chỉ thấy departments mình quản lý
+  const adminDepartments = useMemo(() => {
+    if (currentRole !== 'admin') return departments;
+    return departments.filter(dept => dept.adminId === currentAdminId);
+  }, [departments, currentAdminId, currentRole]);
+
+  // Get department IDs that admin manages
+  const adminDepartmentIds = useMemo(() => {
+    return adminDepartments.map(dept => dept.id);
+  }, [adminDepartments]);
+
+  // Filter categories by admin's departments - Admin chỉ thấy categories thuộc departments mình quản lý
+  const adminCategories = useMemo(() => {
+    if (currentRole !== 'admin') return categories;
+    return categories.filter(cat => adminDepartmentIds.includes(cat.departmentId));
+  }, [categories, adminDepartmentIds, currentRole]);
+
+  // Map IssueCategory to Category name for ticket filtering
+  const categoryNameMap: Record<string, string[]> = {
+    'wifi': ['WiFi/Mạng'],
+    'equipment': ['Thiết bị'],
+    'facility': ['Cơ sở vật chất', 'Điện nước', 'Khẩn cấp'],
+    'classroom': ['Vệ sinh'],
+    'other': ['Cơ sở vật chất', 'Vệ sinh'],
+  };
+
+  // Filter tickets by admin's departments (tickets with categories belonging to admin's departments)
+  // Ẩn 'cancelled' tickets khỏi danh sách "Cần làm" nhưng vẫn lưu trong hệ thống
+  const adminTickets = useMemo(() => {
+    if (currentRole !== 'admin') return tickets;
+    return tickets.filter(ticket => {
+      // Ẩn cancelled tickets khỏi danh sách "Cần làm"
+      if (ticket.status === 'cancelled') return false;
+      
+      // Find categories that match the ticket's IssueCategory
+      const matchingCategoryNames = categoryNameMap[ticket.category] || [];
+      const matchingCategories = categories.filter(cat => 
+        matchingCategoryNames.includes(cat.name)
+      );
+      
+      // Check if any matching category belongs to admin's departments
+      return matchingCategories.some(cat => 
+        adminDepartmentIds.includes(cat.departmentId)
+      );
+    });
+  }, [tickets, categories, adminDepartmentIds, currentRole]);
+
+  // Get staff list for admin's departments
+  const adminStaffList = useMemo(() => {
+    const staffMap = new Map<string, { id: string; name: string; departmentName: string }>();
+    adminDepartments.forEach(dept => {
+      dept.staffIds.forEach(staffId => {
+        if (!staffMap.has(staffId)) {
+          // Mock staff names (sẽ thay bằng API sau)
+          const staffNames: Record<string, string> = {
+            'staff-001': 'Lý Văn K',
+            'staff-002': 'Bùi Thị H',
+            'staff-003': 'Hoàng Văn E',
+            'staff-004': 'Ngô Văn M',
+            'staff-005': 'Trần Văn B',
+          };
+          staffMap.set(staffId, {
+            id: staffId,
+            name: staffNames[staffId] || staffId,
+            departmentName: dept.name,
+          });
+        }
+      });
+    });
+    return Array.from(staffMap.values());
+  }, [adminDepartments]);
+
+  // Filter staff users (it-staff, facility-staff) in admin's departments
+  const adminStaffUsers = useMemo(() => {
+    if (currentRole !== 'admin') return [];
+    const staffIds = new Set<string>();
+    adminDepartments.forEach(dept => {
+      dept.staffIds.forEach(id => staffIds.add(id));
+    });
+    return users.filter(user => 
+      (user.role === 'it-staff' || user.role === 'facility-staff') && 
+      staffIds.has(user.id)
+    );
+  }, [users, adminDepartments, currentRole]);
+
+  // Filter student users (chủ yếu là sinh viên)
+  const studentUsers = useMemo(() => {
+    if (currentRole !== 'admin') return [];
+    return users.filter(user => user.role === 'student');
+  }, [users, currentRole]);
+
+  // Get tickets created by a specific user
+  const getUserTickets = (userId: string) => {
+    return tickets.filter(ticket => ticket.createdBy === userId);
+  };
+
+  // Handle assign ticket to staff (Admin)
+  const handleAssignTicket = (ticketId: string, staffId: string) => {
+    const staff = adminStaffList.find(s => s.id === staffId);
+    if (!staff) return;
+
+    setTickets(tickets.map(t => {
+      if (t.id === ticketId) {
+        const newStatus = t.status === 'open' ? 'acknowledged' : t.status;
+        return {
+          ...t,
+          assignedTo: staffId,
+          assignedToName: staff.name,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return t;
+    }));
+  };
+
+  // Handle cancel ticket (Admin only - thay thế cho xóa)
+  const handleCancelTicket = (ticketId: string) => {
+    const reason = prompt('Lý do hủy ticket (ví dụ: Báo cáo sai, spam, không thuộc phạm vi xử lý):');
+    if (reason === null) return; // User cancelled
+
+    setTickets(tickets.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          status: 'cancelled',
+          updatedAt: new Date().toISOString(),
+          notes: t.notes ? `${t.notes}\n[Hủy bởi Admin]: ${reason}` : `[Hủy bởi Admin]: ${reason}`,
+        };
+      }
+      return t;
+    }));
+  };
+
+  // Handle update priority (Admin only)
+  const handleUpdatePriority = (ticketId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
+    setTickets(tickets.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          priority: newPriority,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return t;
+    }));
+  };
+
+  // Get current staff ID based on staffType
+  const getCurrentStaffId = () => {
+    if (staffType === 'it') return 'staff-001'; // IT Staff
+    return 'staff-003'; // Facility Staff
+  };
+
+  // Helper function to check if role is staff
+  const isStaffRole = (role: UserRole): boolean => {
+    return role === 'it-staff' || role === 'facility-staff';
+  };
+
+  // Filter tickets assigned to current staff
+  const staffTickets = useMemo(() => {
+    if (!isStaffRole(currentRole)) return [];
+    const staffId = getCurrentStaffId();
+    return tickets.filter(ticket => ticket.assignedTo === staffId);
+  }, [tickets, currentRole, staffType]);
+
+  // Handle update ticket status (for Staff)
+  const handleUpdateTicketStatus = (ticketId: string, newStatus: Ticket['status']) => {
+    setTickets(tickets.map(t => {
+      if (t.id === ticketId) {
+        return {
+          ...t,
+          status: newStatus,
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return t;
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 shadow-lg">
         <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold m-0">FPTInsight</h1>
-            <p className="text-sm opacity-90 mt-1">Facility Feedback & Helpdesk System</p>
+          <div className="flex items-center">
+            <img 
+              src="/logoFPTechnical.jpg" 
+              alt="FPTechnical Logo" 
+              className="h-10 w-auto object-contain"
+            />
           </div>
           <div className="flex gap-3">
             {/* Student Button */}
@@ -122,24 +343,24 @@ function App() {
             <div className="relative">
               <button
                 className={`px-5 py-2.5 rounded-lg text-sm font-semibold border-2 transition-all flex items-center gap-2 ${
-                  currentRole === 'staff'
+                  isStaffRole(currentRole)
                     ? 'border-white bg-white text-orange-500'
                     : 'border-white/30 bg-white/10 hover:bg-white/20'
                 }`}
                 onClick={() => {
-                  if (currentRole === 'staff') {
+                  if (isStaffRole(currentRole)) {
                     setShowStaffDropdown(!showStaffDropdown);
                   } else {
-                    handleRoleChange('staff');
+                    handleStaffRoleChange();
                     setShowStaffDropdown(true);
                   }
                 }}
               >
-                Staff {currentRole === 'staff' && `(${staffType === 'it' ? 'IT' : 'Facility'})`}
+                Staff {isStaffRole(currentRole) && `(${staffType === 'it' ? 'IT' : 'Facility'})`}
                 <span className={`transition-transform ${showStaffDropdown ? 'rotate-180' : ''}`}>▼</span>
               </button>
               
-              {showStaffDropdown && currentRole === 'staff' && (
+              {showStaffDropdown && isStaffRole(currentRole) && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-2 z-50">
                   <button
                     className={`w-full px-4 py-2.5 text-left text-sm hover:bg-gray-100 flex items-center gap-3 ${
@@ -248,13 +469,13 @@ function App() {
                       className="py-4 px-8 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(59,130,246,0.3)] mt-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(59,130,246,0.4)]"
                       onClick={() => setStudentView('issue-selection')}
                     >
-                      ➕ Tạo Ticket Mới
+                      Tạo Ticket Mới
                     </button>
                     <button
                       className="py-4 px-8 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_4px_8px_rgba(16,185,129,0.3)] mt-4 ml-4 hover:translate-y-[-2px] hover:shadow-[0_8px_16px_rgba(16,185,129,0.4)]"
                       onClick={() => setStudentView('ticket-list')}
                     >
-                      📋 Xem Danh Sách Ticket
+                      Xem Danh Sách Ticket
                     </button>
                   </div>
                 </div>
@@ -304,11 +525,22 @@ function App() {
 
 
         {/* Staff Pages */}
-        {currentRole === 'staff' && (
+        {isStaffRole(currentRole) && (
           <>
-            {staffType === 'it' && <ITStaffPage />}
-            {staffType === 'facility' && <FacilityStaffPage />}
-
+            {staffType === 'it' && (
+              <ITStaffPage
+                tickets={staffTickets}
+                onUpdateStatus={handleUpdateTicketStatus}
+                onViewDetail={(ticket) => setSelectedTicket(ticket)}
+              />
+            )}
+            {staffType === 'facility' && (
+              <FacilityStaffPage
+                tickets={staffTickets}
+                onUpdateStatus={handleUpdateTicketStatus}
+                onViewDetail={(ticket) => setSelectedTicket(ticket)}
+              />
+            )}
           </>
         )}
 
@@ -329,63 +561,102 @@ function App() {
               {/* Dashboard Layout */}
               <div className="flex gap-8 items-start">
                 {/* Sidebar */}
-                <div className="w-72 bg-white rounded-xl p-6 shadow-sm sticky top-8">
-                  <h3 className="m-0 mb-6 text-lg text-gray-900 font-semibold pb-4 border-b-2 border-gray-100">
-                    📊 Quản lý hệ thống
+                <div className="w-72 bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+                  <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">
+                    Quản lý hệ thống
                   </h3>
-                  <nav className="flex flex-col gap-2">
+                  <nav className="flex flex-col gap-1">
                     <button
-                      className={`py-3.5 px-4 border-none rounded-lg cursor-pointer text-[0.95rem] text-left transition-all flex items-center gap-3 ${
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
                         activeTab === 'categories'
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold'
-                          : 'bg-transparent text-gray-500 font-medium hover:bg-gray-50'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
                       }`}
                       onClick={() => setActiveTab('categories')}
                     >
-                      <span className="text-xl">🏷️</span>
-                      <span>Quản lý Category</span>
+                      Quản lý Category
                     </button>
                     <button
-                      className={`py-3.5 px-4 border-none rounded-lg cursor-pointer text-[0.95rem] text-left transition-all flex items-center gap-3 ${
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
                         activeTab === 'departments'
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold'
-                          : 'bg-transparent text-gray-500 font-medium hover:bg-gray-50'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
                       }`}
                       onClick={() => setActiveTab('departments')}
                     >
-                      <span className="text-xl">📋</span>
-                      <span>Quản lý Bộ phận</span>
+                      Quản lý Bộ phận
                     </button>
                     <button
-                      className={`py-3.5 px-4 border-none rounded-lg cursor-pointer text-[0.95rem] text-left transition-all flex items-center gap-3 ${
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
                         activeTab === 'locations'
-                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold'
-                          : 'bg-transparent text-gray-500 font-medium hover:bg-gray-50'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
                       }`}
                       onClick={() => setActiveTab('locations')}
                     >
-                      <span className="text-xl">📍</span>
-                      <span>Quản lý Địa điểm</span>
+                      Quản lý Địa điểm
+                    </button>
+                    <button
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                        activeTab === 'tickets'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                      onClick={() => setActiveTab('tickets')}
+                    >
+                      Quản lý Tickets
+                    </button>
+                    <button
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                        activeTab === 'staff'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                      onClick={() => setActiveTab('staff')}
+                    >
+                      Quản lý Staff
+                    </button>
+                    <button
+                      className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                        activeTab === 'users'
+                          ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                          : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                      onClick={() => setActiveTab('users')}
+                    >
+                      Quản lý Người dùng
                     </button>
                   </nav>
                   
                   {/* Stats */}
-                  <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-                    <h4 className="m-0 mb-3 text-sm text-gray-500 font-semibold">
-                      📈 Thống kê
+                  <div className="mt-8 pt-6 border-t border-gray-200">
+                    <h4 className="m-0 mb-3 text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                      Thống kê
                     </h4>
                     <div className="flex flex-col gap-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Categories:</span>
-                        <span className="font-semibold text-gray-900">{categories.length}</span>
+                        <span className="font-semibold text-gray-900">{adminCategories.length}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Departments:</span>
-                        <span className="font-semibold text-gray-900">{departments.length}</span>
+                        <span className="font-semibold text-gray-900">{adminDepartments.length}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-500">Locations:</span>
                         <span className="font-semibold text-gray-900">{locations.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Tickets:</span>
+                        <span className="font-semibold text-gray-900">{adminTickets.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Staff:</span>
+                        <span className="font-semibold text-gray-900">{adminStaffUsers.length}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Users:</span>
+                        <span className="font-semibold text-gray-900">{studentUsers.length}</span>
                       </div>
                     </div>
                   </div>
@@ -403,17 +674,28 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Category
+                      Danh sách Category ({adminCategories.length})
                     </h3>
                     <button
                       style={{
-                        background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                        background: '#f97316',
                         color: 'white',
                         border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '8px',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#ea580c';
+                        e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = '#f97316';
+                        e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)';
                       }}
                       onClick={() => {
                         setEditingCategory(null);
@@ -430,7 +712,7 @@ function App() {
                         setIsFormOpen(true);
                       }}
                     >
-                      ➕ Thêm Category
+                      Thêm Category
                     </button>
                   </div>
 
@@ -501,8 +783,8 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {categories.map((cat) => {
-                        const deptName = departments.find(d => d.id === cat.departmentId)?.name || 'Unknown';
+                      {adminCategories.map((cat) => {
+                        const deptName = adminDepartments.find(d => d.id === cat.departmentId)?.name || 'Unknown';
                         const priorityInfo = {
                           low: { bg: '#dbeafe', color: '#1e40af', text: 'Low' },
                           medium: { bg: '#fef3c7', color: '#92400e', text: 'Medium' },
@@ -585,11 +867,22 @@ function App() {
                                 <button
                                   style={{
                                     background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.2rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.875rem',
                                     cursor: 'pointer',
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     borderRadius: '6px',
+                                    color: '#374151',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#f3f4f6';
+                                    e.currentTarget.style.borderColor = '#9ca3af';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'none';
+                                    e.currentTarget.style.borderColor = '#d1d5db';
                                   }}
                                   onClick={() => {
                                     setEditingCategory(cat);
@@ -607,16 +900,25 @@ function App() {
                                   }}
                                   title="Chỉnh sửa"
                                 >
-                                  ✏️
+                                  Sửa
                                 </button>
                                 <button
                                   style={{
                                     background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.2rem',
+                                    border: '1px solid #dc2626',
+                                    fontSize: '0.875rem',
                                     cursor: 'pointer',
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     borderRadius: '6px',
+                                    color: '#dc2626',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#fee2e2';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'none';
                                   }}
                                   onClick={() => {
                                     if (confirm('Bạn có chắc chắn muốn xóa category này?')) {
@@ -625,7 +927,7 @@ function App() {
                                   }}
                                   title="Xóa"
                                 >
-                                  🗑️
+                                  Xóa
                                 </button>
                               </div>
                             </td>
@@ -647,17 +949,20 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Bộ phận
+                      Danh sách Bộ phận ({adminDepartments.length})
                     </h3>
                     <button
                       style={{
-                        background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                        background: '#f97316',
                         color: 'white',
                         border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '8px',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                       }}
                       onClick={() => {
                         setEditingDept(null);
@@ -665,7 +970,7 @@ function App() {
                         setIsFormOpen(true);
                       }}
                     >
-                      ➕ Thêm Bộ phận
+                      Thêm Bộ phận
                     </button>
                   </div>
 
@@ -728,7 +1033,7 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {departments.map((dept) => (
+                      {adminDepartments.map((dept) => (
                         <tr key={dept.id}>
                           <td style={{
                             padding: '1rem',
@@ -781,11 +1086,22 @@ function App() {
                               <button
                                 style={{
                                   background: 'none',
-                                  border: 'none',
-                                  fontSize: '1.2rem',
+                                  border: '1px solid #d1d5db',
+                                  fontSize: '0.875rem',
                                   cursor: 'pointer',
-                                  padding: '0.5rem',
+                                  padding: '0.5rem 0.75rem',
                                   borderRadius: '6px',
+                                  color: '#374151',
+                                  fontWeight: 500,
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#f3f4f6';
+                                  e.currentTarget.style.borderColor = '#9ca3af';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'none';
+                                  e.currentTarget.style.borderColor = '#d1d5db';
                                 }}
                                 onClick={() => {
                                   setEditingDept(dept);
@@ -800,16 +1116,25 @@ function App() {
                                 }}
                                 title="Chỉnh sửa"
                               >
-                                ✏️
+                                Sửa
                               </button>
                               <button
                                 style={{
                                   background: 'none',
-                                  border: 'none',
-                                  fontSize: '1.2rem',
+                                  border: '1px solid #dc2626',
+                                  fontSize: '0.875rem',
                                   cursor: 'pointer',
-                                  padding: '0.5rem',
+                                  padding: '0.5rem 0.75rem',
                                   borderRadius: '6px',
+                                  color: '#dc2626',
+                                  fontWeight: 500,
+                                  transition: 'all 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = '#fee2e2';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'none';
                                 }}
                                 onClick={() => {
                                   if (confirm('Bạn có chắc chắn muốn xóa bộ phận này?')) {
@@ -819,7 +1144,7 @@ function App() {
                                 }}
                                 title="Xóa"
                               >
-                                🗑️
+                                Xóa
                               </button>
                             </div>
                           </td>
@@ -844,13 +1169,16 @@ function App() {
                     </h3>
                     <button
                       style={{
-                        background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                        background: '#f97316',
                         color: 'white',
                         border: 'none',
-                        padding: '0.75rem 1.5rem',
-                        borderRadius: '8px',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
                         fontWeight: 600,
                         cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
                       }}
                       onClick={() => {
                         setEditingLocation(null);
@@ -863,7 +1191,7 @@ function App() {
                         setIsFormOpen(true);
                       }}
                     >
-                      ➕ Thêm Địa điểm
+                      Thêm Địa điểm
                     </button>
                   </div>
 
@@ -981,11 +1309,22 @@ function App() {
                                 <button
                                   style={{
                                     background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.2rem',
+                                    border: '1px solid #d1d5db',
+                                    fontSize: '0.875rem',
                                     cursor: 'pointer',
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     borderRadius: '6px',
+                                    color: '#374151',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#f3f4f6';
+                                    e.currentTarget.style.borderColor = '#9ca3af';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'none';
+                                    e.currentTarget.style.borderColor = '#d1d5db';
                                   }}
                                   onClick={() => {
                                     setEditingLocation(location);
@@ -999,16 +1338,25 @@ function App() {
                                   }}
                                   title="Chỉnh sửa"
                                 >
-                                  ✏️
+                                  Sửa
                                 </button>
                                 <button
                                   style={{
                                     background: 'none',
-                                    border: 'none',
-                                    fontSize: '1.2rem',
+                                    border: '1px solid #dc2626',
+                                    fontSize: '0.875rem',
                                     cursor: 'pointer',
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     borderRadius: '6px',
+                                    color: '#dc2626',
+                                    fontWeight: 500,
+                                    transition: 'all 0.2s',
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#fee2e2';
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'none';
                                   }}
                                   onClick={() => {
                                     if (confirm('Bạn có chắc chắn muốn xóa địa điểm này?')) {
@@ -1017,13 +1365,907 @@ function App() {
                                   }}
                                   title="Xóa"
                                 >
-                                  🗑️
+                                  Xóa
                                 </button>
                               </div>
                             </td>
                           </tr>
                         );
                       })}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {/* Tickets Management */}
+              {activeTab === 'tickets' && (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+                      Danh sách Tickets ({adminTickets.length})
+                    </h3>
+                  </div>
+
+                  {/* Staff List */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                    padding: '1rem',
+                    background: '#f9fafb',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                  }}>
+                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '1rem', color: '#374151', fontWeight: 600 }}>
+                      👥 Staff trong Department
+                    </h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      {adminStaffList.length > 0 ? (
+                        adminStaffList.map((staff) => (
+                          <div key={staff.id} style={{
+                            padding: '0.5rem 1rem',
+                            background: 'white',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            fontSize: '0.875rem',
+                            color: '#374151',
+                          }}>
+                            <span style={{ fontWeight: 600 }}>{staff.name}</span>
+                            <span style={{ color: '#6b7280', marginLeft: '0.5rem' }}>({staff.departmentName})</span>
+                          </div>
+                        ))
+                      ) : (
+                        <span style={{ color: '#6b7280', fontSize: '0.875rem' }}>Chưa có staff nào</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tickets Table */}
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}>
+                    <thead>
+                      <tr>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>ID</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Tiêu đề</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Trạng thái</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Ưu tiên</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Được giao cho</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminTickets.length > 0 ? (
+                        adminTickets.map((ticket) => {
+                          const statusInfo = {
+                            open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
+                            'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
+                            'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
+                            resolved: { bg: '#d1fae5', color: '#065f46', text: 'Đã giải quyết' },
+                            closed: { bg: '#f3f4f6', color: '#374151', text: 'Đã đóng' },
+                            cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
+                          }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
+
+                          const priorityInfo = {
+                            low: { bg: '#d1fae5', color: '#065f46', text: 'Thấp' },
+                            medium: { bg: '#fef3c7', color: '#92400e', text: 'Trung bình' },
+                            high: { bg: '#fed7aa', color: '#9a3412', text: 'Cao' },
+                            urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
+                          }[ticket.priority];
+
+                          return (
+                            <tr key={ticket.id}>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                                fontWeight: 600,
+                                fontSize: '0.875rem',
+                              }}>{ticket.id}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                                maxWidth: '300px',
+                              }}>
+                                <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{ticket.title}</div>
+                                <div style={{ fontSize: '0.875rem', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {ticket.description}
+                                </div>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: statusInfo.bg,
+                                  color: statusInfo.color,
+                                }}>
+                                  {statusInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: priorityInfo.bg,
+                                  color: priorityInfo.color,
+                                }}>
+                                  {priorityInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#4b5563',
+                              }}>
+                                {ticket.assignedTo ? (
+                                  <div>
+                                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{ticket.assignedToName || ticket.assignedTo}</div>
+                                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{ticket.assignedTo}</div>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Chưa được giao</span>
+                                )}
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  {!ticket.assignedTo && adminStaffList.length > 0 && (
+                                    <select
+                                      style={{
+                                        padding: '0.5rem 0.75rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '6px',
+                                        fontSize: '0.875rem',
+                                        cursor: 'pointer',
+                                        background: 'white',
+                                      }}
+                                      value=""
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          handleAssignTicket(ticket.id, e.target.value);
+                                        }
+                                      }}
+                                    >
+                                      <option value="">Giao cho...</option>
+                                      {adminStaffList.map(staff => (
+                                        <option key={staff.id} value={staff.id}>
+                                          {staff.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                  {ticket.assignedTo && (
+                                    <select
+                                      style={{
+                                        padding: '0.5rem 0.75rem',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: '6px',
+                                        fontSize: '0.875rem',
+                                        cursor: 'pointer',
+                                        background: 'white',
+                                      }}
+                                      value={ticket.assignedTo}
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          handleAssignTicket(ticket.id, e.target.value);
+                                        }
+                                      }}
+                                    >
+                                      {adminStaffList.map(staff => (
+                                        <option key={staff.id} value={staff.id}>
+                                          {staff.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  )}
+                                  <select
+                                    style={{
+                                      padding: '0.5rem 0.75rem',
+                                      border: '1px solid #d1d5db',
+                                      borderRadius: '6px',
+                                      fontSize: '0.875rem',
+                                      cursor: 'pointer',
+                                      background: 'white',
+                                    }}
+                                    value={ticket.priority}
+                                    onChange={(e) => {
+                                      handleUpdatePriority(ticket.id, e.target.value as 'low' | 'medium' | 'high' | 'urgent');
+                                    }}
+                                    title="Cập nhật độ ưu tiên"
+                                  >
+                                    <option value="low">Thấp</option>
+                                    <option value="medium">Trung bình</option>
+                                    <option value="high">Cao</option>
+                                    <option value="urgent">Khẩn cấp</option>
+                                  </select>
+                                  {ticket.status !== 'cancelled' && ticket.status !== 'closed' && (
+                                    <button
+                                      style={{
+                                        background: 'none',
+                                        border: '1px solid #dc2626',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '6px',
+                                        fontSize: '0.875rem',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        color: '#dc2626',
+                                      }}
+                                      onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn hủy ticket này? Ticket sẽ bị ẩn khỏi danh sách "Cần làm" nhưng vẫn lưu trong hệ thống.')) {
+                                          handleCancelTicket(ticket.id);
+                                        }
+                                      }}
+                                      title="Hủy ticket (thay thế cho xóa)"
+                                    >
+                                      Hủy
+                                    </button>
+                                  )}
+                                  <button
+                                    style={{
+                                      background: 'none',
+                                      border: '1px solid #d1d5db',
+                                      padding: '0.5rem 1rem',
+                                      borderRadius: '6px',
+                                      fontSize: '0.875rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      color: '#374151',
+                                    }}
+                                    onClick={() => {
+                                      setSelectedTicket(ticket);
+                                    }}
+                                    title="Xem chi tiết"
+                                  >
+                                    Xem
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={6} style={{
+                            padding: '2rem',
+                            textAlign: 'center',
+                            color: '#6b7280',
+                          }}>
+                            Không có ticket nào trong department của bạn
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {/* Staff Management */}
+              {activeTab === 'staff' && (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+                      Danh sách Staff ({adminStaffUsers.length})
+                    </h3>
+                    <button
+                      style={{
+                        background: '#f97316',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                      }}
+                      onClick={() => {
+                        setEditingStaff(null);
+                        setStaffFormData({
+                          username: '',
+                          password: '',
+                          fullName: '',
+                          email: '',
+                          role: 'it-staff',
+                          departmentId: adminDepartments[0]?.id || '',
+                        });
+                        setIsFormOpen(true);
+                      }}
+                    >
+                      Thêm Staff
+                    </button>
+                  </div>
+
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}>
+                    <thead>
+                      <tr>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Tên đăng nhập</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Họ tên</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Email</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Vai trò</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Bộ phận</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Trạng thái</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {adminStaffUsers.length > 0 ? (
+                        adminStaffUsers.map((staff: User) => {
+                          const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
+                          const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
+                            'it-staff': { text: 'IT Staff', bg: '#dbeafe', color: '#1e40af' },
+                            'facility-staff': { text: 'Facility Staff', bg: '#fef3c7', color: '#92400e' },
+                          };
+                          const roleInfo = roleInfoMap[staff.role] || { text: staff.role, bg: '#f3f4f6', color: '#374151' };
+                          const statusInfoMap: Record<string, { text: string; bg: string; color: string }> = {
+                            'active': { text: 'Hoạt động', bg: '#d1fae5', color: '#065f46' },
+                            'inactive': { text: 'Ngừng hoạt động', bg: '#fee2e2', color: '#991b1b' },
+                            'banned': { text: 'Bị khóa', bg: '#fee2e2', color: '#991b1b' },
+                          };
+                          const statusInfo = statusInfoMap[staff.status] || { text: staff.status, bg: '#f3f4f6', color: '#374151' };
+
+                          return (
+                            <tr key={staff.id}>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                                fontWeight: 600,
+                              }}>{staff.username}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                              }}>{staff.fullName}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#4b5563',
+                              }}>{staff.email}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: roleInfo.bg,
+                                  color: roleInfo.color,
+                                }}>
+                                  {roleInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#4b5563',
+                              }}>{dept?.name || '-'}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: statusInfo.bg,
+                                  color: statusInfo.color,
+                                }}>
+                                  {statusInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  <button
+                                    style={{
+                                      background: 'none',
+                                      border: '1px solid #d1d5db',
+                                      fontSize: '0.875rem',
+                                      cursor: 'pointer',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '6px',
+                                      color: '#374151',
+                                      fontWeight: 500,
+                                      transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.background = '#f3f4f6';
+                                      e.currentTarget.style.borderColor = '#9ca3af';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.background = 'none';
+                                      e.currentTarget.style.borderColor = '#d1d5db';
+                                    }}
+                                    onClick={() => {
+                                      setEditingStaff(staff);
+                                      setStaffFormData({
+                                        username: staff.username,
+                                        password: staff.password,
+                                        fullName: staff.fullName,
+                                        email: staff.email,
+                                        role: staff.role,
+                                        departmentId: dept?.id || '',
+                                      });
+                                      setIsFormOpen(true);
+                                    }}
+                                    title="Chỉnh sửa"
+                                  >
+                                    Sửa
+                                  </button>
+                                  <button
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      fontSize: '1.2rem',
+                                      cursor: 'pointer',
+                                      padding: '0.5rem',
+                                      borderRadius: '6px',
+                                    }}
+                                    onClick={() => {
+                                      const newPassword = prompt('Nhập mật khẩu mới:');
+                                      if (newPassword && newPassword.trim()) {
+                                        setUsers(users.map(u => 
+                                          u.id === staff.id ? { ...u, password: newPassword.trim() } : u
+                                        ));
+                                        alert('Đã cấp lại mật khẩu thành công!');
+                                      }
+                                    }}
+                                    title="Cấp lại mật khẩu"
+                                  >
+                                    🔑
+                                  </button>
+                                  {staff.status === 'active' ? (
+                                    <button
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '1.2rem',
+                                        cursor: 'pointer',
+                                        padding: '0.5rem',
+                                        borderRadius: '6px',
+                                      }}
+                                      onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.')) {
+                                          setUsers(users.map(u => 
+                                            u.id === staff.id ? { ...u, status: 'inactive' as const } : u
+                                          ));
+                                        }
+                                      }}
+                                      title="Vô hiệu hóa"
+                                    >
+                                      🚫
+                                    </button>
+                                  ) : (
+                                    <button
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        fontSize: '1.2rem',
+                                        cursor: 'pointer',
+                                        padding: '0.5rem',
+                                        borderRadius: '6px',
+                                      }}
+                                      onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn kích hoạt lại staff này?')) {
+                                          setUsers(users.map(u => 
+                                            u.id === staff.id ? { ...u, status: 'active' as const } : u
+                                          ));
+                                        }
+                                      }}
+                                      title="Kích hoạt lại"
+                                    >
+                                      ✅
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={7} style={{
+                            padding: '2rem',
+                            textAlign: 'center',
+                            color: '#6b7280',
+                          }}>
+                            Chưa có staff nào trong departments của bạn
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </>
+              )}
+
+              {/* Users Management */}
+              {activeTab === 'users' && (
+                <>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '1.5rem',
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+                      Danh sách Người dùng ({studentUsers.length})
+                    </h3>
+                    <button
+                      style={{
+                        background: '#f97316',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.625rem 1.25rem',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                      }}
+                      onClick={() => {
+                        setEditingUser(null);
+                        setUserFormData({
+                          username: '',
+                          password: '',
+                          fullName: '',
+                          email: '',
+                          role: 'student',
+                        });
+                        setIsFormOpen(true);
+                      }}
+                    >
+                      Thêm Người dùng
+                    </button>
+                  </div>
+
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '8px',
+                  }}>
+                    <thead>
+                      <tr>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Tên đăng nhập</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Họ tên</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Email</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Vai trò</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {studentUsers.length > 0 ? (
+                        studentUsers.map((user: User) => {
+                          const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
+                            'student': { text: 'Sinh viên', bg: '#dbeafe', color: '#1e40af' },
+                            'admin': { text: 'Admin', bg: '#fef3c7', color: '#92400e' },
+                          };
+                          const roleInfo = roleInfoMap[user.role] || { text: user.role, bg: '#f3f4f6', color: '#374151' };
+                          const statusInfoMap: Record<string, { text: string; bg: string; color: string }> = {
+                            'active': { text: 'Hoạt động', bg: '#d1fae5', color: '#065f46' },
+                            'inactive': { text: 'Ngừng hoạt động', bg: '#fee2e2', color: '#991b1b' },
+                            'banned': { text: 'Bị khóa', bg: '#fee2e2', color: '#991b1b' },
+                          };
+                          const statusInfo = statusInfoMap[user.status] || { text: user.status, bg: '#f3f4f6', color: '#374151' };
+                          const userTickets = getUserTickets(user.id);
+
+                          return (
+                            <tr key={user.id}>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                                fontWeight: 600,
+                              }}>{user.username}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#1f2937',
+                              }}>{user.fullName}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                                color: '#4b5563',
+                              }}>{user.email}</td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: roleInfo.bg,
+                                  color: roleInfo.color,
+                                }}>
+                                  {roleInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <span style={{
+                                  padding: '0.4rem 0.75rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.875rem',
+                                  fontWeight: 600,
+                                  background: statusInfo.bg,
+                                  color: statusInfo.color,
+                                }}>
+                                  {statusInfo.text}
+                                </span>
+                              </td>
+                              <td style={{
+                                padding: '1rem',
+                                borderBottom: '1px solid #e5e7eb',
+                              }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                  <button
+                                    style={{
+                                      background: 'none',
+                                      border: '1px solid #3b82f6',
+                                      fontSize: '0.875rem',
+                                      cursor: 'pointer',
+                                      padding: '0.5rem 0.75rem',
+                                      borderRadius: '6px',
+                                      color: '#3b82f6',
+                                      fontWeight: 500,
+                                      transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.background = '#dbeafe';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.background = 'none';
+                                    }}
+                                    onClick={() => {
+                                      setSelectedUserForHistory(user);
+                                    }}
+                                    title="Xem lịch sử"
+                                  >
+                                    Lịch sử
+                                  </button>
+                                  {user.status === 'active' ? (
+                                    <button
+                                      style={{
+                                        background: 'none',
+                                        border: '1px solid #dc2626',
+                                        fontSize: '0.875rem',
+                                        cursor: 'pointer',
+                                        padding: '0.5rem 0.75rem',
+                                        borderRadius: '6px',
+                                        color: '#dc2626',
+                                        fontWeight: 500,
+                                        transition: 'all 0.2s',
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#fee2e2';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'none';
+                                      }}
+                                      onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn khóa tài khoản sinh viên này? Sinh viên sẽ không thể đăng nhập hoặc gửi yêu cầu mới.')) {
+                                          setUsers(users.map(u => 
+                                            u.id === user.id ? { ...u, status: 'banned' as const } : u
+                                          ));
+                                        }
+                                      }}
+                                      title="Khóa tài khoản"
+                                    >
+                                      Khóa
+                                    </button>
+                                  ) : user.status === 'banned' ? (
+                                    <button
+                                      style={{
+                                        background: 'none',
+                                        border: '1px solid #10b981',
+                                        fontSize: '0.875rem',
+                                        cursor: 'pointer',
+                                        padding: '0.5rem 0.75rem',
+                                        borderRadius: '6px',
+                                        color: '#10b981',
+                                        fontWeight: 500,
+                                        transition: 'all 0.2s',
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = '#d1fae5';
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'none';
+                                      }}
+                                      onClick={() => {
+                                        if (confirm('Bạn có chắc chắn muốn mở khóa tài khoản sinh viên này?')) {
+                                          setUsers(users.map(u => 
+                                            u.id === user.id ? { ...u, status: 'active' as const } : u
+                                          ));
+                                        }
+                                      }}
+                                      title="Mở khóa"
+                                    >
+                                      Mở khóa
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={6} style={{
+                            padding: '2rem',
+                            textAlign: 'center',
+                            color: '#6b7280',
+                          }}>
+                            Chưa có người dùng nào
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </>
@@ -1289,7 +2531,7 @@ function App() {
                         }}
                       >
                         <option value="">Chọn bộ phận</option>
-                        {departments.map((dept) => (
+                        {adminDepartments.map((dept) => (
                           <option key={dept.id} value={dept.id}>
                             {dept.name}
                           </option>
@@ -1843,7 +3085,524 @@ function App() {
                 </div>
               </div>
             )}
+
+            {/* Modal Form for Staff */}
+            {isFormOpen && activeTab === 'staff' && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 1000,
+                }}
+                onClick={() => setIsFormOpen(false)}
+              >
+                <div
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    width: '90%',
+                    maxWidth: '600px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', color: '#1f2937' }}>
+                    {editingStaff ? 'Chỉnh sửa Staff' : 'Thêm Staff mới'}
+                  </h3>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editingStaff) {
+                        // Update staff
+                        const updatedStaff: User = {
+                          ...editingStaff,
+                          username: staffFormData.username,
+                          password: staffFormData.password,
+                          fullName: staffFormData.fullName,
+                          email: staffFormData.email,
+                          role: staffFormData.role,
+                        };
+                        setUsers(users.map(u => u.id === editingStaff.id ? updatedStaff : u));
+                        
+                        // Update department's staffIds if department changed
+                        const oldDept = adminDepartments.find(d => d.staffIds.includes(editingStaff.id));
+                        if (oldDept && oldDept.id !== staffFormData.departmentId) {
+                          setDepartments(departments.map(d => {
+                            if (d.id === oldDept.id) {
+                              return { ...d, staffIds: d.staffIds.filter(id => id !== editingStaff.id) };
+                            }
+                            if (d.id === staffFormData.departmentId) {
+                              return { ...d, staffIds: [...d.staffIds, editingStaff.id] };
+                            }
+                            return d;
+                          }));
+                        }
+                      } else {
+                        // Create new staff
+                        const newStaff: User = {
+                          id: `staff-${Date.now()}`,
+                          username: staffFormData.username,
+                          password: staffFormData.password,
+                          fullName: staffFormData.fullName,
+                          email: staffFormData.email,
+                          role: staffFormData.role,
+                          status: 'active',
+                        };
+                        setUsers([...users, newStaff]);
+                        
+                        // Add to department's staffIds
+                        if (staffFormData.departmentId) {
+                          setDepartments(departments.map(d => {
+                            if (d.id === staffFormData.departmentId) {
+                              return { ...d, staffIds: [...d.staffIds, newStaff.id] };
+                            }
+                            return d;
+                          }));
+                        }
+                      }
+                      setIsFormOpen(false);
+                      setEditingStaff(null);
+                    }}
+                  >
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Tên đăng nhập *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={staffFormData.username}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, username: e.target.value })}
+                        placeholder="VD: itstaff01"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Mật khẩu *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={staffFormData.password}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, password: e.target.value })}
+                        placeholder="Nhập mật khẩu"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Họ tên *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={staffFormData.fullName}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, fullName: e.target.value })}
+                        placeholder="VD: Nguyễn Văn A"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={staffFormData.email}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, email: e.target.value })}
+                        placeholder="VD: staff@fpt.edu.vn"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Vai trò *
+                      </label>
+                      <select
+                        required
+                        value={staffFormData.role}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, role: e.target.value as UserRole })}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      >
+                        <option value="it-staff">IT Staff</option>
+                        <option value="facility-staff">Facility Staff</option>
+                      </select>
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Bộ phận *
+                      </label>
+                      <select
+                        required
+                        value={staffFormData.departmentId}
+                        onChange={(e) => setStaffFormData({ ...staffFormData, departmentId: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      >
+                        <option value="">Chọn bộ phận</option>
+                        {adminDepartments.map((dept) => (
+                          <option key={dept.id} value={dept.id}>
+                            {dept.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsFormOpen(false);
+                          setEditingStaff(null);
+                        }}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          background: 'white',
+                          color: '#374151',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          border: 'none',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                          color: 'white',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {editingStaff ? 'Cập nhật' : 'Thêm mới'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Form for Users */}
+            {isFormOpen && activeTab === 'users' && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  zIndex: 1000,
+                }}
+                onClick={() => setIsFormOpen(false)}
+              >
+                <div
+                  style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '2rem',
+                    width: '90%',
+                    maxWidth: '600px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', color: '#1f2937' }}>
+                    {editingUser ? 'Chỉnh sửa Người dùng' : 'Thêm Người dùng mới'}
+                  </h3>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (editingUser) {
+                        // Update user
+                        setUsers(users.map(u => u.id === editingUser.id ? {
+                          ...u,
+                          username: userFormData.username,
+                          password: userFormData.password,
+                          fullName: userFormData.fullName,
+                          email: userFormData.email,
+                          role: userFormData.role,
+                        } : u));
+                      } else {
+                        // Create new user
+                        const newUser: User = {
+                          id: `user-${Date.now()}`,
+                          username: userFormData.username,
+                          password: userFormData.password,
+                          fullName: userFormData.fullName,
+                          email: userFormData.email,
+                          role: userFormData.role,
+                          status: 'active',
+                        };
+                        setUsers([...users, newUser]);
+                      }
+                      setIsFormOpen(false);
+                      setEditingUser(null);
+                    }}
+                  >
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Tên đăng nhập *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={userFormData.username}
+                        onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
+                        placeholder="VD: student01"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Mật khẩu *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={userFormData.password}
+                        onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                        placeholder="Nhập mật khẩu"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Họ tên *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={userFormData.fullName}
+                        onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })}
+                        placeholder="VD: Nguyễn Văn A"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={userFormData.email}
+                        onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                        placeholder="VD: student@fpt.edu.vn"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Vai trò *
+                      </label>
+                      <select
+                        required
+                        value={userFormData.role}
+                        onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as UserRole })}
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      >
+                        <option value="student">Sinh viên</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsFormOpen(false);
+                          setEditingUser(null);
+                        }}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          background: 'white',
+                          color: '#374151',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="submit"
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          border: 'none',
+                          borderRadius: '8px',
+                          background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                          color: 'white',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {editingUser ? 'Cập nhật' : 'Thêm mới'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
+        )}
+
+        {/* Ticket Detail Modal for Admin and Staff */}
+        {(currentRole === 'admin' || isStaffRole(currentRole)) && selectedTicket && (
+          <TicketDetailModal
+            ticket={selectedTicket}
+            onClose={() => setSelectedTicket(null)}
+          />
         )}
       </div>
     </div>

@@ -2,6 +2,8 @@
 export type UserRole = 'student' | 'it-staff' | 'facility-staff' | 'admin';
 
 // User authentication
+export type UserStatus = 'active' | 'inactive' | 'banned';
+
 export interface User {
   id: string;
   username: string;
@@ -9,6 +11,7 @@ export interface User {
   fullName: string;
   email: string;
   role: UserRole;
+  status: UserStatus; // Trạng thái tài khoản: active, inactive, banned
   avatar?: string;
 }
 
@@ -65,7 +68,7 @@ export interface IssueType {
 export interface SLATimelineEvent {
   id: string;
   timestamp: string;
-  status: 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed';
+  status: TicketStatus;
   actor: string;
   actorRole: UserRole;
   action: string;
@@ -88,6 +91,8 @@ export interface SLATracking {
 }
 
 // Ticket types
+export type TicketStatus = 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled';
+
 export interface Ticket {
   id: string;
   title: string;
@@ -95,7 +100,7 @@ export interface Ticket {
   issueType: IssueType;
   category: IssueCategory;
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  status: 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed';
+  status: TicketStatus;
   location?: string;
   roomNumber?: string;
   images?: string[];
@@ -107,5 +112,6 @@ export interface Ticket {
   updatedAt?: string;
   slaDeadline: string;
   slaTracking: SLATracking;
+  notes?: string; // Ghi chú tiến độ từ staff
 }
 

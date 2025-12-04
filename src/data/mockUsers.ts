@@ -8,6 +8,7 @@ export const mockUsers: User[] = [
     fullName: 'Nguyễn Văn A',
     email: 'studentA@fpt.edu.vn',
     role: 'student',
+    status: 'active',
   },
   {
     id: 'user-002',
@@ -16,6 +17,7 @@ export const mockUsers: User[] = [
     fullName: 'Trần Thị B',
     email: 'tranb@fpt.edu.vn',
     role: 'it-staff',
+    status: 'active',
   },
   {
     id: 'user-003',
@@ -24,6 +26,7 @@ export const mockUsers: User[] = [
     fullName: 'Lê Văn C',
     email: 'lec@fpt.edu.vn',
     role: 'facility-staff',
+    status: 'active',
   },
   {
     id: 'user-004',
@@ -32,6 +35,7 @@ export const mockUsers: User[] = [
     fullName: 'Phạm Thị D',
     email: 'phamd@fpt.edu.vn',
     role: 'admin',
+    status: 'active',
   },
 ];
 

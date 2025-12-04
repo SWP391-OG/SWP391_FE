@@ -47,15 +47,30 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl"
+        className="bg-white rounded-2xl overflow-hidden max-w-4xl w-full mx-4 shadow-2xl flex"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="text-center mb-6">
-          <div className="text-5xl mb-4">🔐</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Đăng nhập</h2>
-          <p className="text-gray-500">FPTInsight System</p>
+        {/* Left side - Login Image */}
+        <div className="hidden md:flex w-1/2 bg-gradient-to-br from-orange-50 to-orange-100 p-8 items-center justify-center overflow-hidden">
+          <img 
+            src="/loginFPTechnical.jpg" 
+            alt="FPTechnical Login" 
+            className="w-full h-full object-contain rounded-lg"
+          />
         </div>
+
+        {/* Right side - Login Form */}
+        <div className="w-full md:w-1/2 p-8">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <img 
+              src="/logoFPTechnical.jpg" 
+              alt="FPTechnical Logo" 
+              className="h-16 w-auto mx-auto mb-4 object-contain"
+            />
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Đăng nhập</h2>
+            <p className="text-gray-500">FPTechnical System</p>
+          </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -136,13 +151,14 @@ const LoginModal = ({ onClose, onLogin }: LoginModalProps) => {
           </div>
         </div>
 
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all"
-        >
-          ×
-        </button>
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all"
+          >
+            ×
+          </button>
+        </div>
       </div>
     </div>
   );

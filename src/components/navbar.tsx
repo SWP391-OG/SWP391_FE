@@ -8,9 +8,12 @@ interface NavbarProps {
 const Navbar = ({ currentRole, onRoleChange }: NavbarProps) => {
   return (
     <nav className="bg-gradient-to-br from-orange-500 to-orange-600 text-white py-4 px-8 flex justify-between items-center shadow-md">
-      <div className="flex flex-col">
-        <h1 className="m-0 text-[1.8rem] font-bold text-white">FPTInsight</h1>
-        <p className="mt-1 mb-0 text-[0.85rem] opacity-90 font-normal">Facility Feedback & Helpdesk System</p>
+      <div className="flex items-center">
+        <img 
+          src="/logoFPTechnical.jpg" 
+          alt="FPTechnical Logo" 
+          className="h-10 w-auto object-contain"
+        />
       </div>
       <div className="flex gap-3">
         <button
