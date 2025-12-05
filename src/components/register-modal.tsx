@@ -259,3 +259,4 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
 
 export default RegisterModal;
 
+
