@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import type { Ticket } from '../types';
-import { mockTickets } from '../data/mockData';
+import type { Ticket } from '../../types';
+import { mockTickets } from '../../data/mockData';
 
 interface TicketListPageProps {
   onViewDetail: (ticket: Ticket) => void;
@@ -176,7 +176,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
               <label className="text-sm font-semibold text-gray-700">Trạng thái</label>
               <select
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as any)}
+                onChange={(e) => setFilterStatus(e.target.value as Ticket['status'] | 'all')}
                 className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
               >
                 <option value="all">Tất cả</option>
@@ -190,7 +190,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
               <label className="text-sm font-semibold text-gray-700">Ưu tiên</label>
               <select
                 value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value as any)}
+                onChange={(e) => setFilterPriority(e.target.value as Ticket['priority'] | 'all')}
                 className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
               >
                 <option value="all">Tất cả</option>

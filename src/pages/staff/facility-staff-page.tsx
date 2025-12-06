@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { Ticket } from '../types';
+import type { Ticket } from '../../types';
 
 interface FacilityStaffPageProps {
   tickets: Ticket[];

@@ -1,5 +1,5 @@
 import { useState, ChangeEvent, FormEvent } from 'react';
-import type { IssueType, Ticket } from '../types';
+import type { IssueType, Ticket } from '../../types';
 
 interface CreateTicketPageProps {
   issueType: IssueType;
@@ -11,7 +11,6 @@ interface FormData {
   title: string;
   description: string;
   location: string;
-  roomNumber: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   images: string[];
 }
@@ -21,7 +20,6 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
     title: '',
     description: '',
     location: '',
-    roomNumber: '',
     priority: 'medium',
     images: [],
   });
@@ -87,7 +85,6 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
         priority: formData.priority,
         status: 'open',
         location: formData.location,
-        roomNumber: formData.roomNumber,
         images: formData.images.length > 0 ? formData.images : undefined,
         createdBy: 'current-user-id', // This should come from auth context
         updatedAt: new Date().toISOString(),
@@ -157,52 +154,31 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="mb-6">
-            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="Ví dụ: Tòa nhà Alpha"
-              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số phòng</label>
-            <input
-              type="text"
-              name="roomNumber"
-              value={formData.roomNumber}
-              onChange={handleInputChange}
-              placeholder="Ví dụ: 501"
-              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            />
-          </div>
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleInputChange}
+            placeholder="Ví dụ: Tòa nhà Alpha"
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+          />
         </div>
 
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Mức độ ưu tiên</label>
-          <div className="grid grid-cols-4 gap-3">
-            {(Object.keys(priorityLabels) as Array<keyof typeof priorityLabels>).map((key) => (
-              <div
-                key={key}
-                className={`py-3 px-3 rounded-lg text-center transition-all duration-200 cursor-pointer ${
-                  formData.priority === key
-                    ? 'border-2 border-blue-500 bg-blue-50 font-semibold text-blue-500'
-                    : 'border-2 border-gray-200 bg-white font-normal text-gray-700 hover:border-gray-300'
-                }`}
-                onClick={() => setFormData((prev) => ({ ...prev, priority: key }))}
-              >
-                <div className="text-2xl mb-1">
-                  {priorityLabels[key].emoji}
-                </div>
-                <div className="text-[0.85rem]">{priorityLabels[key].label}</div>
-              </div>
-            ))}
-          </div>
+          <select
+            name="priority"
+            value={formData.priority}
+            onChange={handleInputChange}
+            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+          >
+            <option value="low">Thấp</option>
+            <option value="medium">Trung bình</option>
+            <option value="high">Cao</option>
+            <option value="urgent">Khẩn cấp</option>
+          </select>
         </div>
 
         <div className="mb-6">

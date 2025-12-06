@@ -1,4 +1,4 @@
-import type { UserRole } from '../types';
+import type { UserRole } from '../../types';
 
 interface NavbarProps {
   currentRole: UserRole;
@@ -52,4 +52,3 @@ const Navbar = ({ currentRole, onRoleChange }: NavbarProps) => {
 };
 
 export default Navbar;
-

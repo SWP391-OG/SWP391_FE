@@ -1,5 +1,5 @@
-import { issueTypes } from '../data/issueTypes';
-import type { IssueType } from '../types';
+import { issueTypes } from '../../data/issueTypes';
+import type { IssueType } from '../../types';
 
 interface IssueSelectionPageProps {
   onSelectIssue: (issueType: IssueType) => void;
@@ -7,6 +7,12 @@ interface IssueSelectionPageProps {
 }
 
 const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) => {
+  // Filter to only show 3 issue types for students
+  const allowedIssueTypeIds = ['facility-broken', 'wifi-issue', 'equipment-broken'];
+  const filteredIssueTypes = issueTypes.filter(issueType => 
+    allowedIssueTypeIds.includes(issueType.id)
+  );
+  
   return (
     <div className="max-w-[1400px] mx-auto p-8">
       <div className="mb-8 text-center">
@@ -29,8 +35,8 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
         </p>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6 py-4">
-        {issueTypes.map((issueType) => (
+      <div className="grid grid-cols-3 gap-6 py-4 max-w-5xl mx-auto">
+        {filteredIssueTypes.map((issueType) => (
           <div
             key={issueType.id}
             className="bg-white rounded-xl p-8 border-2 border-gray-200 cursor-pointer transition-all duration-300 ease-in-out flex flex-col gap-4 hover:-translate-y-1 hover:shadow-lg hover:border-blue-500"
@@ -61,7 +67,3 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
 };
 
 export default IssueSelectionPage;
-
-
-
-

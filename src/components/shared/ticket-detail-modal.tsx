@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import type { Ticket } from '../types';
-import { mockSLAEvents, type SLAEvent } from '../data/mockData';
+import type { Ticket } from '../../types';
+import { mockSLAEvents, type SLAEvent } from '../../data/mockData';
 
 interface TicketDetailModalProps {
   ticket: Ticket;

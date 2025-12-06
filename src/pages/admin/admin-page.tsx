@@ -1,0 +1,911 @@
+import { useState, useMemo, useEffect } from 'react';
+import type { UserRole, User, Department, Location, Category, Priority, Ticket } from '../../types';
+import { useTickets } from '../../hooks/useTickets';
+import { useCategories } from '../../hooks/useCategories';
+import { useDepartments } from '../../hooks/useDepartments';
+import { useLocations } from '../../hooks/useLocations';
+import { useUsers } from '../../hooks/useUsers';
+import TicketDetailModal from '../../components/shared/ticket-detail-modal';
+import CategoryForm from '../../components/admin/CategoryForm';
+import CategoryList from '../../components/admin/CategoryList';
+import DepartmentForm from '../../components/admin/DepartmentForm';
+import DepartmentList from '../../components/admin/DepartmentList';
+import LocationForm from '../../components/admin/LocationForm';
+import LocationList from '../../components/admin/LocationList';
+import StaffForm from '../../components/admin/StaffForm';
+import StaffList from '../../components/admin/StaffList';
+import UserList from '../../components/admin/UserList';
+import TicketsTable from '../../components/admin/TicketsTable';
+
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users';
+
+interface AdminPageProps {
+  currentAdminId?: string;
+}
+
+const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
+  // Hooks
+  const { tickets, assignTicket, updateTicketPriority, cancelTicket } = useTickets();
+  const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
+  const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
+  const { locations, createLocation, updateLocation, deleteLocation } = useLocations();
+  const { users, createUser, updateUser } = useUsers();
+
+  // UI State
+  const [activeTab, setActiveTab] = useState<AdminTab>('tickets');
+  const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
+
+  // Form state
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [editingDept, setEditingDept] = useState<Department | null>(null);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingStaff, setEditingStaff] = useState<User | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  // Form data
+  const [categoryFormData, setCategoryFormData] = useState({
+    code: '',
+    name: '',
+    description: '',
+    icon: '📋',
+    color: '#3b82f6',
+    slaResolveHours: 24,
+    defaultPriority: 'medium' as Priority,
+    departmentId: '',
+    status: 'active' as 'active' | 'inactive',
+  });
+
+  const [deptFormData, setDeptFormData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    adminId: currentAdminId,
+    staffIds: [] as string[],
+  });
+
+  const [locationFormData, setLocationFormData] = useState({
+    code: '',
+    name: '',
+    description: '',
+    type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
+    floor: '',
+    status: 'active' as 'active' | 'inactive',
+  });
+
+  const [staffFormData, setStaffFormData] = useState({
+    username: '',
+    password: '',
+    fullName: '',
+    email: '',
+    role: 'it-staff' as UserRole,
+    departmentId: '',
+  });
+
+  const [userFormData, setUserFormData] = useState({
+    username: '',
+    password: '',
+    fullName: '',
+    email: '',
+    role: 'student' as UserRole,
+  });
+
+  // Search and filter state
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
+  const [locationSearchQuery, setLocationSearchQuery] = useState('');
+  const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
+  const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+
+  // Pagination
+  const [usersPage, setUsersPage] = useState(1);
+  const [staffPage, setStaffPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Auto-open submenu
+  useEffect(() => {
+    if (activeTab === 'staff' || activeTab === 'users') {
+      setShowMembersSubmenu(true);
+    }
+  }, [activeTab]);
+
+  // Filter departments by adminId
+  const adminDepartments = useMemo(() => {
+    return departments.filter(dept => dept.adminId === currentAdminId);
+  }, [departments, currentAdminId]);
+
+  const adminDepartmentIds = useMemo(() => {
+    return adminDepartments.map(dept => dept.id);
+  }, [adminDepartments]);
+
+  // Filter categories by admin's departments
+  const adminCategories = useMemo(() => {
+    return categories.filter(cat => adminDepartmentIds.includes(cat.departmentId));
+  }, [categories, adminDepartmentIds]);
+
+  // Map IssueCategory to Category name for ticket filtering
+  const categoryNameMap: Record<string, string[]> = {
+    'wifi': ['WiFi/Mạng'],
+    'equipment': ['Thiết bị'],
+    'facility': ['Cơ sở vật chất', 'Điện nước', 'Khẩn cấp'],
+    'classroom': ['Vệ sinh'],
+    'other': ['Cơ sở vật chất', 'Vệ sinh'],
+  };
+
+  // Filter tickets by admin's departments
+  const adminTickets = useMemo(() => {
+    return tickets.filter(ticket => {
+      if (ticket.status === 'cancelled') return false;
+      
+      const matchingCategoryNames = categoryNameMap[ticket.category] || [];
+      const matchingCategories = categories.filter(cat => 
+        matchingCategoryNames.includes(cat.name)
+      );
+      
+      return matchingCategories.some(cat => 
+        adminDepartmentIds.includes(cat.departmentId)
+      );
+    });
+  }, [tickets, categories, adminDepartmentIds]);
+
+  // Get staff list for admin's departments
+  const adminStaffList = useMemo(() => {
+    const staffMap = new Map<string, { id: string; name: string; departmentName: string }>();
+    adminDepartments.forEach(dept => {
+      dept.staffIds.forEach(staffId => {
+        if (!staffMap.has(staffId)) {
+          const staffNames: Record<string, string> = {
+            'staff-001': 'Lý Văn K',
+            'staff-002': 'Bùi Thị H',
+            'staff-003': 'Hoàng Văn E',
+            'staff-004': 'Ngô Văn M',
+            'staff-005': 'Trần Văn B',
+          };
+          staffMap.set(staffId, {
+            id: staffId,
+            name: staffNames[staffId] || staffId,
+            departmentName: dept.name,
+          });
+        }
+      });
+    });
+    return Array.from(staffMap.values());
+  }, [adminDepartments]);
+
+  // Filter staff users
+  const adminStaffUsers = useMemo(() => {
+    const staffIds = new Set<string>();
+    adminDepartments.forEach(dept => {
+      dept.staffIds.forEach(id => staffIds.add(id));
+    });
+    return users
+      .filter(user => 
+        (user.role === 'it-staff' || user.role === 'facility-staff') && 
+        staffIds.has(user.id)
+      )
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [users, adminDepartments]);
+
+  const paginatedStaffUsers = useMemo(() => {
+    const startIndex = (staffPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return adminStaffUsers.slice(startIndex, endIndex);
+  }, [adminStaffUsers, staffPage]);
+
+  const totalStaffPages = Math.ceil(adminStaffUsers.length / itemsPerPage);
+
+  // Filter student users
+  const studentUsers = useMemo(() => {
+    return users
+      .filter(user => user.role === 'student' || user.role === 'teacher')
+      .sort((a, b) => {
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [users]);
+
+  const paginatedStudentUsers = useMemo(() => {
+    const startIndex = (usersPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return studentUsers.slice(startIndex, endIndex);
+  }, [studentUsers, usersPage]);
+
+  const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
+
+  // Handlers
+  const handleAssignTicket = (ticketId: string, staffId: string) => {
+    const staff = adminStaffList.find(s => s.id === staffId);
+    if (!staff) return;
+    assignTicket(ticketId, staffId, staff.name);
+  };
+
+  const handleCancelTicket = (ticketId: string) => {
+    const reason = prompt('Lý do hủy ticket (ví dụ: Báo cáo sai, spam, không thuộc phạm vi xử lý):');
+    if (reason === null) return;
+    cancelTicket(ticketId, reason);
+  };
+
+  const handleUpdatePriority = (ticketId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
+    updateTicketPriority(ticketId, newPriority);
+  };
+
+
+  return (
+    <div className="max-w-[1400px] mx-auto p-8">
+      <div className="text-center mb-8">
+        <span className="inline-block px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+          Department Admin
+        </span>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h2>
+        <p className="text-gray-600 max-w-3xl mx-auto">
+          Quản lý phòng/bộ phận, cấu hình hệ thống và giám sát hoạt động
+        </p>
+      </div>
+
+      {/* Dashboard Layout */}
+      <div className="flex gap-8 items-start">
+        {/* Sidebar */}
+        <div className="w-72 bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+          <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">
+            Quản lý hệ thống
+          </h3>
+          <nav className="flex flex-col gap-1">
+            {/* Tickets */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'tickets'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                  : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('tickets')}
+            >
+              Quản lý Tickets
+            </button>
+            
+            {/* Members submenu */}
+            <div>
+              <button
+                className={`w-full py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 flex items-center justify-between ${
+                  (activeTab === 'staff' || activeTab === 'users')
+                    ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                    : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                }`}
+                onClick={() => setShowMembersSubmenu(!showMembersSubmenu)}
+              >
+                <span>Quản lý thành viên</span>
+                <span className={`transition-transform duration-200 text-xs ${showMembersSubmenu ? 'rotate-90' : ''}`}>
+                  ▶
+                </span>
+              </button>
+              {showMembersSubmenu && (
+                <div className="ml-4 mt-1 flex flex-col gap-1">
+                  <button
+                    className={`py-2 px-4 rounded-md cursor-pointer text-xs text-left transition-all duration-200 ${
+                      activeTab === 'staff'
+                        ? 'bg-orange-100 text-orange-700 font-semibold border-l-2 border-orange-600'
+                        : 'text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                    onClick={() => {
+                      setActiveTab('staff');
+                      setStaffPage(1);
+                      setShowMembersSubmenu(true);
+                    }}
+                  >
+                    Quản lý Staff
+                  </button>
+                  <button
+                    className={`py-2 px-4 rounded-md cursor-pointer text-xs text-left transition-all duration-200 ${
+                      activeTab === 'users'
+                        ? 'bg-orange-100 text-orange-700 font-semibold border-l-2 border-orange-600'
+                        : 'text-gray-600 font-medium hover:bg-gray-50 hover:text-gray-900'
+                    }`}
+                    onClick={() => {
+                      setActiveTab('users');
+                      setUsersPage(1);
+                      setShowMembersSubmenu(true);
+                    }}
+                  >
+                    Quản lý Người dùng
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Categories */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'categories'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                  : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('categories')}
+            >
+              Quản lý Danh mục
+            </button>
+            
+            {/* Departments */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'departments'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                  : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('departments')}
+            >
+              Quản lý Bộ phận
+            </button>
+            
+            {/* Locations */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'locations'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                  : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('locations')}
+            >
+              Quản lý Địa điểm
+            </button>
+          </nav>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+          {/* Tickets Management */}
+          {activeTab === 'tickets' && (
+            <TicketsTable
+              tickets={adminTickets}
+              locations={locations}
+              staffList={adminStaffList}
+              onAssignTicket={handleAssignTicket}
+              onViewTicket={setSelectedTicket}
+            />
+          )}
+
+          {/* Category Management */}
+          {activeTab === 'categories' && (
+            <CategoryList
+              categories={adminCategories}
+              departments={adminDepartments}
+              searchQuery={categorySearchQuery}
+              onSearchChange={setCategorySearchQuery}
+              onAddClick={() => {
+                setEditingCategory(null);
+                setCategoryFormData({
+                  code: '',
+                  name: '',
+                  description: '',
+                  icon: '📋',
+                  color: '#3b82f6',
+                  slaResolveHours: 24,
+                  defaultPriority: 'medium',
+                  departmentId: '',
+                  status: 'active',
+                });
+                setIsFormOpen(true);
+              }}
+              onEditClick={(cat) => {
+                setEditingCategory(cat);
+                setCategoryFormData({
+                  code: cat.code || '',
+                  name: cat.name,
+                  description: cat.description,
+                  icon: cat.icon,
+                  color: cat.color,
+                  slaResolveHours: cat.slaResolveHours,
+                  defaultPriority: cat.defaultPriority,
+                  departmentId: cat.departmentId,
+                  status: cat.status,
+                });
+                setIsFormOpen(true);
+              }}
+              onDeleteClick={(id) => deleteCategory(id)}
+            />
+          )}
+          {/* Department Management */}
+          {activeTab === 'departments' && (
+            <DepartmentList
+              departments={adminDepartments}
+              searchQuery={departmentSearchQuery}
+              onSearchChange={setDepartmentSearchQuery}
+              onAddClick={() => {
+                setEditingDept(null);
+                setDeptFormData({ name: '', description: '', location: '', adminId: currentAdminId, staffIds: [] });
+                setIsFormOpen(true);
+              }}
+              onEditClick={(dept) => {
+                setEditingDept(dept);
+                setDeptFormData({
+                  name: dept.name,
+                  description: dept.description,
+                  location: dept.location,
+                  adminId: dept.adminId || currentAdminId,
+                  staffIds: dept.staffIds || [],
+                });
+                setIsFormOpen(true);
+              }}
+              onDeleteClick={(id) => deleteDepartment(id)}
+            />
+          )}
+
+          {/* Location Management */}
+          {activeTab === 'locations' && (
+            <LocationList
+              locations={locations}
+              searchQuery={locationSearchQuery}
+              filterStatus={locationFilterStatus}
+              onSearchChange={setLocationSearchQuery}
+              onFilterStatusChange={setLocationFilterStatus}
+              onAddClick={() => {
+                setEditingLocation(null);
+                setLocationFormData({
+                  code: '',
+                  name: '',
+                  description: '',
+                  type: 'classroom',
+                  floor: '',
+                  status: 'active',
+                });
+                setIsFormOpen(true);
+              }}
+              onEditClick={(location) => {
+                setEditingLocation(location);
+                setLocationFormData({
+                  code: location.code || '',
+                  name: location.name,
+                  description: location.description || '',
+                  type: location.type,
+                  floor: location.floor || '',
+                  status: location.status,
+                });
+                setIsFormOpen(true);
+              }}
+              onDeleteClick={(id) => deleteLocation(id)}
+            />
+          )}
+
+          {/* Staff Management */}
+          {activeTab === 'staff' && (
+            <StaffList
+              staffUsers={adminStaffUsers}
+              departments={adminDepartments}
+              searchQuery={staffSearchQuery}
+              currentPage={staffPage}
+              itemsPerPage={itemsPerPage}
+              totalPages={totalStaffPages}
+              onSearchChange={setStaffSearchQuery}
+              onPageChange={setStaffPage}
+              onAddClick={() => {
+                setEditingStaff(null);
+                setStaffFormData({
+                  username: '',
+                  password: '',
+                  fullName: '',
+                  email: '',
+                  role: 'it-staff',
+                  departmentId: adminDepartments[0]?.id || '',
+                });
+                setIsFormOpen(true);
+              }}
+              onEditClick={(staff) => {
+                const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
+                setEditingStaff(staff);
+                setStaffFormData({
+                  username: staff.username,
+                  password: staff.password,
+                  fullName: staff.fullName,
+                  email: staff.email,
+                  role: staff.role,
+                  departmentId: dept?.id || '',
+                });
+                setIsFormOpen(true);
+              }}
+              onResetPassword={(staffId) => {
+                const newPassword = prompt('Nhập mật khẩu mới:');
+                if (newPassword && newPassword.trim()) {
+                  updateUser(staffId, { password: newPassword.trim() });
+                  alert('Đã cấp lại mật khẩu thành công!');
+                }
+              }}
+              onToggleStatus={(staffId, currentStatus) => {
+                if (currentStatus === 'active') {
+                  if (confirm('Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.')) {
+                    updateUser(staffId, { status: 'inactive' });
+                  }
+                } else {
+                  if (confirm('Bạn có chắc chắn muốn kích hoạt lại staff này?')) {
+                    updateUser(staffId, { status: 'active' });
+                  }
+                }
+              }}
+            />
+          )}
+
+          {/* Users Management */}
+          {activeTab === 'users' && (
+            <UserList
+              users={studentUsers}
+              searchQuery={userSearchQuery}
+              currentPage={usersPage}
+              itemsPerPage={itemsPerPage}
+              totalPages={totalUsersPages}
+              onSearchChange={setUserSearchQuery}
+              onPageChange={setUsersPage}
+              onViewHistory={setSelectedUserForHistory}
+              onToggleBan={(user) => {
+                if (user.status === 'active') {
+                  if (confirm('Bạn có chắc chắn muốn khóa tài khoản sinh viên này? Sinh viên sẽ không thể đăng nhập hoặc gửi yêu cầu mới.')) {
+                    updateUser(user.id, { status: 'banned' });
+                  }
+                } else if (user.status === 'banned') {
+                  if (confirm('Bạn có chắc chắn muốn mở khóa tài khoản sinh viên này?')) {
+                    updateUser(user.id, { status: 'active' });
+                  }
+                }
+              }}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Category Form Modal */}
+      {isFormOpen && activeTab === 'categories' && (
+        <CategoryForm
+          editingCategory={editingCategory}
+          categoryFormData={categoryFormData}
+          adminDepartments={adminDepartments}
+          onFormDataChange={setCategoryFormData}
+          onSubmit={() => {
+            if (editingCategory) {
+              updateCategory(editingCategory.id, categoryFormData);
+            } else {
+              createCategory(categoryFormData);
+            }
+            setIsFormOpen(false);
+            setEditingCategory(null);
+          }}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingCategory(null);
+          }}
+        />
+      )}
+
+      {/* Department Form Modal */}
+      {isFormOpen && activeTab === 'departments' && (
+        <DepartmentForm
+          editingDept={editingDept}
+          deptFormData={deptFormData}
+          onFormDataChange={setDeptFormData}
+          onSubmit={() => {
+            if (editingDept) {
+              updateDepartment(editingDept.id, deptFormData);
+            } else {
+              createDepartment(deptFormData);
+            }
+            setIsFormOpen(false);
+            setEditingDept(null);
+          }}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingDept(null);
+          }}
+        />
+      )}
+
+      {/* Location Form Modal */}
+      {isFormOpen && activeTab === 'locations' && (
+        <LocationForm
+          editingLocation={editingLocation}
+          locationFormData={locationFormData}
+          onFormDataChange={setLocationFormData}
+          onSubmit={() => {
+            if (editingLocation) {
+              updateLocation(editingLocation.id, locationFormData);
+            } else {
+              createLocation(locationFormData);
+            }
+            setIsFormOpen(false);
+            setEditingLocation(null);
+          }}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingLocation(null);
+          }}
+        />
+      )}
+
+      {/* Staff Form Modal */}
+      {isFormOpen && activeTab === 'staff' && (
+        <StaffForm
+          editingStaff={editingStaff}
+          staffFormData={staffFormData}
+          adminDepartments={adminDepartments}
+          onFormDataChange={setStaffFormData}
+          onSubmit={() => {
+            if (editingStaff) {
+              updateUser(editingStaff.id, {
+                username: staffFormData.username,
+                password: staffFormData.password,
+                fullName: staffFormData.fullName,
+                email: staffFormData.email,
+                role: staffFormData.role,
+              });
+              
+              // Update department's staffIds if department changed
+              const oldDept = adminDepartments.find(d => d.staffIds.includes(editingStaff.id));
+              if (oldDept && oldDept.id !== staffFormData.departmentId) {
+                // Remove from old department
+                const oldDeptUpdated = departments.find(d => d.id === oldDept.id);
+                if (oldDeptUpdated) {
+                  updateDepartment(oldDept.id, {
+                    staffIds: oldDeptUpdated.staffIds.filter(id => id !== editingStaff.id),
+                  });
+                }
+                // Add to new department
+                const newDept = departments.find(d => d.id === staffFormData.departmentId);
+                if (newDept) {
+                  updateDepartment(newDept.id, {
+                    staffIds: [...newDept.staffIds, editingStaff.id],
+                  });
+                }
+              }
+            } else {
+              const newStaff = createUser({
+                username: staffFormData.username,
+                password: staffFormData.password,
+                fullName: staffFormData.fullName,
+                email: staffFormData.email,
+                role: staffFormData.role,
+              });
+              
+              // Add to department's staffIds
+              if (staffFormData.departmentId) {
+                const dept = departments.find(d => d.id === staffFormData.departmentId);
+                if (dept) {
+                  updateDepartment(dept.id, {
+                    staffIds: [...dept.staffIds, newStaff.id],
+                  });
+                }
+              }
+              setStaffPage(1);
+            }
+            setIsFormOpen(false);
+            setEditingStaff(null);
+          }}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingStaff(null);
+          }}
+        />
+      )}
+
+      {/* User Form Modal */}
+      {isFormOpen && activeTab === 'users' && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setIsFormOpen(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: '2rem',
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', color: '#1f2937' }}>
+              {editingUser ? 'Chỉnh sửa Người dùng' : 'Thêm Người dùng mới'}
+            </h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (editingUser) {
+                  updateUser(editingUser.id, userFormData);
+                } else {
+                  createUser(userFormData);
+                }
+                setIsFormOpen(false);
+                setEditingUser(null);
+              }}
+            >
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Tên đăng nhập *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData.username}
+                  onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
+                  placeholder="VD: student01"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Mật khẩu *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                  placeholder="Nhập mật khẩu"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Họ tên *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData.fullName}
+                  onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })}
+                  placeholder="VD: Nguyễn Văn A"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                  placeholder="VD: student@fpt.edu.vn"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Vai trò *
+                </label>
+                <select
+                  required
+                  value={userFormData.role}
+                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as UserRole })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                >
+                  <option value="student">Sinh viên</option>
+                  <option value="teacher">Giảng viên</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    setEditingUser(null);
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    background: 'white',
+                    color: '#374151',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: 'none',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {editingUser ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ticket Detail Modal */}
+      {selectedTicket && (
+        <TicketDetailModal
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AdminPage;
