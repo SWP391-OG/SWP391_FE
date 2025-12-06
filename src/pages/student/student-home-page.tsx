@@ -1,0 +1,461 @@
+import { useState } from 'react';
+import type { Ticket, IssueType } from '../../types';
+import IssueSelectionPage from './issue-selection-page';
+import CreateTicketPage from './create-ticket-page';
+import TicketListPage from './ticket-list-page';
+import TicketDetailModal from '../../components/shared/ticket-detail-modal';
+
+type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
+type StudentTab = 'pending' | 'processing' | 'completed';
+
+interface StudentHomePageProps {
+  currentUser: { id: string; fullName?: string } | null;
+  tickets: Ticket[];
+  onTicketCreated: (ticket: Ticket) => void;
+}
+
+const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomePageProps) => {
+  const [studentView, setStudentView] = useState<StudentView>('home');
+  const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [studentTab, setStudentTab] = useState<StudentTab>('pending');
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [studentFilterStatus, setStudentFilterStatus] = useState<Ticket['status'] | 'all'>('all');
+  const [studentFilterPriority, setStudentFilterPriority] = useState<Ticket['priority'] | 'all'>('all');
+
+  // Get student tickets
+  const getUserTickets = (userId: string) => {
+    return tickets.filter(ticket => ticket.createdBy === userId);
+  };
+
+  const studentTickets = currentUser ? getUserTickets(currentUser.id) : [];
+
+  // Filter tickets by tab
+  const pendingTickets = studentTickets.filter(t => t.status === 'open');
+  const processingTickets = studentTickets.filter(t => 
+    t.status === 'acknowledged' || t.status === 'in-progress'
+  );
+  const completedTickets = studentTickets.filter(t => 
+    t.status === 'resolved' || t.status === 'closed'
+  );
+
+  // Get tickets for current tab
+  let tabTickets: Ticket[] = [];
+  if (studentTab === 'pending') {
+    tabTickets = pendingTickets;
+  } else if (studentTab === 'processing') {
+    tabTickets = processingTickets;
+  } else {
+    tabTickets = completedTickets;
+  }
+
+  // Apply search and filters
+  const displayedTickets = tabTickets.filter((ticket) => {
+    const matchesSearch = ticket.title.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
+                         ticket.description.toLowerCase().includes(studentSearchQuery.toLowerCase());
+    const matchesStatus = studentFilterStatus === 'all' || ticket.status === studentFilterStatus;
+    const matchesPriority = studentFilterPriority === 'all' || ticket.priority === studentFilterPriority;
+
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
+  // Calculate SLA status
+  const getSLAStatus = (ticket: Ticket) => {
+    const now = new Date();
+    const deadline = new Date(ticket.slaDeadline);
+    const hoursRemaining = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      const resolvedAt = new Date(ticket.updatedAt || ticket.createdAt);
+      if (resolvedAt <= deadline) {
+        return { status: 'completed', label: 'Hoàn thành đúng hạn', color: '#10b981' };
+      } else {
+        return { status: 'completed-late', label: 'Hoàn thành trễ', color: '#f59e0b' };
+      }
+    }
+
+    if (hoursRemaining < 0) {
+      return { status: 'overdue', label: 'Quá hạn', color: '#ef4444' };
+    } else if (hoursRemaining <= 2) {
+      return { status: 'critical', label: 'Sắp quá hạn', color: '#f97316' };
+    } else if (hoursRemaining <= 6) {
+      return { status: 'warning', label: 'Cần chú ý', color: '#f59e0b' };
+    } else {
+      return { status: 'on-time', label: 'Đúng hạn', color: '#10b981' };
+    }
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 1) {
+      return 'Vừa xong';
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)} giờ trước`;
+    } else {
+      const days = Math.floor(diffInHours / 24);
+      return `${days} ngày trước`;
+    }
+  };
+
+  // Format time remaining
+  const formatTimeRemaining = (slaDeadline: string) => {
+    const now = new Date();
+    const deadline = new Date(slaDeadline);
+    const diffInHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 0) {
+      const overdue = Math.abs(Math.floor(diffInHours));
+      return `Quá hạn ${overdue} giờ`;
+    } else if (diffInHours < 1) {
+      const minutes = Math.floor(diffInHours * 60);
+      return `Còn ${minutes} phút`;
+    } else if (diffInHours < 24) {
+      return `Còn ${Math.floor(diffInHours)} giờ`;
+    } else {
+      const days = Math.floor(diffInHours / 24);
+      return `Còn ${days} ngày`;
+    }
+  };
+
+  // Status colors
+  const statusColors: Record<string, { bg: string; text: string }> = {
+    open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    acknowledged: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
+  };
+
+  // Priority colors
+  const priorityColors = {
+    low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
+    high: { bg: 'bg-orange-100', text: 'text-orange-700' },
+    urgent: { bg: 'bg-red-100', text: 'text-red-800' },
+  };
+
+  // Priority labels
+  const priorityLabels = {
+    low: 'Thấp',
+    medium: 'Trung bình',
+    high: 'Cao',
+    urgent: 'Khẩn cấp',
+  };
+
+  // Status labels
+  const statusLabels: Record<string, string> = {
+    open: 'Mở',
+    acknowledged: 'Đã xác nhận',
+    'in-progress': 'Đang xử lý',
+    resolved: 'Đã giải quyết',
+    closed: 'Đã đóng',
+    cancelled: 'Đã hủy',
+  };
+
+  // Handle create ticket
+  const handleCreateTicket = (ticketData: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'>) => {
+    // Calculate SLA deadline based on priority
+    const calculateSLADeadline = (createdAt: string, priority: Ticket['priority']): string => {
+      const created = new Date(createdAt);
+      const slaHours = {
+        urgent: 4,
+        high: 24,
+        medium: 48,
+        low: 72,
+      };
+      created.setHours(created.getHours() + slaHours[priority]);
+      return created.toISOString();
+    };
+
+    // Generate initial SLA tracking
+    const createInitialSLATracking = (createdAt: string, slaDeadline: string): Ticket['slaTracking'] => {
+      return {
+        createdAt,
+        deadline: slaDeadline,
+        isOverdue: false,
+        timeline: [
+          {
+            id: `evt-${Date.now()}-1`,
+            timestamp: createdAt,
+            status: 'open',
+            actor: currentUser?.fullName || 'Sinh viên',
+            actorRole: 'student',
+            action: 'Ticket được tạo',
+            note: 'Sinh viên tạo ticket mới',
+            duration: 0,
+          },
+        ],
+      };
+    };
+
+    // Generate new ticket ID
+    const getNextTicketId = (): string => {
+      const existingIds = tickets.map(t => t.id);
+      const maxNumber = existingIds
+        .map(id => {
+          const match = id.match(/TKT-(\d+)/);
+          return match ? parseInt(match[1], 10) : 0;
+        })
+        .reduce((max, num) => Math.max(max, num), 0);
+      return `TKT-${String(maxNumber + 1).padStart(3, '0')}`;
+    };
+
+    // Create new ticket
+    const createdAt = new Date().toISOString();
+    const newTicketId = getNextTicketId();
+    const slaDeadline = calculateSLADeadline(createdAt, ticketData.priority);
+    const slaTracking = createInitialSLATracking(createdAt, slaDeadline);
+
+    const newTicket: Ticket = {
+      id: newTicketId,
+      title: ticketData.title,
+      description: ticketData.description,
+      issueType: ticketData.issueType,
+      category: ticketData.category,
+      priority: ticketData.priority,
+      status: ticketData.status,
+      location: ticketData.location,
+      images: ticketData.images,
+      createdBy: currentUser?.id || 'unknown',
+      createdByName: currentUser?.fullName,
+      createdAt,
+      updatedAt: createdAt,
+      slaDeadline,
+      slaTracking,
+    };
+
+    onTicketCreated(newTicket);
+    alert('Ticket đã được gửi thành công! 🎉');
+    setStudentView('home');
+    setSelectedIssue(null);
+  };
+
+  return (
+    <div className="max-w-[1400px] mx-auto p-8">
+      {studentView === 'home' && (
+        <>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl m-0 text-gray-800">My tickets</h2>
+              <button
+                className="py-3 px-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white border-none rounded-lg cursor-pointer text-[0.95rem] font-medium transition-all duration-200 hover:bg-blue-700"
+                onClick={() => setStudentView('issue-selection')}
+              >
+                + Tạo Ticket Mới
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 border-b border-gray-200 mb-6">
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'pending'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('pending')}
+              >
+                Chưa xử lý ({pendingTickets.length})
+              </button>
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'processing'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('processing')}
+              >
+                Đang xử lý ({processingTickets.length})
+              </button>
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'completed'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('completed')}
+              >
+                Đã hoàn thành ({completedTickets.length})
+              </button>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
+              <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 items-end">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Tìm kiếm</label>
+                  <input
+                    type="text"
+                    placeholder="Tìm theo tiêu đề hoặc mô tả..."
+                    value={studentSearchQuery}
+                    onChange={(e) => setStudentSearchQuery(e.target.value)}
+                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Trạng thái</label>
+                  <select
+                    value={studentFilterStatus}
+                    onChange={(e) => setStudentFilterStatus(e.target.value as Ticket['status'] | 'all')}
+                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="open">Mở</option>
+                    <option value="acknowledged">Đã xác nhận</option>
+                    <option value="in-progress">Đang xử lý</option>
+                    <option value="resolved">Đã giải quyết</option>
+                    <option value="closed">Đã đóng</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-semibold text-gray-700">Ưu tiên</label>
+                  <select
+                    value={studentFilterPriority}
+                    onChange={(e) => setStudentFilterPriority(e.target.value as Ticket['priority'] | 'all')}
+                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="all">Tất cả</option>
+                    <option value="urgent">Khẩn cấp</option>
+                    <option value="high">Cao</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="low">Thấp</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Ticket Cards */}
+          {displayedTickets.length === 0 ? (
+            <div className="text-center py-16 px-8 bg-white rounded-xl border-2 border-dashed border-gray-300">
+              <div className="text-6xl mb-4">📭</div>
+              <h3 className="text-2xl font-semibold text-gray-800 mb-2">
+                {studentTab === 'pending'
+                  ? 'Chưa có ticket chưa xử lý'
+                  : studentTab === 'processing'
+                  ? 'Chưa có ticket đang xử lý'
+                  : 'Chưa có ticket đã hoàn thành'}
+              </h3>
+              <p className="text-base text-gray-500">
+                {studentTab === 'pending'
+                  ? 'Bạn chưa có ticket nào chưa được xử lý hoặc bạn chưa tạo ticket nào'
+                  : studentTab === 'processing'
+                  ? 'Tất cả các ticket của bạn đã được xử lý hoặc bạn chưa tạo ticket nào'
+                  : 'Bạn chưa có ticket nào đã hoàn thành'}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {displayedTickets.map((ticket) => {
+                const slaStatus = getSLAStatus(ticket);
+                return (
+                  <div
+                    key={ticket.id}
+                    className="bg-white rounded-xl p-6 border-2 border-gray-200 cursor-pointer transition-all duration-200 flex flex-col gap-4 hover:border-blue-500 hover:shadow-lg hover:-translate-y-0.5"
+                    onClick={() => setSelectedTicket(ticket)}
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex-1">
+                        <div className="text-[0.85rem] font-semibold text-gray-500 mb-2">{ticket.id}</div>
+                        <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
+                        <div className="flex gap-4 flex-wrap items-center">
+                          <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
+                            {statusLabels[ticket.status] || ticket.status}
+                          </span>
+                          <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
+                            {priorityLabels[ticket.priority]}
+                          </span>
+                          <span className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{ticket.issueType.icon}</span>
+                            <span>{ticket.issueType.name}</span>
+                          </span>
+                          {ticket.location && (
+                            <span className="flex items-center gap-2 text-sm text-gray-500">
+                              <span>📍</span>
+                              <span>{ticket.location} {ticket.roomNumber && `- ${ticket.roomNumber}`}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[0.95rem] text-gray-500 leading-relaxed line-clamp-2 overflow-hidden">
+                      {ticket.description}
+                    </p>
+
+                    <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span
+                          className="inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold text-white"
+                          style={{ backgroundColor: slaStatus.color }}
+                        >
+                          {slaStatus.label}
+                        </span>
+                        <span className="text-gray-500 text-[0.85rem]">
+                          • {formatTimeRemaining(ticket.slaDeadline)}
+                        </span>
+                        <span className="text-gray-400 text-[0.85rem]">
+                          • {formatDate(ticket.createdAt)}
+                        </span>
+                      </div>
+                      <button
+                        className="py-2 px-4 bg-blue-500 text-white border-none rounded-md cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-blue-600"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTicket(ticket);
+                        }}
+                      >
+                        Xem chi tiết →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {studentView === 'issue-selection' && (
+        <IssueSelectionPage
+          onSelectIssue={(issueType: IssueType) => {
+            setSelectedIssue(issueType);
+            setStudentView('create-ticket');
+          }}
+          onBack={() => setStudentView('home')}
+        />
+      )}
+
+      {studentView === 'create-ticket' && selectedIssue && (
+        <CreateTicketPage
+          issueType={selectedIssue}
+          onBack={() => setStudentView('issue-selection')}
+          onSubmit={handleCreateTicket}
+        />
+      )}
+
+      {studentView === 'ticket-list' && (
+        <TicketListPage
+          onViewDetail={(ticket: Ticket) => setSelectedTicket(ticket)}
+          onBack={() => setStudentView('home')}
+        />
+      )}
+
+      {/* Ticket Detail Modal */}
+      {selectedTicket && (
+        <TicketDetailModal
+          ticket={selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default StudentHomePage;
+
