@@ -4,6 +4,7 @@ import { issueTypes } from './issueTypes';
 export const mockCategories: Category[] = [
   {
     id: 'cat-1',
+    code: 'CAT001',
     name: 'Cơ sở vật chất',
     description: 'Phản ánh về hư hỏng cơ sở vật chất: tường, sàn, trần, cửa...',
     icon: '🏢',
@@ -16,6 +17,7 @@ export const mockCategories: Category[] = [
   },
   {
     id: 'cat-2',
+    code: 'CAT002',
     name: 'WiFi/Mạng',
     description: 'Vấn đề về kết nối WiFi, mạng chậm, mất kết nối',
     icon: '📶',
@@ -28,6 +30,7 @@ export const mockCategories: Category[] = [
   },
   {
     id: 'cat-3',
+    code: 'CAT003',
     name: 'Thiết bị',
     description: 'Hư hỏng thiết bị: máy chiếu, máy lạnh, đèn, quạt...',
     icon: '🖥️',
@@ -40,6 +43,7 @@ export const mockCategories: Category[] = [
   },
   {
     id: 'cat-4',
+    code: 'CAT004',
     name: 'Điện nước',
     description: 'Vấn đề về điện, nước: mất điện, rò rỉ nước...',
     icon: '💡',
@@ -52,6 +56,7 @@ export const mockCategories: Category[] = [
   },
   {
     id: 'cat-5',
+    code: 'CAT005',
     name: 'Vệ sinh',
     description: 'Vấn đề về vệ sinh: toilet, rác, làm sạch...',
     icon: '🧹',
@@ -64,6 +69,7 @@ export const mockCategories: Category[] = [
   },
   {
     id: 'cat-6',
+    code: 'CAT006',
     name: 'Khẩn cấp',
     description: 'Tình huống khẩn cấp cần xử lý ngay lập tức',
     icon: '🚨',
@@ -118,6 +124,7 @@ export const mockDepartments: Department[] = [
 export const mockLocations: Location[] = [
   {
     id: 'loc-1',
+    code: 'LOC001',
     name: 'P301',
     description: 'Phòng học 301',
     type: 'classroom',
@@ -126,6 +133,7 @@ export const mockLocations: Location[] = [
   },
   {
     id: 'loc-2',
+    code: 'LOC002',
     name: 'P302',
     description: 'Phòng học 302',
     type: 'classroom',
@@ -134,6 +142,7 @@ export const mockLocations: Location[] = [
   },
   {
     id: 'loc-3',
+    code: 'LOC003',
     name: 'P501',
     description: 'Phòng học 501',
     type: 'classroom',
@@ -142,6 +151,7 @@ export const mockLocations: Location[] = [
   },
   {
     id: 'loc-4',
+    code: 'LOC004',
     name: 'WC Tầng 2',
     description: 'Nhà vệ sinh tầng 2',
     type: 'wc',
@@ -150,6 +160,7 @@ export const mockLocations: Location[] = [
   },
   {
     id: 'loc-5',
+    code: 'LOC005',
     name: 'Sảnh chính',
     description: 'Sảnh chính tòa nhà Alpha',
     type: 'hall',
@@ -158,6 +169,7 @@ export const mockLocations: Location[] = [
   },
   {
     id: 'loc-6',
+    code: 'LOC006',
     name: 'Hành lang Tầng 3',
     description: 'Hành lang tầng 3',
     type: 'corridor',

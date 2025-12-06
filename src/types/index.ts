@@ -30,6 +30,7 @@ export interface Department {
 // Location types (thay thế Room)
 export interface Location {
   id: string;
+  code?: string; // Mã địa điểm (optional for backward compatibility)
   name: string;
   description?: string;
   type: 'classroom' | 'wc' | 'hall' | 'corridor' | 'other';
@@ -43,6 +44,7 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Category {
   id: string;
+  code?: string; // Mã category (optional for backward compatibility)
   name: string;
   description: string;
   icon: string;

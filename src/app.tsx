@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { UserRole, User, Department, Location, Category, Priority, IssueType, Ticket } from './types';
+import type { UserRole, User, UserStatus, Department, Location, Category, Priority, IssueType, Ticket } from './types';
 import { mockDepartments, mockLocations, mockCategories, mockTickets } from './data/mockData';
 import { mockUsers } from './data/mockUsers';
 import { 
@@ -76,6 +76,7 @@ function App() {
   const [editingStaff, setEditingStaff] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [categoryFormData, setCategoryFormData] = useState({
+    code: '',
     name: '',
     description: '',
     icon: '📋',
@@ -93,13 +94,19 @@ function App() {
     staffIds: [] as string[],
   });
   const [locationFormData, setLocationFormData] = useState({
+    code: '',
     name: '',
     description: '',
     type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
     floor: '',
     status: 'active' as 'active' | 'inactive',
   });
-  const [locationFilterFloor, setLocationFilterFloor] = useState<string>('all');
+  const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
+  const [locationSearchQuery, setLocationSearchQuery] = useState<string>('');
+  const [departmentSearchQuery, setDepartmentSearchQuery] = useState<string>('');
+  const [categorySearchQuery, setCategorySearchQuery] = useState<string>('');
+  const [staffSearchQuery, setStaffSearchQuery] = useState<string>('');
+  const [userSearchQuery, setUserSearchQuery] = useState<string>('');
   const [staffFormData, setStaffFormData] = useState({
     username: '',
     password: '',
@@ -754,7 +761,7 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Category ({adminCategories.length})
+                      Danh sách Category
                     </h3>
                     <button
                       style={{
@@ -780,6 +787,7 @@ function App() {
                       onClick={() => {
                         setEditingCategory(null);
                         setCategoryFormData({
+                          code: '',
                           name: '',
                           description: '',
                           icon: '📋',
@@ -794,6 +802,26 @@ function App() {
                     >
                       Thêm Category
                     </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo mã category, tên category..."
+                      value={categorySearchQuery}
+                      onChange={(e) => setCategorySearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                      }}
+                    />
                   </div>
 
                   <table style={{
@@ -811,6 +839,14 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
+                        }}>Mã Category</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
                         }}>Tên Category</th>
                         <th style={{
                           background: '#f9fafb',
@@ -820,14 +856,6 @@ function App() {
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
                         }}>SLA</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Priority</th>
                         <th style={{
                           background: '#f9fafb',
                           padding: '1rem',
@@ -855,17 +883,27 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {adminCategories.map((cat) => {
+                      {adminCategories
+                        .filter((cat) => {
+                          if (!categorySearchQuery) return true;
+                          const query = categorySearchQuery.toLowerCase();
+                          const matchesCode = cat.code?.toLowerCase().includes(query);
+                          const matchesName = cat.name?.toLowerCase().includes(query);
+                          return matchesCode || matchesName;
+                        })
+                        .map((cat) => {
                         const deptName = adminDepartments.find(d => d.id === cat.departmentId)?.name || 'Unknown';
-                        const priorityInfo = {
-                          low: { bg: '#dbeafe', color: '#1e40af', text: 'Low' },
-                          medium: { bg: '#fef3c7', color: '#92400e', text: 'Medium' },
-                          high: { bg: '#fed7aa', color: '#9a3412', text: 'High' },
-                          urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Urgent' },
-                        }[cat.defaultPriority];
 
                         return (
                           <tr key={cat.id}>
+                            <td style={{
+                              padding: '1rem',
+                              borderBottom: '1px solid #e5e7eb',
+                              color: '#4b5563',
+                              fontWeight: 500,
+                            }}>
+                              {cat.code || '-'}
+                            </td>
                             <td style={{
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
@@ -882,21 +920,6 @@ function App() {
                               {cat.slaResolveHours < 24 
                                 ? `${cat.slaResolveHours} giờ` 
                                 : `${Math.floor(cat.slaResolveHours / 24)} ngày`}
-                            </td>
-                            <td style={{
-                              padding: '1rem',
-                              borderBottom: '1px solid #e5e7eb',
-                            }}>
-                              <span style={{
-                                padding: '0.4rem 0.75rem',
-                                borderRadius: '6px',
-                                fontSize: '0.875rem',
-                                fontWeight: 600,
-                                background: priorityInfo.bg,
-                                color: priorityInfo.color,
-                              }}>
-                                {priorityInfo.text}
-                              </span>
                             </td>
                             <td style={{
                               padding: '1rem',
@@ -946,6 +969,7 @@ function App() {
                                   onClick={() => {
                                     setEditingCategory(cat);
                                     setCategoryFormData({
+                                      code: cat.code || '',
                                       name: cat.name,
                                       description: cat.description,
                                       icon: cat.icon,
@@ -1008,7 +1032,7 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Bộ phận ({adminDepartments.length})
+                      Danh sách Bộ phận
                     </h3>
                     <button
                       style={{
@@ -1031,6 +1055,26 @@ function App() {
                     >
                       Thêm Bộ phận
                     </button>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo tên bộ phận..."
+                      value={departmentSearchQuery}
+                      onChange={(e) => setDepartmentSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                      }}
+                    />
                   </div>
 
                   <table style={{
@@ -1076,7 +1120,13 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {adminDepartments.map((dept) => (
+                      {adminDepartments
+                        .filter((dept) => {
+                          if (!departmentSearchQuery) return true;
+                          const query = departmentSearchQuery.toLowerCase();
+                          return dept.name.toLowerCase().includes(query);
+                        })
+                        .map((dept) => (
                         <tr key={dept.id}>
                           <td style={{
                             padding: '1rem',
@@ -1199,6 +1249,7 @@ function App() {
                       onClick={() => {
                         setEditingLocation(null);
                         setLocationFormData({
+                          code: '',
                           name: '',
                           description: '',
                           type: 'classroom',
@@ -1212,42 +1263,65 @@ function App() {
                     </button>
                   </div>
 
-                  {/* Filter by Floor */}
+                  {/* Search and Filter */}
                   <div style={{
                     marginBottom: '1.5rem',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '1rem',
+                    flexWrap: 'wrap',
                   }}>
-                    <label style={{
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      color: '#374151',
+                    {/* Search Bar */}
+                    <div style={{
+                      flex: '1',
+                      minWidth: '300px',
                     }}>
-                      Chọn Tầng:
-                    </label>
-                    <select
-                      value={locationFilterFloor}
-                      onChange={(e) => setLocationFilterFloor(e.target.value)}
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm theo mã địa điểm, tên địa điểm..."
+                        value={locationSearchQuery}
+                        onChange={(e) => setLocationSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem 0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                    {/* Status Filter */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}>
+                      <label style={{
                         fontSize: '0.875rem',
-                        cursor: 'pointer',
-                        background: 'white',
-                        minWidth: '150px',
-                      }}
-                    >
-                      <option value="all">Tất cả các tầng</option>
-                      <option value="G">Tầng Trệt (G)</option>
-                      <option value="1">Tầng 1</option>
-                      <option value="2">Tầng 2</option>
-                      <option value="3">Tầng 3</option>
-                      <option value="4">Tầng 4</option>
-                      <option value="5">Tầng 5</option>
-                      <option value="6">Tầng 6</option>
-                    </select>
+                        fontWeight: 600,
+                        color: '#374151',
+                      }}>
+                        Trạng thái:
+                      </label>
+                      <select
+                        value={locationFilterStatus}
+                        onChange={(e) => setLocationFilterStatus(e.target.value)}
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '6px',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                          background: 'white',
+                          minWidth: '150px',
+                        }}
+                      >
+                        <option value="all">Tất cả</option>
+                        <option value="active">Hoạt động</option>
+                        <option value="inactive">Không hoạt động</option>
+                      </select>
+                    </div>
                   </div>
 
                   <table style={{
@@ -1265,23 +1339,15 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
+                        }}>Mã Địa điểm</th>
+                        <th style={{
+                          background: '#f9fafb',
+                          padding: '1rem',
+                          textAlign: 'left',
+                          fontWeight: 600,
+                          color: '#374151',
+                          borderBottom: '2px solid #e5e7eb',
                         }}>Tên Địa điểm</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Tầng</th>
-                        <th style={{
-                          background: '#f9fafb',
-                          padding: '1rem',
-                          textAlign: 'left',
-                          fontWeight: 600,
-                          color: '#374151',
-                          borderBottom: '2px solid #e5e7eb',
-                        }}>Loại</th>
                         <th style={{
                           background: '#f9fafb',
                           padding: '1rem',
@@ -1303,51 +1369,41 @@ function App() {
                     <tbody>
                       {locations
                         .filter((location) => {
-                          if (locationFilterFloor === 'all') return true;
-                          return location.floor === locationFilterFloor;
+                          // Filter by status
+                          if (locationFilterStatus !== 'all' && location.status !== locationFilterStatus) {
+                            return false;
+                          }
+                          // Filter by search query
+                          if (locationSearchQuery) {
+                            const query = locationSearchQuery.toLowerCase();
+                            const matchesCode = location.code?.toLowerCase().includes(query);
+                            const matchesName = location.name?.toLowerCase().includes(query);
+                            if (!matchesCode && !matchesName) {
+                              return false;
+                            }
+                          }
+                          return true;
                         })
                         .map((location) => {
-                        const typeInfo = {
-                          classroom: { text: 'Phòng học', icon: '🏫' },
-                          wc: { text: 'Nhà vệ sinh', icon: '🚻' },
-                          hall: { text: 'Sảnh', icon: '🏛️' },
-                          corridor: { text: 'Hành lang', icon: '🚶' },
-                          other: { text: 'Khác', icon: '📍' },
-                        }[location.type];
-
                         const statusInfo = {
                           active: { bg: '#d1fae5', color: '#065f46', text: 'Hoạt động' },
                           inactive: { bg: '#fee2e2', color: '#991b1b', text: 'Không hoạt động' },
                         }[location.status];
-
-                        // Format floor display
-                        const formatFloor = (floor?: string) => {
-                          if (!floor) return '-';
-                          if (floor === 'G') return 'Tầng Trệt (G)';
-                          return `Tầng ${floor}`;
-                        };
 
                         return (
                           <tr key={location.id}>
                             <td style={{
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
+                              color: '#4b5563',
+                              fontWeight: 500,
+                            }}>{location.code || '-'}</td>
+                            <td style={{
+                              padding: '1rem',
+                              borderBottom: '1px solid #e5e7eb',
                               color: '#1f2937',
                               fontWeight: 600,
                             }}>{location.name}</td>
-                            <td style={{
-                              padding: '1rem',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#4b5563',
-                              fontWeight: 500,
-                            }}>{formatFloor(location.floor)}</td>
-                            <td style={{
-                              padding: '1rem',
-                              borderBottom: '1px solid #e5e7eb',
-                              color: '#4b5563',
-                            }}>
-                              {typeInfo.text}
-                            </td>
                             <td style={{
                               padding: '1rem',
                               borderBottom: '1px solid #e5e7eb',
@@ -1391,6 +1447,7 @@ function App() {
                                   onClick={() => {
                                     setEditingLocation(location);
                                     setLocationFormData({
+                                      code: location.code || '',
                                       name: location.name,
                                       description: location.description || '',
                                       type: location.type,
@@ -1796,7 +1853,7 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Staff ({adminStaffUsers.length})
+                      Danh sách Staff
                     </h3>
                     <button
                       style={{
@@ -1828,6 +1885,26 @@ function App() {
                     </button>
                   </div>
 
+                  {/* Search Bar */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo mã, tên đăng nhập, họ tên, email, vai trò, bộ phận..."
+                      value={staffSearchQuery}
+                      onChange={(e) => setStaffSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
                   <table style={{
                     width: '100%',
                     borderCollapse: 'collapse',
@@ -1843,7 +1920,7 @@ function App() {
                           fontWeight: 600,
                           color: '#374151',
                           borderBottom: '2px solid #e5e7eb',
-                        }}>Tên đăng nhập</th>
+                        }}>Mã người dùng</th>
                         <th style={{
                           background: '#f9fafb',
                           padding: '1rem',
@@ -1895,8 +1972,47 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {adminStaffUsers.length > 0 ? (
-                        paginatedStaffUsers.map((staff: User) => {
+                      {(() => {
+                        const filteredStaff = adminStaffUsers.filter((staff: User) => {
+                          if (!staffSearchQuery) return true;
+                          const query = staffSearchQuery.toLowerCase();
+                          const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
+                          const deptName = dept?.name || '';
+                          const roleInfoMap: Record<string, string> = {
+                            'it-staff': 'IT Staff',
+                            'facility-staff': 'Facility Staff',
+                          };
+                          const roleText = roleInfoMap[staff.role] || staff.role;
+                          
+                          return (
+                            staff.username?.toLowerCase().includes(query) ||
+                            staff.fullName?.toLowerCase().includes(query) ||
+                            staff.email?.toLowerCase().includes(query) ||
+                            roleText.toLowerCase().includes(query) ||
+                            deptName.toLowerCase().includes(query)
+                          );
+                        });
+                        
+                        const paginatedFilteredStaff = filteredStaff.slice(
+                          (staffPage - 1) * itemsPerPage,
+                          staffPage * itemsPerPage
+                        );
+                        
+                        if (filteredStaff.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={7} style={{
+                                padding: '2rem',
+                                textAlign: 'center',
+                                color: '#6b7280',
+                              }}>
+                                {staffSearchQuery ? 'Không tìm thấy staff nào phù hợp với từ khóa tìm kiếm' : 'Chưa có staff nào trong departments của bạn'}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        return paginatedFilteredStaff.map((staff: User) => {
                           const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
                           const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
                             'it-staff': { text: 'IT Staff', bg: '#dbeafe', color: '#1e40af' },
@@ -1915,8 +2031,8 @@ function App() {
                               <td style={{
                                 padding: '1rem',
                                 borderBottom: '1px solid #e5e7eb',
-                                color: '#1f2937',
-                                fontWeight: 600,
+                                color: '#4b5563',
+                                fontWeight: 500,
                               }}>{staff.username}</td>
                               <td style={{
                                 padding: '1rem',
@@ -2039,7 +2155,7 @@ function App() {
                                       onClick={() => {
                                         if (confirm('Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.')) {
                                           setUsers(users.map(u => 
-                                            u.id === staff.id ? { ...u, status: 'inactive' as const } : u
+                                            u.id === staff.id ? { ...u, status: 'inactive' } : u
                                           ));
                                         }
                                       }}
@@ -2060,7 +2176,7 @@ function App() {
                                       onClick={() => {
                                         if (confirm('Bạn có chắc chắn muốn kích hoạt lại staff này?')) {
                                           setUsers(users.map(u => 
-                                            u.id === staff.id ? { ...u, status: 'active' as const } : u
+                                            u.id === staff.id ? { ...u, status: 'active' } : u
                                           ));
                                         }
                                       }}
@@ -2073,18 +2189,8 @@ function App() {
                               </td>
                             </tr>
                           );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan={7} style={{
-                            padding: '2rem',
-                            textAlign: 'center',
-                            color: '#6b7280',
-                          }}>
-                            Chưa có staff nào trong departments của bạn
-                          </td>
-                        </tr>
-                      )}
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </>
@@ -2097,8 +2203,28 @@ function App() {
                     marginBottom: '1.5rem',
                   }}>
                     <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-                      Danh sách Người dùng ({studentUsers.length})
+                      Danh sách Người dùng
                     </h3>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div style={{
+                    marginBottom: '1.5rem',
+                  }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm theo mã người dùng, họ tên, email..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.625rem 0.75rem',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        fontSize: '0.875rem',
+                        outline: 'none',
+                      }}
+                    />
                   </div>
 
                   <table style={{
@@ -2119,7 +2245,7 @@ function App() {
                           letterSpacing: '0.05em',
                           color: '#6b7280',
                           borderBottom: '1px solid #e5e7eb',
-                        }}>Mã SV</th>
+                        }}>Mã người dùng</th>
                         <th style={{
                           background: '#f9fafb',
                           padding: '0.875rem 1rem',
@@ -2167,8 +2293,37 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {studentUsers.length > 0 ? (
-                        paginatedStudentUsers.map((user: User) => {
+                      {(() => {
+                        const filteredUsers = studentUsers.filter((user: User) => {
+                          if (!userSearchQuery) return true;
+                          const query = userSearchQuery.toLowerCase();
+                          return (
+                            user.username?.toLowerCase().includes(query) ||
+                            user.fullName?.toLowerCase().includes(query) ||
+                            user.email?.toLowerCase().includes(query)
+                          );
+                        });
+                        
+                        const paginatedFilteredUsers = filteredUsers.slice(
+                          (usersPage - 1) * itemsPerPage,
+                          usersPage * itemsPerPage
+                        );
+                        
+                        if (filteredUsers.length === 0) {
+                          return (
+                            <tr key="no-users">
+                              <td colSpan={5} style={{
+                                padding: '2rem',
+                                textAlign: 'center',
+                                color: '#6b7280',
+                              }}>
+                                {userSearchQuery ? 'Không tìm thấy người dùng nào phù hợp với từ khóa tìm kiếm' : 'Chưa có người dùng nào'}
+                              </td>
+                            </tr>
+                          );
+                        }
+                        
+                        return paginatedFilteredUsers.map((user: User) => {
                           return (
                             <tr key={user.id}>
                               <td style={{
@@ -2310,19 +2465,8 @@ function App() {
                               </td>
                             </tr>
                           );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan={5} style={{
-                            padding: '2rem',
-                            textAlign: 'center',
-                            color: '#6b7280',
-                            fontSize: '0.875rem',
-                          }}>
-                            Chưa có người dùng nào
-                          </td>
-                        </tr>
-                      )}
+                        });
+                      })()}
                     </tbody>
                   </table>
                   
@@ -2455,6 +2599,31 @@ function App() {
                       setIsFormOpen(false);
                     }}
                   >
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
+                        Mã Category *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={categoryFormData.code}
+                        onChange={(e) => setCategoryFormData({ ...categoryFormData, code: e.target.value })}
+                        placeholder="VD: CAT001, CAT002"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
                     <div style={{ marginBottom: '1.5rem' }}>
                       <label style={{
                         display: 'block',
@@ -2741,6 +2910,31 @@ function App() {
                         color: '#374151',
                         fontSize: '0.9rem',
                       }}>
+                        Mã địa điểm *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={locationFormData.code}
+                        onChange={(e) => setLocationFormData({ ...locationFormData, code: e.target.value })}
+                        placeholder="VD: LOC001, LOC002"
+                        style={{
+                          width: '100%',
+                          padding: '0.75rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                        }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{
+                        display: 'block',
+                        marginBottom: '0.5rem',
+                        fontWeight: 600,
+                        color: '#374151',
+                        fontSize: '0.9rem',
+                      }}>
                         Tên địa điểm *
                       </label>
                       <input
@@ -2977,6 +3171,7 @@ function App() {
                       } else {
                         const newDept: Department = {
                           ...deptFormData,
+                          adminId: currentAdminId, // Set adminId automatically
                           id: `dept-${Date.now()}`,
                           createdAt: new Date().toISOString(),
                         };
