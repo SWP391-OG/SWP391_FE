@@ -13,6 +13,8 @@ interface StaffFormProps {
   adminDepartments: Department[];
   onFormDataChange: (data: StaffFormProps['staffFormData']) => void;
   onSubmit: () => void;
+  onResetPassword?: () => void;
+  onToggleStatus?: () => void;
   onClose: () => void;
 }
 
@@ -22,6 +24,8 @@ const StaffForm = ({
   adminDepartments,
   onFormDataChange,
   onSubmit,
+  onResetPassword,
+  onToggleStatus,
   onClose,
 }: StaffFormProps) => {
   return (
@@ -217,6 +221,104 @@ const StaffForm = ({
               ))}
             </select>
           </div>
+          {editingStaff && onResetPassword && onToggleStatus && (
+            <div style={{
+              marginBottom: '1.5rem',
+              padding: '1rem',
+              background: '#f9fafb',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb',
+            }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#1f2937', fontWeight: 600 }}>
+                Quản lý tài khoản
+              </h4>
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newPassword = prompt('Nhập mật khẩu mới:');
+                    if (newPassword && newPassword.trim()) {
+                      onResetPassword();
+                      alert('Đã cấp lại mật khẩu thành công!');
+                    }
+                  }}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    border: '1px solid #3b82f6',
+                    borderRadius: '8px',
+                    background: 'none',
+                    color: '#3b82f6',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#dbeafe';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'none';
+                  }}
+                >
+                  Cập nhật mật khẩu
+                </button>
+                {editingStaff.status === 'active' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.')) {
+                        onToggleStatus();
+                      }
+                    }}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      border: '1px solid #dc2626',
+                      borderRadius: '8px',
+                      background: 'none',
+                      color: '#dc2626',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#fee2e2';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    Khóa tài khoản
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Bạn có chắc chắn muốn kích hoạt lại staff này?')) {
+                        onToggleStatus();
+                      }
+                    }}
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      border: '1px solid #10b981',
+                      borderRadius: '8px',
+                      background: 'none',
+                      color: '#10b981',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#d1fae5';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'none';
+                    }}
+                  >
+                    Mở khóa tài khoản
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
             <button
               type="button"

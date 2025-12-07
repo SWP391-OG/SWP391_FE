@@ -1,4 +1,5 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import type { IssueType, Ticket } from '../../types';
 
 interface CreateTicketPageProps {
@@ -77,6 +78,7 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
 
     // Simulate API call
     setTimeout(() => {
+      const now = new Date();
       const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
         title: formData.title,
         description: formData.description,
@@ -87,7 +89,20 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
         location: formData.location,
         images: formData.images.length > 0 ? formData.images : undefined,
         createdBy: 'current-user-id', // This should come from auth context
-        updatedAt: new Date().toISOString(),
+        updatedAt: now.toISOString(),
+        slaTracking: {
+          createdAt: now.toISOString(),
+          deadline: '', // Will be set by service
+          isOverdue: false,
+          timeline: [{
+            id: `event-${Date.now()}`,
+            timestamp: now.toISOString(),
+            status: 'open',
+            actor: 'current-user-id',
+            actorRole: 'student',
+            action: 'Ticket created',
+          }],
+        },
       };
 
       onSubmit(ticket);

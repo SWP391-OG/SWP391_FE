@@ -6,6 +6,7 @@ import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
+import TicketReviewModal from '../../components/admin/TicketReviewModal';
 import CategoryForm from '../../components/admin/CategoryForm';
 import CategoryList from '../../components/admin/CategoryList';
 import DepartmentForm from '../../components/admin/DepartmentForm';
@@ -14,6 +15,7 @@ import LocationForm from '../../components/admin/LocationForm';
 import LocationList from '../../components/admin/LocationList';
 import StaffForm from '../../components/admin/StaffForm';
 import StaffList from '../../components/admin/StaffList';
+import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
 
@@ -25,7 +27,7 @@ interface AdminPageProps {
 
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
-  const { tickets, assignTicket, updateTicketPriority, cancelTicket } = useTickets();
+  const { tickets, assignTicket, updateTicketPriority, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
   const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
   const { locations, createLocation, updateLocation, deleteLocation } = useLocations();
@@ -36,6 +38,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | null>(null);
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
 
   // Form state
@@ -237,6 +240,16 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     updateTicketPriority(ticketId, newPriority);
   };
 
+  const handleApproveTicket = (ticketId: string) => {
+    // Chấp nhận ticket: chuyển từ 'open' sang 'acknowledged'
+    updateTicketStatus(ticketId, 'acknowledged');
+  };
+
+  const handleRejectTicket = (ticketId: string, reason: string) => {
+    // Từ chối ticket: chuyển sang 'cancelled' với lý do
+    cancelTicket(ticketId, reason);
+  };
+
 
   return (
     <div className="max-w-[1400px] mx-auto p-8">
@@ -366,7 +379,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               locations={locations}
               staffList={adminStaffList}
               onAssignTicket={handleAssignTicket}
-              onViewTicket={setSelectedTicket}
+              onViewTicket={setSelectedTicketForReview}
             />
           )}
 
@@ -407,7 +420,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 });
                 setIsFormOpen(true);
               }}
-              onDeleteClick={(id) => deleteCategory(id)}
             />
           )}
           {/* Department Management */}
@@ -432,7 +444,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 });
                 setIsFormOpen(true);
               }}
-              onDeleteClick={(id) => deleteDepartment(id)}
             />
           )}
 
@@ -468,7 +479,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 });
                 setIsFormOpen(true);
               }}
-              onDeleteClick={(id) => deleteLocation(id)}
             />
           )}
 
@@ -539,17 +549,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               totalPages={totalUsersPages}
               onSearchChange={setUserSearchQuery}
               onPageChange={setUsersPage}
-              onViewHistory={setSelectedUserForHistory}
-              onToggleBan={(user) => {
-                if (user.status === 'active') {
-                  if (confirm('Bạn có chắc chắn muốn khóa tài khoản sinh viên này? Sinh viên sẽ không thể đăng nhập hoặc gửi yêu cầu mới.')) {
-                    updateUser(user.id, { status: 'banned' });
-                  }
-                } else if (user.status === 'banned') {
-                  if (confirm('Bạn có chắc chắn muốn mở khóa tài khoản sinh viên này?')) {
-                    updateUser(user.id, { status: 'active' });
-                  }
-                }
+              onEditClick={(user) => {
+                setEditingUser(user);
+                setUserFormData({
+                  username: user.username,
+                  password: user.password || '',
+                  fullName: user.fullName,
+                  email: user.email,
+                });
+                setIsFormOpen(true);
               }}
             />
           )}
@@ -572,6 +580,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             setIsFormOpen(false);
             setEditingCategory(null);
           }}
+          onDelete={editingCategory ? () => {
+            deleteCategory(editingCategory.id);
+          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingCategory(null);
@@ -594,6 +605,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             setIsFormOpen(false);
             setEditingDept(null);
           }}
+          onDelete={editingDept ? () => {
+            deleteDepartment(editingDept.id);
+          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingDept(null);
@@ -616,6 +630,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             setIsFormOpen(false);
             setEditingLocation(null);
           }}
+          onDelete={editingLocation ? () => {
+            deleteLocation(editingLocation.id);
+          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingLocation(null);
@@ -681,6 +698,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             setIsFormOpen(false);
             setEditingStaff(null);
           }}
+          onResetPassword={editingStaff ? () => {
+            const newPassword = prompt('Nhập mật khẩu mới:');
+            if (newPassword && newPassword.trim()) {
+              updateUser(editingStaff.id, { password: newPassword.trim() });
+            }
+          } : undefined}
+          onToggleStatus={editingStaff ? () => {
+            if (editingStaff.status === 'active') {
+              updateUser(editingStaff.id, { status: 'inactive' });
+            } else {
+              updateUser(editingStaff.id, { status: 'active' });
+            }
+          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingStaff(null);
@@ -690,211 +720,38 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
       {/* User Form Modal */}
       {isFormOpen && activeTab === 'users' && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
+        <UserForm
+          editingUser={editingUser}
+          userFormData={userFormData}
+          userTickets={editingUser ? getTicketsByUserId(editingUser.id) : []}
+          onFormDataChange={setUserFormData}
+          onSubmit={() => {
+            if (editingUser) {
+              updateUser(editingUser.id, {
+                ...userFormData,
+                role: editingUser.role, // Keep original role
+              });
+            } else {
+              createUser({
+                ...userFormData,
+                role: 'student', // Default role for new users
+              });
+            }
+            setIsFormOpen(false);
+            setEditingUser(null);
           }}
-          onClick={() => setIsFormOpen(false)}
-        >
-          <div
-            style={{
-              background: 'white',
-              borderRadius: '12px',
-              padding: '2rem',
-              width: '90%',
-              maxWidth: '600px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', color: '#1f2937' }}>
-              {editingUser ? 'Chỉnh sửa Người dùng' : 'Thêm Người dùng mới'}
-            </h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (editingUser) {
-                  updateUser(editingUser.id, userFormData);
-                } else {
-                  createUser(userFormData);
-                }
-                setIsFormOpen(false);
-                setEditingUser(null);
-              }}
-            >
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
-                  Tên đăng nhập *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={userFormData.username}
-                  onChange={(e) => setUserFormData({ ...userFormData, username: e.target.value })}
-                  placeholder="VD: student01"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
-                  Mật khẩu *
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={userFormData.password}
-                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                  placeholder="Nhập mật khẩu"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
-                  Họ tên *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={userFormData.fullName}
-                  onChange={(e) => setUserFormData({ ...userFormData, fullName: e.target.value })}
-                  placeholder="VD: Nguyễn Văn A"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={userFormData.email}
-                  onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                  placeholder="VD: student@fpt.edu.vn"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
-                />
-              </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
-                  Vai trò *
-                </label>
-                <select
-                  required
-                  value={userFormData.role}
-                  onChange={(e) => setUserFormData({ ...userFormData, role: e.target.value as UserRole })}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
-                >
-                  <option value="student">Sinh viên</option>
-                  <option value="teacher">Giảng viên</option>
-                </select>
-              </div>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsFormOpen(false);
-                    setEditingUser(null);
-                  }}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    background: 'white',
-                    color: '#374151',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                    color: 'white',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  {editingUser ? 'Cập nhật' : 'Thêm mới'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          onToggleBan={editingUser ? () => {
+            if (editingUser.status === 'active') {
+              updateUser(editingUser.id, { status: 'banned' });
+            } else if (editingUser.status === 'banned') {
+              updateUser(editingUser.id, { status: 'active' });
+            }
+          } : undefined}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingUser(null);
+          }}
+        />
       )}
 
       {/* Ticket Detail Modal */}
@@ -902,6 +759,16 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <TicketDetailModal
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
+        />
+      )}
+
+      {/* Ticket Review Modal */}
+      {selectedTicketForReview && (
+        <TicketReviewModal
+          ticket={selectedTicketForReview}
+          onApprove={handleApproveTicket}
+          onReject={handleRejectTicket}
+          onClose={() => setSelectedTicketForReview(null)}
         />
       )}
     </div>

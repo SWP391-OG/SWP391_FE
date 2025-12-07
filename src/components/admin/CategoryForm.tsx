@@ -16,6 +16,7 @@ interface CategoryFormProps {
   adminDepartments: Department[];
   onFormDataChange: (data: CategoryFormProps['categoryFormData']) => void;
   onSubmit: () => void;
+  onDelete?: () => void;
   onClose: () => void;
 }
 
@@ -25,6 +26,7 @@ const CategoryForm = ({
   adminDepartments,
   onFormDataChange,
   onSubmit,
+  onDelete,
   onClose,
 }: CategoryFormProps) => {
   return (
@@ -297,6 +299,35 @@ const CategoryForm = ({
             >
               Hủy
             </button>
+            {editingCategory && onDelete && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Bạn có chắc chắn muốn xóa category này?')) {
+                    onDelete();
+                    onClose();
+                  }
+                }}
+                style={{
+                  background: 'none',
+                  color: '#dc2626',
+                  border: '1px solid #dc2626',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#fee2e2';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'none';
+                }}
+              >
+                Xóa
+              </button>
+            )}
             <button
               type="submit"
               style={{

@@ -53,9 +53,11 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   // Status colors
   const statusColors = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    cancelled: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Priority colors
@@ -77,9 +79,11 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   // Status labels
   const statusLabels = {
     open: 'Mở',
+    acknowledged: 'Đã xác nhận',
     'in-progress': 'Đang xử lý',
     resolved: 'Đã giải quyết',
     closed: 'Đã đóng',
+    cancelled: 'Đã hủy',
   };
 
   // Calculate stats

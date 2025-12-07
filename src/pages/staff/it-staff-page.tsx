@@ -246,6 +246,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                                 'in-progress': 'Đang xử lý',
                                 resolved: 'Đã giải quyết',
                                 closed: 'Đã đóng',
+                                cancelled: 'Đã hủy',
                               }[newStatus];
                               if (confirm(`Bạn có chắc muốn cập nhật trạng thái ticket ${ticket.id} thành "${newStatusText}"?`)) {
                                 onUpdateStatus(ticket.id, newStatus);

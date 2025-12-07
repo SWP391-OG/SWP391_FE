@@ -40,7 +40,7 @@ const TicketsTable = ({
         marginBottom: '1.5rem',
       }}>
         <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
-          Danh sách Tickets ({tickets.length})
+          Danh sách Tickets
         </h3>
       </div>
 
@@ -141,7 +141,7 @@ const TicketsTable = ({
               letterSpacing: '0.05em',
               color: '#6b7280',
               borderBottom: '1px solid #e5e7eb',
-            }}>Hành động</th>
+            }}>Thao tác</th>
           </tr>
         </thead>
         <tbody>

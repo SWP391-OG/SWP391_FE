@@ -8,8 +8,7 @@ interface UserListProps {
   totalPages: number;
   onSearchChange: (query: string) => void;
   onPageChange: (page: number) => void;
-  onViewHistory: (user: User) => void;
-  onToggleBan: (user: User) => void;
+  onEditClick: (user: User) => void;
 }
 
 const UserList = ({
@@ -20,8 +19,7 @@ const UserList = ({
   totalPages,
   onSearchChange,
   onPageChange,
-  onViewHistory,
-  onToggleBan,
+  onEditClick,
 }: UserListProps) => {
   const filteredUsers = users.filter((user: User) => {
     if (!searchQuery) return true;
@@ -196,80 +194,47 @@ const UserList = ({
                     padding: '0.875rem 1rem',
                     borderBottom: '1px solid #e5e7eb',
                   }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button
-                        style={{
-                          background: 'none',
-                          border: '1px solid #3b82f6',
-                          fontSize: '0.875rem',
-                          cursor: 'pointer',
-                          padding: '0.5rem 0.75rem',
-                          borderRadius: '6px',
-                          color: '#3b82f6',
-                          fontWeight: 500,
-                          transition: 'all 0.2s',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#dbeafe';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'none';
-                        }}
-                        onClick={() => onViewHistory(user)}
-                        title="Xem lịch sử ticket"
+                    <button
+                      style={{
+                        background: 'none',
+                        border: '1px solid #d1d5db',
+                        fontSize: '0.875rem',
+                        cursor: 'pointer',
+                        padding: '0.5rem 0.75rem',
+                        borderRadius: '6px',
+                        color: '#374151',
+                        fontWeight: 500,
+                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = '#f3f4f6';
+                        e.currentTarget.style.borderColor = '#9ca3af';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'none';
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }}
+                      onClick={() => onEditClick(user)}
+                      title="Chỉnh sửa"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        style={{ width: '18px', height: '18px' }}
                       >
-                        Lịch sử
-                      </button>
-                      {user.status === 'active' ? (
-                        <button
-                          style={{
-                            background: 'none',
-                            border: '1px solid #dc2626',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '6px',
-                            color: '#dc2626',
-                            fontWeight: 500,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#fee2e2';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'none';
-                          }}
-                          onClick={() => onToggleBan(user)}
-                          title="Khóa tài khoản (Ban)"
-                        >
-                          Khóa
-                        </button>
-                      ) : user.status === 'banned' ? (
-                        <button
-                          style={{
-                            background: 'none',
-                            border: '1px solid #10b981',
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            padding: '0.5rem 0.75rem',
-                            borderRadius: '6px',
-                            color: '#10b981',
-                            fontWeight: 500,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#d1fae5';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'none';
-                          }}
-                          onClick={() => onToggleBan(user)}
-                          title="Mở khóa (Unban)"
-                        >
-                          Mở khóa
-                        </button>
-                      ) : null}
-                    </div>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                        />
+                      </svg>
+                    </button>
                   </td>
                 </tr>
               );
