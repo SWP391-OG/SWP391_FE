@@ -107,6 +107,81 @@ function App() {
     }));
   };
 
+  // Handle escalate ticket (for Staff)
+  const handleEscalateTicket = (ticketId: string) => {
+    setTickets(tickets.map(t => {
+      if (t.id === ticketId) {
+        const now = new Date().toISOString();
+        // Add escalate event to timeline
+        const escalateEvent = {
+          id: `event-escalate-${Date.now()}`,
+          timestamp: now,
+          status: 'in-progress' as const,
+          actor: currentUser?.fullName || 'Staff',
+          actorRole: currentUser?.role || 'it-staff',
+          action: 'Ticket escalated to Admin',
+          note: 'Ticket được escalate lên Admin do gặp khó khăn trong xử lý',
+        };
+        
+        return {
+          ...t,
+          // Mark as escalated (có thể thêm field escalated: true)
+          slaTracking: {
+            ...t.slaTracking,
+            timeline: [...(t.slaTracking?.timeline || []), escalateEvent],
+          },
+          updatedAt: now,
+        };
+      }
+      return t;
+    }));
+    alert('Ticket đã được escalate lên Admin. Admin sẽ xem xét và xử lý.');
+  };
+
+  // Auto-escalate overdue tickets (check periodically)
+  useEffect(() => {
+    const checkOverdueTickets = () => {
+      const now = new Date();
+      setTickets(prevTickets => {
+        return prevTickets.map(ticket => {
+          // Chỉ escalate tickets đang mở hoặc đang xử lý và quá hạn
+          if (
+            (ticket.status === 'open' || ticket.status === 'acknowledged' || ticket.status === 'in-progress') &&
+            ticket.slaTracking?.deadline &&
+            new Date(ticket.slaTracking.deadline) < now &&
+            !ticket.slaTracking.timeline.some(e => e.action.includes('escalated'))
+          ) {
+            const escalateEvent = {
+              id: `event-auto-escalate-${Date.now()}`,
+              timestamp: now.toISOString(),
+              status: 'in-progress' as const,
+              actor: 'Hệ thống',
+              actorRole: 'admin' as const,
+              action: 'Ticket tự động escalate (quá hạn SLA)',
+              note: `Ticket quá hạn SLA ${Math.round((now.getTime() - new Date(ticket.slaTracking.deadline).getTime()) / (1000 * 60))} phút`,
+            };
+            
+            return {
+              ...ticket,
+              slaTracking: {
+                ...ticket.slaTracking,
+                timeline: [...(ticket.slaTracking.timeline || []), escalateEvent],
+                isOverdue: true,
+              },
+            };
+          }
+          return ticket;
+        });
+      });
+    };
+
+    // Check every 5 minutes
+    const interval = setInterval(checkOverdueTickets, 5 * 60 * 1000);
+    checkOverdueTickets(); // Check immediately
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       {/* Auth Pages - Show when not logged in */}
@@ -202,6 +277,8 @@ function App() {
           <TicketDetailModal
             ticket={selectedTicket!}
             onClose={() => setSelectedTicket(null)}
+            onEscalate={isStaffRole(currentRole) ? handleEscalateTicket : undefined}
+            showEscalateButton={isStaffRole(currentRole)}
           />
           )}
         </div>

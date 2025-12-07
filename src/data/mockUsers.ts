@@ -7,9 +7,13 @@ export const mockUsers: User[] = [
     password: 'student123',
     fullName: 'Nguyễn Văn A',
     email: 'studentA@fpt.edu.vn',
+    userCode: 'SV001',
+    studentCode: 'SV001', // Backward compatibility
     role: 'student',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
+    updatedAt: '2024-01-15T08:00:00Z',
   },
   {
     id: 'user-002',
@@ -17,9 +21,13 @@ export const mockUsers: User[] = [
     password: 'itstaff123',
     fullName: 'Trần Thị B',
     email: 'tranb@fpt.edu.vn',
+    userCode: 'IT001',
     role: 'it-staff',
+    departmentId: 'dept-001',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-14T08:00:00Z',
+    updatedAt: '2024-01-14T08:00:00Z',
   },
   {
     id: 'user-003',
@@ -27,9 +35,13 @@ export const mockUsers: User[] = [
     password: 'facility123',
     fullName: 'Lê Văn C',
     email: 'lec@fpt.edu.vn',
+    userCode: 'FC001',
     role: 'facility-staff',
+    departmentId: 'dept-002',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-13T08:00:00Z',
+    updatedAt: '2024-01-13T08:00:00Z',
   },
   {
     id: 'user-004',
@@ -37,9 +49,12 @@ export const mockUsers: User[] = [
     password: 'admin123',
     fullName: 'Phạm Thị D',
     email: 'phamd@fpt.edu.vn',
+    userCode: 'AD001',
     role: 'admin',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-12T08:00:00Z',
+    updatedAt: '2024-01-12T08:00:00Z',
   },
 ];
 
@@ -55,6 +70,8 @@ interface RegisterData {
   password: string;
   fullName: string;
   phoneNumber?: string;
+  studentCode?: string; // Deprecated - dùng userCode thay thế
+  userCode?: string; // Mã số sinh viên / Mã người dùng (DB: user_code)
 }
 
 interface RegisterResult {
@@ -84,7 +101,21 @@ export const registerUser = (data: RegisterData): RegisterResult => {
     counter++;
   }
 
+  // Check if userCode already exists (if provided)
+  if (data.userCode || data.studentCode) {
+    const codeToCheck = data.userCode || data.studentCode;
+    const codeExists = mockUsers.some((u) => u.userCode === codeToCheck);
+    if (codeExists) {
+      return {
+        success: false,
+        message: 'Mã người dùng đã được sử dụng!',
+      };
+    }
+  }
+
   // Create new user
+  const userCode = data.userCode || data.studentCode;
+  const now = new Date().toISOString();
   const newUser: User = {
     id: `user-${Date.now()}`,
     username,
@@ -92,8 +123,13 @@ export const registerUser = (data: RegisterData): RegisterResult => {
     fullName: data.fullName,
     email: data.email,
     phoneNumber: data.phoneNumber,
+    userCode,
+    studentCode: userCode, // Backward compatibility
     role: 'student', // Default role for new registrations
     status: 'active',
+    isActive: true,
+    createdAt: now,
+    updatedAt: now,
   };
 
   // Add to mockUsers array
@@ -175,6 +211,9 @@ export const updateUser = (userId: string, data: UpdateUserData): UpdateUserResu
   if (data.email !== undefined) {
     mockUsers[userIndex].email = data.email;
   }
+  
+  // Update updatedAt timestamp
+  mockUsers[userIndex].updatedAt = new Date().toISOString();
 
   return {
     success: true,

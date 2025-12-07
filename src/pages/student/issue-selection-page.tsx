@@ -26,13 +26,7 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
             </button>
           </div>
         )}
-        <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          Tạo Ticket Mới
-        </div>
         <h2 className="text-2xl my-2 text-gray-800">Chọn Loại Vấn Đề</h2>
-        <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 mb-8 leading-relaxed">
-          Vui lòng chọn loại vấn đề mà bạn đang gặp phải. Điều này giúp chúng tôi xử lý nhanh hơn và chuyển đến bộ phận phù hợp.
-        </p>
       </div>
 
       <div className="grid grid-cols-3 gap-6 py-4 max-w-5xl mx-auto">

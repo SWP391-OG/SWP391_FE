@@ -18,8 +18,9 @@ import StaffList from '../../components/admin/StaffList';
 import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
+import ReportsPage from '../../components/admin/ReportsPage';
 
-type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users';
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports';
 
 interface AdminPageProps {
   currentAdminId?: string;
@@ -253,15 +254,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   return (
     <div className="max-w-[1400px] mx-auto p-8">
-      <div className="text-center mb-8">
-        <span className="inline-block px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-          Department Admin
-        </span>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h2>
-        <p className="text-gray-600 max-w-3xl mx-auto">
-          Quản lý phòng/bộ phận, cấu hình hệ thống và giám sát hoạt động
-        </p>
-      </div>
 
       {/* Dashboard Layout */}
       <div className="flex gap-8 items-start">
@@ -366,6 +358,18 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               onClick={() => setActiveTab('locations')}
             >
               Quản lý Địa điểm
+            </button>
+            
+            {/* Reports */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'reports'
+                  ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
+                  : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+              }`}
+              onClick={() => setActiveTab('reports')}
+            >
+              Báo cáo
             </button>
           </nav>
         </div>
@@ -561,6 +565,17 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               }}
             />
           )}
+
+          {/* Reports */}
+          {activeTab === 'reports' && (
+            <ReportsPage
+              tickets={tickets}
+              categories={categories}
+              departments={departments}
+              users={users}
+              adminDepartments={adminDepartments}
+            />
+          )}
         </div>
       </div>
 
@@ -726,19 +741,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           userTickets={editingUser ? getTicketsByUserId(editingUser.id) : []}
           onFormDataChange={setUserFormData}
           onSubmit={() => {
-            if (editingUser) {
-              updateUser(editingUser.id, {
-                ...userFormData,
-                role: editingUser.role, // Keep original role
-              });
-            } else {
+            // Chỉ cho phép tạo user mới, không cho phép cập nhật
+            if (!editingUser) {
               createUser({
                 ...userFormData,
                 role: 'student', // Default role for new users
               });
+              setIsFormOpen(false);
+              setEditingUser(null);
             }
-            setIsFormOpen(false);
-            setEditingUser(null);
           }}
           onToggleBan={editingUser ? () => {
             if (editingUser.status === 'active') {

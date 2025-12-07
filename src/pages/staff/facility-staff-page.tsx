@@ -22,13 +22,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
 
   return (
     <div className="max-w-[1400px] mx-auto p-8">
-      <div className="text-center mb-8">
-        <span className="inline-block px-6 py-2 rounded-full text-sm font-semibold uppercase tracking-wide mb-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-          Facility Staff
-        </span>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Facility Staff Dashboard</h2>
-        <p className="text-gray-600">Xử lý các ticket về AC, Điện, Nước được giao cho bạn</p>
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">

@@ -14,6 +14,7 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
     confirmPassword: '',
     fullName: '',
     phoneNumber: '',
+    studentCode: '',
   });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -78,6 +79,8 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
       password: formData.password,
       fullName: formData.fullName,
       phoneNumber: formData.phoneNumber || undefined,
+      userCode: formData.studentCode || undefined, // Map studentCode to userCode
+      studentCode: formData.studentCode || undefined, // Backward compatibility
     });
 
     if (result.success) {
@@ -134,6 +137,20 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 placeholder="Nhập họ và tên"
                 required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mã người dùng
+              </label>
+              <input
+                type="text"
+                name="studentCode"
+                value={formData.studentCode}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                placeholder="Mã số sinh viên"
               />
             </div>
 

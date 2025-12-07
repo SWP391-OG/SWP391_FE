@@ -5,9 +5,11 @@ import { mockSLAEvents, type SLAEvent } from '../../data/mockData';
 interface TicketDetailModalProps {
   ticket: Ticket;
   onClose: () => void;
+  onEscalate?: (ticketId: string) => void; // Optional - chỉ có khi mở từ staff page
+  showEscalateButton?: boolean; // Hiển thị nút Escalate (chỉ cho staff)
 }
 
-const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
+const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = false }: TicketDetailModalProps) => {
   // Close on ESC key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -312,6 +314,39 @@ const TicketDetailModal = ({ ticket, onClose }: TicketDetailModalProps) => {
               )}
             </div>
           </div>
+
+          {/* Actions - Escalate button (only for staff) */}
+          {showEscalateButton && onEscalate && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
+            <div className="mt-8 pt-8 border-t-2 border-gray-100">
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    if (confirm('Bạn có chắc chắn muốn escalate ticket này lên Admin? Ticket sẽ được chuyển cho Admin xử lý.')) {
+                      onEscalate(ticket.id);
+                      onClose();
+                    }
+                  }}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                    />
+                  </svg>
+                  Escalate lên Admin
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

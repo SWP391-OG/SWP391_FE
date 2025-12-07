@@ -436,6 +436,7 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
           issueType={selectedIssue}
           onBack={() => setStudentView('issue-selection')}
           onSubmit={handleCreateTicket}
+          existingTickets={tickets}
         />
       )}
 

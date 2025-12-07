@@ -189,7 +189,7 @@ const CategoryList = ({
                     background: cat.status === 'active' ? '#d1fae5' : '#fee2e2',
                     color: cat.status === 'active' ? '#065f46' : '#991b1b',
                   }}>
-                    {cat.status === 'active' ? 'Active' : 'Inactive'}
+                    {cat.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
                   </span>
                 </td>
                 <td style={{

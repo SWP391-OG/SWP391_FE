@@ -28,7 +28,7 @@ const StaffList = ({
   const filteredStaff = staffUsers.filter((staff: User) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    const dept = departments.find(d => d.staffIds.includes(staff.id));
+    const dept = departments.find(d => d.staffIds?.includes(staff.id));
     const deptName = dept?.name || '';
     const roleInfoMap: Record<string, string> = {
       'it-staff': 'IT Staff',
@@ -179,7 +179,7 @@ const StaffList = ({
             </tr>
           ) : (
             paginatedFilteredStaff.map((staff: User) => {
-              const dept = departments.find(d => d.staffIds.includes(staff.id));
+              const dept = departments.find(d => d.staffIds?.includes(staff.id));
               const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
                 'it-staff': { text: 'IT Staff', bg: '#dbeafe', color: '#1e40af' },
                 'facility-staff': { text: 'Facility Staff', bg: '#fef3c7', color: '#92400e' },

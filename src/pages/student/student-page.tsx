@@ -1,15 +1,6 @@
 const StudentPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto p-8">
-      <div className="mb-8 text-center">
-        <div className="inline-block px-6 py-2 rounded-full text-sm font-semibold mb-4 uppercase tracking-wide bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-          Student
-        </div>
-        <h2 className="text-2xl my-2 text-gray-800">Trang Sinh viên</h2>
-        <p className="text-base text-gray-500 max-w-3xl mx-auto my-2 leading-relaxed">
-          Bạn đang ở trang dành cho Sinh viên
-        </p>
-      </div>
       
       <div className="bg-white rounded-xl py-12 px-8 text-center shadow-sm max-w-[700px] mx-auto my-8 border-2 border-gray-100">
         <div className="text-[5rem] mb-6">👨‍🎓</div>

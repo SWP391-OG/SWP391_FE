@@ -13,6 +13,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'medium',
     departmentId: 'dept-2', // Facilities Management
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -26,6 +27,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'high',
     departmentId: 'dept-1', // IT Department
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -39,6 +41,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'medium',
     departmentId: 'dept-1', // IT Department
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -52,6 +55,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'high',
     departmentId: 'dept-2', // Facilities Management
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -65,6 +69,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'medium',
     departmentId: 'dept-2', // Facilities Management
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -78,6 +83,7 @@ export const mockCategories: Category[] = [
     defaultPriority: 'urgent',
     departmentId: 'dept-2', // Facilities Management
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
 ];
@@ -90,6 +96,7 @@ export const mockDepartments: Department[] = [
     location: 'Tầng 5, Tòa nhà Alpha',
     adminId: 'admin-001',
     staffIds: ['staff-001', 'staff-002'],
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -99,6 +106,7 @@ export const mockDepartments: Department[] = [
     location: 'Tầng 1, Tòa nhà Alpha',
     adminId: 'admin-002',
     staffIds: ['staff-003', 'staff-004'],
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -108,6 +116,7 @@ export const mockDepartments: Department[] = [
     location: 'Tầng 2, Tòa nhà Beta',
     adminId: 'admin-003',
     staffIds: [],
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -117,6 +126,7 @@ export const mockDepartments: Department[] = [
     location: 'Tầng 1, Tòa nhà Beta',
     adminId: 'admin-004',
     staffIds: [],
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
 ];
@@ -128,7 +138,9 @@ export const mockLocations: Location[] = [
     name: 'P301',
     description: 'Phòng học 301',
     type: 'classroom',
+    floor: '3',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -137,7 +149,9 @@ export const mockLocations: Location[] = [
     name: 'P302',
     description: 'Phòng học 302',
     type: 'classroom',
+    floor: '3',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -146,7 +160,9 @@ export const mockLocations: Location[] = [
     name: 'P501',
     description: 'Phòng học 501',
     type: 'classroom',
+    floor: '5',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -155,7 +171,9 @@ export const mockLocations: Location[] = [
     name: 'WC Tầng 2',
     description: 'Nhà vệ sinh tầng 2',
     type: 'wc',
+    floor: '2',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -164,7 +182,9 @@ export const mockLocations: Location[] = [
     name: 'Sảnh chính',
     description: 'Sảnh chính tòa nhà Alpha',
     type: 'hall',
+    floor: 'G',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
   {
@@ -173,7 +193,9 @@ export const mockLocations: Location[] = [
     name: 'Hành lang Tầng 3',
     description: 'Hành lang tầng 3',
     type: 'corridor',
+    floor: '3',
     status: 'active',
+    isActive: true,
     createdAt: '2024-01-15T08:00:00Z',
   },
 ];
@@ -693,9 +715,35 @@ export const mockTickets: Ticket[] = ticketData.map(ticket => {
   const events = mockSLAEvents[ticket.id] || [];
   const slaTracking = generateSLATracking(ticket.id, ticket.createdAt, slaDeadline, events);
   
+  // Map category to categoryId (simplified - in real DB, this would be a FK)
+  const categoryIdMap: Record<string, string> = {
+    'equipment': 'cat-3',
+    'wifi': 'cat-2',
+    'facility': 'cat-1',
+    'classroom': 'cat-5',
+  };
+  
+  // Map location name to locationId (simplified - in real DB, this would be a FK)
+  const locationIdMap: Record<string, string> = {
+    'Tòa nhà Alpha': 'loc-1',
+    'Tòa nhà Beta': 'loc-2',
+  };
+  
+  // Get resolvedAt and closedAt from SLA tracking
+  const resolvedAt = slaTracking.resolvedAt;
+  const closedAt = slaTracking.closedAt;
+  
   return {
     ...ticket,
-    slaDeadline,
+    ticketCode: ticket.id, // Use id as ticketCode for now
+    categoryId: categoryIdMap[ticket.category] || 'cat-1',
+    locationId: locationIdMap[ticket.location || ''] || 'loc-1',
+    requesterId: ticket.createdBy,
+    assignedToId: ticket.assignedTo,
+    deadlineAt: slaDeadline,
+    slaDeadline, // Keep for backward compatibility
+    resolvedAt,
+    closedAt,
     slaTracking,
   };
 });

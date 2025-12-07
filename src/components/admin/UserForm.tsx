@@ -3,15 +3,15 @@ import type { User, Ticket } from '../../types';
 
 interface UserFormProps {
   editingUser: User | null;
-  userFormData: {
+  userFormData?: {
     username: string;
     password: string;
     fullName: string;
     email: string;
   };
   userTickets: Ticket[];
-  onFormDataChange: (data: UserFormProps['userFormData']) => void;
-  onSubmit: () => void;
+  onFormDataChange?: (data: UserFormProps['userFormData']) => void;
+  onSubmit?: () => void;
   onToggleBan?: () => void;
   onClose: () => void;
 }
@@ -84,7 +84,7 @@ const UserForm = ({
           borderBottom: '1px solid #e5e7eb',
         }}>
           <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937' }}>
-            {editingUser ? 'Chỉnh sửa Người dùng' : 'Thêm Người dùng mới'}
+            {editingUser ? 'Thông tin Người dùng' : 'Thêm Người dùng mới'}
           </h3>
           <button
             style={{
@@ -101,113 +101,210 @@ const UserForm = ({
           </button>
         </div>
 
-        <form
-          style={{ padding: '1.5rem' }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit();
-          }}
-        >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Tên đăng nhập *
-            </label>
-            <input
-              type="text"
-              required
-              value={userFormData.username}
-              onChange={(e) => onFormDataChange({ ...userFormData, username: e.target.value })}
-              placeholder="VD: student001"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
+        <div style={{ padding: '1.5rem' }}>
+          {editingUser ? (
+            // View mode - chỉ hiển thị thông tin
+            <>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Mã người dùng
+                </label>
+                <div style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  background: '#f9fafb',
+                  color: '#6b7280',
+                }}>
+                  {editingUser.id}
+                </div>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Họ tên
+                </label>
+                <div style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  background: '#f9fafb',
+                  color: '#6b7280',
+                }}>
+                  {editingUser.fullName}
+                </div>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Email
+                </label>
+                <div style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  background: '#f9fafb',
+                  color: '#6b7280',
+                }}>
+                  {editingUser.email}
+                </div>
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Trạng thái
+                </label>
+                <div style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  background: '#f9fafb',
+                  color: '#6b7280',
+                }}>
+                  {editingUser.status === 'active' ? 'Hoạt động' : editingUser.status === 'banned' ? 'Đã khóa' : editingUser.status}
+                </div>
+              </div>
+            </>
+          ) : (
+            // Add mode - form để thêm mới (giữ nguyên)
+            <form
+              id="user-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (onSubmit) onSubmit();
               }}
-            />
-          </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Mật khẩu *
-            </label>
-            <input
-              type="password"
-              required
-              value={userFormData.password}
-              onChange={(e) => onFormDataChange({ ...userFormData, password: e.target.value })}
-              placeholder="Nhập mật khẩu"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Họ tên *
-            </label>
-            <input
-              type="text"
-              required
-              value={userFormData.fullName}
-              onChange={(e) => onFormDataChange({ ...userFormData, fullName: e.target.value })}
-              placeholder="VD: Nguyễn Văn A"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
-            />
-          </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
-              Email *
-            </label>
-            <input
-              type="email"
-              required
-              value={userFormData.email}
-              onChange={(e) => onFormDataChange({ ...userFormData, email: e.target.value })}
-              placeholder="VD: student@fpt.edu.vn"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
-            />
-          </div>
+            >
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Tên đăng nhập *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData?.username || ''}
+                  onChange={(e) => onFormDataChange?.({ ...userFormData!, username: e.target.value })}
+                  placeholder="VD: student001"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Mật khẩu *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={userFormData?.password || ''}
+                  onChange={(e) => onFormDataChange?.({ ...userFormData!, password: e.target.value })}
+                  placeholder="Nhập mật khẩu"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Họ tên *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={userFormData?.fullName || ''}
+                  onChange={(e) => onFormDataChange?.({ ...userFormData!, fullName: e.target.value })}
+                  placeholder="VD: Nguyễn Văn A"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontWeight: 600,
+                  color: '#374151',
+                  fontSize: '0.9rem',
+                }}>
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={userFormData?.email || ''}
+                  onChange={(e) => onFormDataChange?.({ ...userFormData!, email: e.target.value })}
+                  placeholder="VD: student@fpt.edu.vn"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                  }}
+                />
+              </div>
+            </form>
+          )}
 
           {editingUser && onToggleBan && (
             <div style={{
@@ -364,43 +461,75 @@ const UserForm = ({
             </div>
           )}
 
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'flex-end',
-            marginTop: '2rem',
-          }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: '#f3f4f6',
-                color: '#4b5563',
-                border: '1px solid #d1d5db',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              style={{
-                background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {editingUser ? 'Cập nhật' : 'Thêm mới'}
-            </button>
-          </div>
-        </form>
+          {editingUser ? (
+            // View mode - chỉ có nút đóng và các thao tác
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              justifyContent: 'flex-end',
+              marginTop: '2rem',
+            }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: '#f3f4f6',
+                  color: '#4b5563',
+                  border: '1px solid #d1d5db',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Đóng
+              </button>
+            </div>
+          ) : (
+            // Add mode - có nút hủy và thêm mới
+            <div style={{
+              display: 'flex',
+              gap: '1rem',
+              justifyContent: 'flex-end',
+              marginTop: '2rem',
+            }}>
+              <button
+                type="button"
+                onClick={onClose}
+                style={{
+                  background: '#f3f4f6',
+                  color: '#4b5563',
+                  border: '1px solid #d1d5db',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                form="user-form"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onSubmit) onSubmit();
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '8px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Thêm mới
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

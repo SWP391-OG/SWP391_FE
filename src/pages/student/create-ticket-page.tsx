@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { IssueType, Ticket } from '../../types';
+import { checkDuplicateTicket } from '../../utils/ticketUtils';
+import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 
 interface CreateTicketPageProps {
   issueType: IssueType;
   onBack: () => void;
   onSubmit: (ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'>) => void;
+  existingTickets?: Ticket[]; // Tickets hiện có để kiểm tra duplicate
 }
 
 interface FormData {
@@ -16,7 +19,7 @@ interface FormData {
   images: string[];
 }
 
-const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps) => {
+const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }: CreateTicketPageProps) => {
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
@@ -27,6 +30,8 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
 
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [duplicateTicket, setDuplicateTicket] = useState<Ticket | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -74,6 +79,30 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    
+    // Kiểm tra duplicate ticket
+    const duplicate = checkDuplicateTicket(
+      {
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        roomNumber: '', // TODO: Add roomNumber field if needed
+        issueType: issueType,
+      },
+      existingTickets
+    );
+
+    if (duplicate) {
+      setDuplicateTicket(duplicate);
+      setShowDuplicateModal(true);
+      return;
+    }
+
+    // Nếu không có duplicate, tiếp tục submit
+    proceedWithSubmit();
+  };
+
+  const proceedWithSubmit = () => {
     setIsSubmitting(true);
 
     // Simulate API call
@@ -108,6 +137,12 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
       onSubmit(ticket);
       setIsSubmitting(false);
     }, 1000);
+  };
+
+  const handleCreateAnyway = () => {
+    setShowDuplicateModal(false);
+    setDuplicateTicket(null);
+    proceedWithSubmit();
   };
 
   const priorityLabels = {
@@ -254,6 +289,132 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit }: CreateTicketPageProps
           </button>
         </div>
       </form>
+
+      {/* Duplicate Ticket Warning Modal */}
+      {showDuplicateModal && duplicateTicket && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+          }}
+          onClick={() => setShowDuplicateModal(false)}
+        >
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              padding: '1.5rem',
+              borderBottom: '1px solid #e5e7eb',
+            }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937', fontWeight: 600 }}>
+                ⚠️ Phát hiện Ticket tương tự
+              </h3>
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#4b5563' }}>
+                Chúng tôi phát hiện một ticket tương tự đã được tạo trước đó. Bạn có muốn xem ticket đó không?
+              </p>
+              <div style={{
+                background: '#f9fafb',
+                padding: '1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                border: '1px solid #e5e7eb',
+              }}>
+                <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: '0.5rem' }}>
+                  {duplicateTicket.title}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+                  Trạng thái: <span style={{ fontWeight: 600 }}>
+                    {duplicateTicket.status === 'open' ? 'Mở' :
+                     duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
+                     duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
+                     duplicateTicket.status === 'resolved' ? 'Đã giải quyết' :
+                     duplicateTicket.status === 'closed' ? 'Đã đóng' : duplicateTicket.status}
+                  </span>
+                </div>
+                {duplicateTicket.location && (
+                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    Địa điểm: {duplicateTicket.location}
+                  </div>
+                )}
+              </div>
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                justifyContent: 'flex-end',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setShowDuplicateModal(false)}
+                  style={{
+                    background: '#f3f4f6',
+                    color: '#4b5563',
+                    border: '1px solid #d1d5db',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowDuplicateModal(false);
+                    // TODO: Navigate to ticket detail or open modal
+                  }}
+                  style={{
+                    background: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Xem Ticket
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateAnyway}
+                  style={{
+                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Vẫn tạo mới
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

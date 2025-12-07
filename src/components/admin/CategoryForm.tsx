@@ -274,8 +274,8 @@ const CategoryForm = ({
                 fontSize: '1rem',
               }}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">Hoạt động</option>
+              <option value="inactive">Không hoạt động</option>
             </select>
           </div>
           <div style={{
