@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   DEPARTMENTS: 'fptech_departments',
   LOCATIONS: 'fptech_locations',
   TICKETS: 'fptech_tickets',
+  CURRENT_USER: 'fptech_current_user', // Session persistence
 } as const;
 
 // Generic functions to load/save data
@@ -71,6 +72,19 @@ export const loadTickets = (): Ticket[] => {
 
 export const saveTickets = (tickets: Ticket[]): void => {
   saveToStorage(STORAGE_KEYS.TICKETS, tickets);
+};
+
+// Current user session persistence
+export const saveCurrentUser = (user: User | null): void => {
+  if (user) {
+    saveToStorage(STORAGE_KEYS.CURRENT_USER, user);
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+  }
+};
+
+export const loadCurrentUser = (): User | null => {
+  return loadFromStorage<User | null>(STORAGE_KEYS.CURRENT_USER, null);
 };
 
 // Clear all data (useful for testing/reset)

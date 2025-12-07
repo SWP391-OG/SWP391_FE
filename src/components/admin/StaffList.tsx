@@ -52,28 +52,12 @@ const StaffList = ({
 
   return (
     <>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1.5rem',
-      }}>
-        <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Staff
         </h3>
         <button
-          style={{
-            background: '#f97316',
-            color: 'white',
-            border: 'none',
-            padding: '0.625rem 1.25rem',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-          }}
+          className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-md transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
           onClick={onAddClick}
         >
           Thêm Staff
@@ -81,269 +65,133 @@ const StaffList = ({
       </div>
 
       {/* Search Bar */}
-      <div style={{
-        marginBottom: '1.5rem',
-      }}>
+      <div className="mb-6">
         <input
           type="text"
           placeholder="Tìm kiếm theo mã, tên đăng nhập, họ tên, email, vai trò, bộ phận..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.625rem 0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            outline: 'none',
-          }}
+          className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
       </div>
 
-      <table style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-      }}>
-        <thead>
-          <tr>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Mã người dùng</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Họ tên</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Email</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Vai trò</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Bộ phận</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Trạng thái</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredStaff.length === 0 ? (
-            <tr>
-              <td colSpan={7} style={{
-                padding: '2rem',
-                textAlign: 'center',
-                color: '#6b7280',
-              }}>
-                {searchQuery ? 'Không tìm thấy staff nào phù hợp với từ khóa tìm kiếm' : 'Chưa có staff nào trong departments của bạn'}
-              </td>
-            </tr>
-          ) : (
-            paginatedFilteredStaff.map((staff: User) => {
-              const dept = departments.find(d => d.staffIds?.includes(staff.id));
-              const roleInfoMap: Record<string, { text: string; bg: string; color: string }> = {
-                'it-staff': { text: 'IT Staff', bg: '#dbeafe', color: '#1e40af' },
-                'facility-staff': { text: 'Facility Staff', bg: '#fef3c7', color: '#92400e' },
-              };
-              const roleInfo = roleInfoMap[staff.role] || { text: staff.role, bg: '#f3f4f6', color: '#374151' };
-              const statusInfoMap: Record<string, { text: string; bg: string; color: string }> = {
-                'active': { text: 'Hoạt động', bg: '#d1fae5', color: '#065f46' },
-                'inactive': { text: 'Ngừng hoạt động', bg: '#fee2e2', color: '#991b1b' },
-                'banned': { text: 'Bị khóa', bg: '#fee2e2', color: '#991b1b' },
-              };
-              const statusInfo = statusInfoMap[staff.status] || { text: staff.status, bg: '#f3f4f6', color: '#374151' };
-
-              return (
-                <tr key={staff.id}>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    color: '#4b5563',
-                    fontWeight: 500,
-                  }}>{staff.username}</td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    color: '#1f2937',
-                    fontWeight: 600,
-                  }}>{staff.fullName}</td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    color: '#4b5563',
-                  }}>{staff.email}</td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                  }}>
-                    <span style={{
-                      padding: '0.4rem 0.75rem',
-                      borderRadius: '6px',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      background: roleInfo.bg,
-                      color: roleInfo.color,
-                    }}>
-                      {roleInfo.text}
-                    </span>
-                  </td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                    color: '#4b5563',
-                  }}>{dept?.name || '-'}</td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                  }}>
-                    <span style={{
-                      padding: '0.4rem 0.75rem',
-                      borderRadius: '6px',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      background: statusInfo.bg,
-                      color: statusInfo.color,
-                    }}>
-                      {statusInfo.text}
-                    </span>
-                  </td>
-                  <td style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid #e5e7eb',
-                  }}>
-                    <button
-                      style={{
-                        background: 'none',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem',
-                        cursor: 'pointer',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '6px',
-                        color: '#374151',
-                        fontWeight: 500,
-                        transition: 'all 0.2s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f3f4f6';
-                        e.currentTarget.style.borderColor = '#9ca3af';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'none';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                      }}
-                      onClick={() => onEditClick(staff)}
-                      title="Chỉnh sửa"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={1.5}
-                        stroke="currentColor"
-                        style={{ width: '18px', height: '18px' }}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                        />
-                      </svg>
-                    </button>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b-2 border-gray-200">
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Mã người dùng</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Họ tên</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Email</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Vai trò</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Bộ phận</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Trạng thái</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredStaff.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-8 py-12 text-center text-gray-500">
+                    {searchQuery ? 'Không tìm thấy staff nào phù hợp với từ khóa tìm kiếm' : 'Chưa có staff nào trong departments của bạn'}
                   </td>
                 </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
+              ) : (
+                paginatedFilteredStaff.map((staff: User) => {
+                  const dept = departments.find(d => d.staffIds?.includes(staff.id));
+                  const roleInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
+                    'it-staff': { text: 'IT Staff', bg: 'bg-blue-100', textColor: 'text-blue-800' },
+                    'facility-staff': { text: 'Facility Staff', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
+                  };
+                  const roleInfo = roleInfoMap[staff.role] || { text: staff.role, bg: 'bg-gray-100', textColor: 'text-gray-700' };
+                  const statusInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
+                    'active': { text: 'Hoạt động', bg: 'bg-green-100', textColor: 'text-green-800' },
+                    'inactive': { text: 'Ngừng hoạt động', bg: 'bg-red-100', textColor: 'text-red-800' },
+                    'banned': { text: 'Bị khóa', bg: 'bg-red-100', textColor: 'text-red-800' },
+                  };
+                  const statusInfo = statusInfoMap[staff.status] || { text: staff.status, bg: 'bg-gray-100', textColor: 'text-gray-700' };
+
+                  return (
+                    <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-4 text-sm text-gray-600 font-medium">
+                        {staff.username}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
+                        {staff.fullName}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {staff.email}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${roleInfo.bg} ${roleInfo.textColor}`}>
+                          {roleInfo.text}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {dept?.name || '-'}
+                      </td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${statusInfo.bg} ${statusInfo.textColor}`}>
+                          {statusInfo.text}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4">
+                        <button
+                          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md font-medium transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                          onClick={() => onEditClick(staff)}
+                          title="Chỉnh sửa"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="w-5 h-5"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                            />
+                          </svg>
+                          <span className="text-sm">Sửa</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: '0.5rem',
-          marginTop: '1.5rem',
-        }}>
+        <div className="flex justify-center items-center gap-2 mt-6">
           <button
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            style={{
-              padding: '0.5rem 1rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              background: currentPage === 1 ? '#f3f4f6' : 'white',
-              color: currentPage === 1 ? '#9ca3af' : '#374151',
-              cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}
+            className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+              currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+            }`}
           >
             Trước
           </button>
-          <span style={{
-            padding: '0.5rem 1rem',
-            fontSize: '0.875rem',
-            color: '#374151',
-          }}>
+          <span className="px-4 py-2 text-sm text-gray-700">
             Trang {currentPage} / {totalPages}
           </span>
           <button
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
-            style={{
-              padding: '0.5rem 1rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '6px',
-              background: currentPage === totalPages ? '#f3f4f6' : 'white',
-              color: currentPage === totalPages ? '#9ca3af' : '#374151',
-              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-            }}
+            className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+              currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
+            }`}
           >
             Sau
           </button>

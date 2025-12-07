@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { UserRole, User, IssueType, Ticket } from './types';
 import { 
-  loadTickets, saveTickets 
+  loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
 import ITStaffPage from './pages/staff/it-staff-page';
 import FacilityStaffPage from './pages/staff/facility-staff-page';
@@ -17,16 +17,33 @@ import NavbarNew from './components/shared/navbar-new';
 type StaffType = 'it' | 'facility';
 
 function App() {
-  // Auth state
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Auth state - Load from localStorage on mount
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedUser = loadCurrentUser();
+    // Verify user still exists in users list and is active
+    if (savedUser) {
+      const users = loadUsers();
+      const userExists = users.find((u: User) => u.id === savedUser.id && (u.status === 'active' || u.isActive));
+      return userExists || null;
+    }
+    return null;
+  });
   const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password'>('login');
   const [showProfileModal, setShowProfileModal] = useState(false);
   
   // Mock current user IDs (sẽ thay bằng authentication sau)
   const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
   
-  const [currentRole, setCurrentRole] = useState<UserRole>('admin');
-  const [staffType, setStaffType] = useState<StaffType>('it');
+  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
+    const savedUser = loadCurrentUser();
+    return savedUser?.role || 'admin';
+  });
+  const [staffType, setStaffType] = useState<StaffType>(() => {
+    const savedUser = loadCurrentUser();
+    if (savedUser?.role === 'it-staff') return 'it';
+    if (savedUser?.role === 'facility-staff') return 'facility';
+    return 'it';
+  });
   
   // Initialize tickets state from localStorage
   const [tickets, setTickets] = useState<Ticket[]>(() => loadTickets());
@@ -35,27 +52,66 @@ function App() {
   useEffect(() => {
     saveTickets(tickets);
   }, [tickets]);
+
+  // Sync tickets from localStorage when changed by other components (e.g., AdminPage)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tickets') {
+        const updatedTickets = loadTickets();
+        setTickets(updatedTickets);
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check localStorage periodically (every 2 seconds) to catch changes from same tab
+    const interval = setInterval(() => {
+      const currentTickets = loadTickets();
+      // Only update if tickets actually changed (compare by length and IDs)
+      const currentIds = currentTickets.map(t => t.id).sort().join(',');
+      const stateIds = tickets.map(t => t.id).sort().join(',');
+      if (currentIds !== stateIds || currentTickets.length !== tickets.length) {
+        setTickets(currentTickets);
+      }
+    }, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [tickets.length]); // Re-run if tickets length changes
   
   // Student page state - REMOVED, now handled in StudentHomePage
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
 
+  // Save currentUser to localStorage whenever it changes
+  useEffect(() => {
+    saveCurrentUser(currentUser);
+    if (currentUser) {
+      setCurrentRole(currentUser.role);
+      // Set staffType based on role
+      if (currentUser.role === 'it-staff') {
+        setStaffType('it');
+      } else if (currentUser.role === 'facility-staff') {
+        setStaffType('facility');
+      }
+    } else {
+      setCurrentRole('admin');
+      setStaffType('it');
+    }
+  }, [currentUser]);
+
   // Login handlers
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    setCurrentRole(user.role);
-    // Set staffType based on role
-    if (user.role === 'it-staff') {
-      setStaffType('it');
-    } else if (user.role === 'facility-staff') {
-      setStaffType('facility');
-    }
+    // currentRole and staffType will be set by useEffect above
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
-    setCurrentRole('admin'); // Reset role
     setAuthView('login'); // Return to login page
+    // currentRole and staffType will be reset by useEffect above
   };
 
   // Handle logo click - navigate to home based on role
@@ -75,8 +131,13 @@ function App() {
   };
 
 
-  // Get current staff ID based on staffType
+  // Get current staff ID from currentUser
   const getCurrentStaffId = () => {
+    // Use currentUser.id if available (for dynamically created staff)
+    if (currentUser && isStaffRole(currentUser.role)) {
+      return currentUser.id;
+    }
+    // Fallback to hardcoded IDs for backward compatibility
     if (staffType === 'it') return 'staff-001'; // IT Staff
     return 'staff-003'; // Facility Staff
   };
@@ -88,10 +149,10 @@ function App() {
 
   // Filter tickets assigned to current staff
   const staffTickets = useMemo(() => {
-    if (!isStaffRole(currentRole)) return [];
+    if (!isStaffRole(currentRole) || !currentUser) return [];
     const staffId = getCurrentStaffId();
     return tickets.filter(ticket => ticket.assignedTo === staffId);
-  }, [tickets, currentRole, staffType]);
+  }, [tickets, currentRole, staffType, currentUser]);
 
   // Handle update ticket status (for Staff)
   const handleUpdateTicketStatus = (ticketId: string, newStatus: Ticket['status']) => {

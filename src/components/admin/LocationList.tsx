@@ -36,28 +36,12 @@ const LocationList = ({
 
   return (
     <>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1.5rem',
-      }}>
-        <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Địa điểm
         </h3>
         <button
-          style={{
-            background: '#f97316',
-            color: 'white',
-            border: 'none',
-            padding: '0.625rem 1.25rem',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            transition: 'all 0.2s',
-            boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-          }}
+          className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-md transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
           onClick={onAddClick}
         >
           Thêm Địa điểm
@@ -65,38 +49,18 @@ const LocationList = ({
       </div>
 
       {/* Search and Filter */}
-      <div style={{
-        display: 'flex',
-        gap: '1rem',
-        marginBottom: '1.5rem',
-        alignItems: 'center',
-      }}>
+      <div className="flex gap-4 mb-6 items-center">
         <input
           type="text"
           placeholder="Tìm kiếm theo mã địa điểm, tên địa điểm..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '0.625rem 0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            outline: 'none',
-          }}
+          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
         <select
           value={filterStatus}
           onChange={(e) => onFilterStatusChange(e.target.value)}
-          style={{
-            padding: '0.5rem 0.75rem',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '0.875rem',
-            cursor: 'pointer',
-            background: 'white',
-            minWidth: '150px',
-          }}
+          className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[150px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         >
           <option value="all">Tất cả</option>
           <option value="active">Hoạt động</option>
@@ -104,135 +68,67 @@ const LocationList = ({
         </select>
       </div>
 
-      <table style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-      }}>
-        <thead>
-          <tr>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Mã Địa điểm</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Tên Địa điểm</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Trạng thái</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              color: '#374151',
-              borderBottom: '2px solid #e5e7eb',
-            }}>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredLocations.map((location) => {
-            const statusInfo = {
-              active: { bg: '#d1fae5', color: '#065f46', text: 'Hoạt động' },
-              inactive: { bg: '#fee2e2', color: '#991b1b', text: 'Không hoạt động' },
-            }[location.status];
-
-            return (
-              <tr key={location.id}>
-                <td style={{
-                  padding: '1rem',
-                  borderBottom: '1px solid #e5e7eb',
-                  color: '#4b5563',
-                  fontWeight: 500,
-                }}>{location.code || '-'}</td>
-                <td style={{
-                  padding: '1rem',
-                  borderBottom: '1px solid #e5e7eb',
-                  color: '#1f2937',
-                  fontWeight: 600,
-                }}>{location.name}</td>
-                <td style={{
-                  padding: '1rem',
-                  borderBottom: '1px solid #e5e7eb',
-                }}>
-                  <span style={{
-                    padding: '0.4rem 0.75rem',
-                    borderRadius: '6px',
-                    fontSize: '0.875rem',
-                    fontWeight: 600,
-                    background: statusInfo.bg,
-                    color: statusInfo.color,
-                  }}>
-                    {statusInfo.text}
-                  </span>
-                </td>
-                <td style={{
-                  padding: '1rem',
-                  borderBottom: '1px solid #e5e7eb',
-                }}>
-                  <button
-                    style={{
-                      background: 'none',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem',
-                      cursor: 'pointer',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '6px',
-                      color: '#374151',
-                      fontWeight: 500,
-                      transition: 'all 0.2s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f3f4f6';
-                      e.currentTarget.style.borderColor = '#9ca3af';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                      e.currentTarget.style.borderColor = '#d1d5db';
-                    }}
-                    onClick={() => onEditClick(location)}
-                    title="Chỉnh sửa"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      style={{ width: '18px', height: '18px' }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                      />
-                    </svg>
-                  </button>
-                </td>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b-2 border-gray-200">
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Mã Địa điểm</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Tên Địa điểm</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Trạng thái</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Thao tác</th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredLocations.map((location) => {
+                const statusInfo = {
+                  active: { bg: 'bg-green-100', text: 'text-green-800', label: 'Hoạt động' },
+                  inactive: { bg: 'bg-red-100', text: 'text-red-800', label: 'Không hoạt động' },
+                }[location.status];
+
+                return (
+                  <tr key={location.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 text-sm text-gray-600 font-medium">
+                      {location.code || '-'}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
+                      {location.name}
+                    </td>
+                    <td className="px-4 py-4">
+                      <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${statusInfo.bg} ${statusInfo.text}`}>
+                        {statusInfo.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md font-medium transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                        onClick={() => onEditClick(location)}
+                        title="Chỉnh sửa"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                          className="w-5 h-5"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                          />
+                        </svg>
+                        <span className="text-sm">Sửa</span>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </>
   );
 };

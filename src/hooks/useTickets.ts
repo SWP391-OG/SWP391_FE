@@ -9,7 +9,30 @@ export const useTickets = () => {
   // Load tickets
   useEffect(() => {
     loadTickets();
-  }, []);
+    
+    // Listen for storage events to sync tickets across tabs/components
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'tickets') {
+        loadTickets();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check localStorage periodically (every 2 seconds) to catch changes from same tab
+    const interval = setInterval(() => {
+      const currentTickets = ticketService.getAll();
+      if (currentTickets.length !== tickets.length || 
+          JSON.stringify(currentTickets) !== JSON.stringify(tickets)) {
+        loadTickets();
+      }
+    }, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [tickets.length]); // Re-run if tickets length changes
 
   const loadTickets = () => {
     setLoading(true);

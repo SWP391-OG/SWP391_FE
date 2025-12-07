@@ -33,332 +33,177 @@ const TicketsTable = ({
 
   return (
     <>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1.5rem',
-      }}>
-        <h3 style={{ margin: 0, fontSize: '1.5rem', color: '#1f2937' }}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Tickets
         </h3>
       </div>
 
       {/* Tickets Table */}
-      <table style={{
-        width: '100%',
-        borderCollapse: 'collapse',
-        border: '1px solid #e5e7eb',
-        borderRadius: '8px',
-        overflow: 'hidden',
-      }}>
-        <thead>
-          <tr>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>ID</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Tiêu đề & Mô tả</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Vị trí</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Trạng thái</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Độ ưu tiên</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Người xử lý</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Ngày tạo</th>
-            <th style={{
-              background: '#f9fafb',
-              padding: '0.875rem 1rem',
-              textAlign: 'left',
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: '#6b7280',
-              borderBottom: '1px solid #e5e7eb',
-            }}>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tickets.length > 0 ? (
-            tickets.map((ticket) => {
-              const statusInfo = {
-                open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
-                'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
-                'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
-                resolved: { bg: '#d1fae5', color: '#065f46', text: 'Đã giải quyết' },
-                closed: { bg: '#f3f4f6', color: '#374151', text: 'Đã đóng' },
-                cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
-              }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  ID
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Tiêu đề & Mô tả
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Vị trí
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Trạng thái
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Độ ưu tiên
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Người xử lý
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Ngày tạo
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {tickets.length > 0 ? (
+                tickets.map((ticket) => {
+                  const statusInfo = {
+                    open: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
+                    'acknowledged': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Đã giao việc' },
+                    'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
+                    resolved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
+                    closed: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
+                    cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+                  }[ticket.status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: ticket.status };
 
-              const priorityInfo = {
-                low: { bg: '#d1fae5', color: '#065f46', text: 'Thấp' },
-                medium: { bg: '#fef3c7', color: '#92400e', text: 'Trung bình' },
-                high: { bg: '#fed7aa', color: '#9a3412', text: 'Cao' },
-                urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
-              }[ticket.priority];
+                  const priorityInfo = {
+                    low: { bg: 'bg-green-100', text: 'text-green-800', label: 'Thấp' },
+                    medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Trung bình' },
+                    high: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Cao' },
+                    urgent: { bg: 'bg-red-100', text: 'text-red-800', label: 'Khẩn cấp' },
+                  }[ticket.priority];
 
-              // Get location name
-              const location = locations.find(l => l.id === ticket.location);
-              const locationName = location ? location.name : ticket.location || 'N/A';
+                  // Get location name
+                  const location = locations.find(l => l.id === ticket.location);
+                  const locationName = location ? location.name : ticket.location || 'N/A';
 
-              // Get assigned staff name
-              const assignedStaff = staffList.find(s => s.id === ticket.assignedTo);
+                  // Get assigned staff name
+                  const assignedStaff = staffList.find(s => s.id === ticket.assignedTo);
 
-              return (
-                <tr key={ticket.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                  {/* ID */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                    color: '#6b7280',
-                    fontSize: '0.875rem',
-                    fontFamily: 'monospace',
-                  }}>
-                    {ticket.id.substring(0, 8)}
-                  </td>
-                  
-                  {/* Tiêu đề & Mô tả */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                    color: '#1f2937',
-                    maxWidth: '300px',
-                  }}>
-                    <div style={{ fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
-                      {ticket.title}
-                    </div>
-                    <div style={{ 
-                      fontSize: '0.75rem', 
-                      color: '#6b7280', 
-                      overflow: 'hidden', 
-                      textOverflow: 'ellipsis', 
-                      whiteSpace: 'nowrap',
-                      maxWidth: '280px',
-                    }}>
-                      {ticket.description}
-                    </div>
-                  </td>
-                  
-                  {/* Vị trí */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                    color: '#4b5563',
-                    fontSize: '0.875rem',
-                  }}>
-                    {locationName}
-                  </td>
-                  
-                  {/* Trạng thái */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                  }}>
-                    <span style={{
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      background: statusInfo.bg,
-                      color: statusInfo.color,
-                      display: 'inline-block',
-                    }}>
-                      {statusInfo.text}
-                    </span>
-                  </td>
-                  
-                  {/* Độ ưu tiên */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                  }}>
-                    <span style={{
-                      padding: '0.35rem 0.65rem',
-                      borderRadius: '4px',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      background: priorityInfo.bg,
-                      color: priorityInfo.color,
-                      display: 'inline-block',
-                    }}>
-                      {priorityInfo.text}
-                    </span>
-                  </td>
-                  
-                  {/* Người xử lý */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                    color: '#4b5563',
-                    fontSize: '0.875rem',
-                  }}>
-                    {ticket.assignedTo && assignedStaff ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span>{assignedStaff.name}</span>
-                        <select
-                          style={{
-                            padding: '0.25rem 0.5rem',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '4px',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                            background: 'white',
-                            color: '#6b7280',
-                          }}
-                          value={ticket.assignedTo}
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              onAssignTicket(ticket.id, e.target.value);
-                            }
-                          }}
-                          onClick={(e) => e.stopPropagation()}
+                  return (
+                    <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                      {/* ID */}
+                      <td className="px-4 py-3.5 text-sm text-gray-500 font-mono">
+                        {ticket.id.substring(0, 8)}
+                      </td>
+                      
+                      {/* Tiêu đề & Mô tả */}
+                      <td className="px-4 py-3.5 max-w-xs">
+                        <div className="font-semibold text-sm text-gray-900 mb-1">
+                          {ticket.title}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate max-w-[280px]">
+                          {ticket.description}
+                        </div>
+                      </td>
+                      
+                      {/* Vị trí */}
+                      <td className="px-4 py-3.5 text-sm text-gray-600">
+                        {locationName}
+                      </td>
+                      
+                      {/* Trạng thái */}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${statusInfo.bg} ${statusInfo.text}`}>
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      
+                      {/* Độ ưu tiên */}
+                      <td className="px-4 py-3.5">
+                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${priorityInfo.bg} ${priorityInfo.text}`}>
+                          {priorityInfo.label}
+                        </span>
+                      </td>
+                      
+                      {/* Người xử lý */}
+                      <td className="px-4 py-3.5 text-sm">
+                        {ticket.assignedTo ? (
+                          <div className="flex items-center gap-2">
+                            <span className={`${assignedStaff ? 'text-gray-900 font-medium' : 'text-red-600 font-semibold'}`}>
+                              {assignedStaff ? assignedStaff.name : `ID: ${ticket.assignedTo} (Không tìm thấy)`}
+                            </span>
+                            <select
+                              className="px-2 py-1 text-xs border border-gray-300 rounded-md cursor-pointer bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                              value={ticket.assignedTo}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  onAssignTicket(ticket.id, e.target.value);
+                                }
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="">-- Chọn staff --</option>
+                              {staffList.map(staff => (
+                                <option key={staff.id} value={staff.id}>
+                                  {staff.name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : (
+                          <button
+                            className="px-2.5 py-1.5 text-xs font-semibold border border-orange-500 rounded-md cursor-pointer bg-white text-orange-500 hover:bg-orange-50 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (staffList.length > 0) {
+                                const firstStaff = staffList[0];
+                                onAssignTicket(ticket.id, firstStaff.id);
+                              }
+                            }}
+                            title="Giao việc"
+                          >
+                            Assign +
+                          </button>
+                        )}
+                      </td>
+                      
+                      {/* Ngày tạo */}
+                      <td className="px-4 py-3.5 text-xs text-gray-500">
+                        {formatDate(ticket.createdAt)}
+                      </td>
+                      
+                      {/* Thao tác */}
+                      <td className="px-4 py-3.5">
+                        <button
+                          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                          onClick={() => onViewTicket(ticket)}
+                          title="Xem chi tiết"
                         >
-                          {staffList.map(staff => (
-                            <option key={staff.id} value={staff.id}>
-                              {staff.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    ) : (
-                      <button
-                        style={{
-                          padding: '0.35rem 0.65rem',
-                          border: '1px solid #f97316',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          background: 'white',
-                          color: '#f97316',
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (staffList.length > 0) {
-                            const firstStaff = staffList[0];
-                            onAssignTicket(ticket.id, firstStaff.id);
-                          }
-                        }}
-                        title="Giao việc"
-                      >
-                        Assign +
-                      </button>
-                    )}
-                  </td>
-                  
-                  {/* Ngày tạo */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                    color: '#6b7280',
-                    fontSize: '0.75rem',
-                  }}>
-                    {formatDate(ticket.createdAt)}
-                  </td>
-                  
-                  {/* Hành động */}
-                  <td style={{
-                    padding: '0.875rem 1rem',
-                  }}>
-                    <button
-                      style={{
-                        background: '#f97316',
-                        border: 'none',
-                        padding: '0.5rem 1rem',
-                        borderRadius: '6px',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        color: 'white',
-                        transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#ea580c';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#f97316';
-                      }}
-                      onClick={() => onViewTicket(ticket)}
-                      title="Xem chi tiết"
-                    >
-                      Xem
-                    </button>
+                          Xem
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={8} className="px-8 py-12 text-center text-gray-500">
+                    Không có ticket nào trong department của bạn
                   </td>
                 </tr>
-              );
-            })
-          ) : (
-            <tr>
-              <td colSpan={8} style={{
-                padding: '2rem',
-                textAlign: 'center',
-                color: '#6b7280',
-              }}>
-                Không có ticket nào trong department của bạn
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </>
   );
 };

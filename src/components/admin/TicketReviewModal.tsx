@@ -1,20 +1,30 @@
 import { useState } from 'react';
 import type { Ticket } from '../../types';
 
+interface Staff {
+  id: string;
+  name: string;
+}
+
 interface TicketReviewModalProps {
   ticket: Ticket;
+  staffList: Staff[];
   onApprove: (ticketId: string) => void;
   onReject: (ticketId: string, reason: string) => void;
+  onAssign?: (ticketId: string, staffId: string) => void;
   onClose: () => void;
 }
 
 const TicketReviewModal = ({
   ticket,
+  staffList,
   onApprove,
   onReject,
+  onAssign,
   onClose,
 }: TicketReviewModalProps) => {
   const [rejectReason, setRejectReason] = useState('');
+  const [selectedStaffId, setSelectedStaffId] = useState<string>(ticket.assignedTo || '');
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -29,53 +39,20 @@ const TicketReviewModal = ({
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-        padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          width: '100%',
-          maxWidth: '700px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-        }}
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.5rem',
-          borderBottom: '1px solid #e5e7eb',
-        }}>
-          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937' }}>
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800">
             Duyệt Ticket
           </h3>
           <button
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem',
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700 transition-colors"
             onClick={onClose}
           >
             ✕
@@ -83,44 +60,36 @@ const TicketReviewModal = ({
         </div>
 
         {/* Content */}
-        <div style={{ padding: '1.5rem' }}>
+        <div className="p-6">
           {/* Ticket Info */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>ID Ticket:</span>
-              <span style={{ marginLeft: '0.5rem', fontFamily: 'monospace', color: '#1f2937' }}>{ticket.id}</span>
+          <div className="mb-6">
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">ID Ticket:</span>
+              <span className="ml-2 font-mono text-gray-800">{ticket.id}</span>
             </div>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>Tiêu đề:</span>
-              <div style={{ marginTop: '0.25rem', fontSize: '1rem', color: '#1f2937', fontWeight: 600 }}>
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Tiêu đề:</span>
+              <div className="mt-1 text-base text-gray-800 font-semibold">
                 {ticket.title}
               </div>
             </div>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>Mô tả:</span>
-              <div style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#4b5563', lineHeight: '1.5' }}>
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Mô tả:</span>
+              <div className="mt-1 text-sm text-gray-600 leading-relaxed">
                 {ticket.description}
               </div>
             </div>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>Vị trí:</span>
-              <span style={{ marginLeft: '0.5rem', color: '#1f2937' }}>{ticket.location || 'N/A'}</span>
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Vị trí:</span>
+              <span className="ml-2 text-gray-800">{ticket.location || 'N/A'}</span>
             </div>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>Ngày tạo:</span>
-              <span style={{ marginLeft: '0.5rem', color: '#1f2937' }}>{formatDate(ticket.createdAt)}</span>
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Ngày tạo:</span>
+              <span className="ml-2 text-gray-800">{formatDate(ticket.createdAt)}</span>
             </div>
-            <div style={{ marginBottom: '0.75rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600 }}>Trạng thái:</span>
-              <span style={{
-                marginLeft: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                background: '#dbeafe',
-                color: '#1e40af',
-              }}>
+            <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Trạng thái:</span>
+              <span className="ml-2 inline-flex px-2 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">
                 {ticket.status === 'open' ? 'Mới tạo' : ticket.status}
               </span>
             </div>
@@ -128,38 +97,59 @@ const TicketReviewModal = ({
 
           {/* Images if any */}
           {ticket.images && ticket.images.length > 0 && (
-            <div style={{ marginBottom: '1.5rem' }}>
-              <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: 600, display: 'block', marginBottom: '0.5rem' }}>
+            <div className="mb-6">
+              <span className="text-sm text-gray-500 font-semibold block mb-2">
                 Hình ảnh:
               </span>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
                 {ticket.images.map((img, idx) => (
                   <img
                     key={idx}
                     src={img}
                     alt={`Ticket image ${idx + 1}`}
-                    style={{
-                      width: '100%',
-                      height: '100px',
-                      objectFit: 'cover',
-                      borderRadius: '6px',
-                      border: '1px solid #e5e7eb',
-                    }}
+                    className="w-full h-24 object-cover rounded-md border border-gray-200"
                   />
                 ))}
               </div>
             </div>
           )}
 
+          {/* Assign Staff */}
+          {staffList.length > 0 && (
+            <div className="mb-6">
+              <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                Chọn người xử lý:
+              </label>
+              <select
+                value={selectedStaffId}
+                onChange={(e) => setSelectedStaffId(e.target.value)}
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              >
+                <option value="">-- Chọn staff --</option>
+                {staffList.map(staff => (
+                  <option key={staff.id} value={staff.id}>
+                    {staff.name}
+                  </option>
+                ))}
+              </select>
+              {selectedStaffId && onAssign && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAssign(ticket.id, selectedStaffId);
+                    alert('Đã giao ticket cho staff thành công!');
+                  }}
+                  className="mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white border-none rounded-md text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                >
+                  Giao việc ngay
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Reject Reason Input */}
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Lý do từ chối (nếu từ chối):
             </label>
             <textarea
@@ -167,37 +157,16 @@ const TicketReviewModal = ({
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Nhập lý do từ chối ticket này..."
               rows={3}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '0.875rem',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
 
           {/* Actions */}
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'flex-end',
-            marginTop: '2rem',
-          }}>
+          <div className="flex gap-4 justify-end mt-8">
             <button
               type="button"
               onClick={onClose}
-              style={{
-                background: '#f3f4f6',
-                color: '#4b5563',
-                border: '1px solid #d1d5db',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Hủy
             </button>
@@ -211,49 +180,23 @@ const TicketReviewModal = ({
                   alert('Vui lòng nhập lý do từ chối');
                 }
               }}
-              style={{
-                background: 'none',
-                color: '#dc2626',
-                border: '1px solid #dc2626',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#fee2e2';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'none';
-              }}
+              className="px-6 py-3 bg-white text-red-600 border border-red-600 rounded-lg font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
               Từ chối
             </button>
             <button
               type="button"
               onClick={() => {
+                // If staff is selected, assign first, then approve
+                if (selectedStaffId && onAssign) {
+                  onAssign(ticket.id, selectedStaffId);
+                }
                 onApprove(ticket.id);
                 onClose();
               }}
-              style={{
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #059669, #047857)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-              }}
+              className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
             >
-              Chấp nhận
+              {selectedStaffId ? 'Chấp nhận và giao việc' : 'Chấp nhận'}
             </button>
           </div>
         </div>
@@ -263,4 +206,3 @@ const TicketReviewModal = ({
 };
 
 export default TicketReviewModal;
-

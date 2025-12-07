@@ -30,33 +30,14 @@ const StaffForm = ({
 }: StaffFormProps) => {
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-      }}
+      className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '2rem',
-          width: '90%',
-          maxWidth: '600px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem', color: '#1f2937' }}>
+        <h3 className="text-2xl font-bold text-gray-800 mb-6">
           {editingStaff ? 'Chỉnh sửa Staff' : 'Thêm Staff mới'}
         </h3>
         <form
@@ -65,14 +46,8 @@ const StaffForm = ({
             onSubmit();
           }}
         >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Tên đăng nhập *
             </label>
             <input
@@ -81,23 +56,11 @@ const StaffForm = ({
               value={staffFormData.username}
               onChange={(e) => onFormDataChange({ ...staffFormData, username: e.target.value })}
               placeholder="VD: itstaff01"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Mật khẩu *
             </label>
             <input
@@ -106,23 +69,11 @@ const StaffForm = ({
               value={staffFormData.password}
               onChange={(e) => onFormDataChange({ ...staffFormData, password: e.target.value })}
               placeholder="Nhập mật khẩu"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Họ tên *
             </label>
             <input
@@ -131,23 +82,11 @@ const StaffForm = ({
               value={staffFormData.fullName}
               onChange={(e) => onFormDataChange({ ...staffFormData, fullName: e.target.value })}
               placeholder="VD: Nguyễn Văn A"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Email *
             </label>
             <input
@@ -156,62 +95,32 @@ const StaffForm = ({
               value={staffFormData.email}
               onChange={(e) => onFormDataChange({ ...staffFormData, email: e.target.value })}
               placeholder="VD: staff@fpt.edu.vn"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Vai trò *
             </label>
             <select
               required
               value={staffFormData.role}
               onChange={(e) => onFormDataChange({ ...staffFormData, role: e.target.value as UserRole })}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="it-staff">IT Staff</option>
               <option value="facility-staff">Facility Staff</option>
             </select>
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Bộ phận *
             </label>
             <select
               required
               value={staffFormData.departmentId}
               onChange={(e) => onFormDataChange({ ...staffFormData, departmentId: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="">Chọn bộ phận</option>
               {adminDepartments.map((dept) => (
@@ -222,17 +131,11 @@ const StaffForm = ({
             </select>
           </div>
           {editingStaff && onResetPassword && onToggleStatus && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              background: '#f9fafb',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-            }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#1f2937', fontWeight: 600 }}>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-base font-semibold text-gray-800 mb-4">
                 Quản lý tài khoản
               </h4>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div className="flex gap-4 flex-wrap">
                 <button
                   type="button"
                   onClick={() => {
@@ -242,22 +145,7 @@ const StaffForm = ({
                       alert('Đã cấp lại mật khẩu thành công!');
                     }
                   }}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    border: '1px solid #3b82f6',
-                    borderRadius: '8px',
-                    background: 'none',
-                    color: '#3b82f6',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#dbeafe';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'none';
-                  }}
+                  className="px-6 py-3 border border-blue-500 rounded-lg bg-white text-blue-500 font-semibold cursor-pointer hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Cập nhật mật khẩu
                 </button>
@@ -269,22 +157,7 @@ const StaffForm = ({
                         onToggleStatus();
                       }
                     }}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: '1px solid #dc2626',
-                      borderRadius: '8px',
-                      background: 'none',
-                      color: '#dc2626',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#fee2e2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
+                    className="px-6 py-3 border border-red-600 rounded-lg bg-white text-red-600 font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                   >
                     Khóa tài khoản
                   </button>
@@ -296,22 +169,7 @@ const StaffForm = ({
                         onToggleStatus();
                       }
                     }}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: '1px solid #10b981',
-                      borderRadius: '8px',
-                      background: 'none',
-                      color: '#10b981',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#d1fae5';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
+                    className="px-6 py-3 border border-green-500 rounded-lg bg-white text-green-500 font-semibold cursor-pointer hover:bg-green-50 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                   >
                     Mở khóa tài khoản
                   </button>
@@ -319,33 +177,17 @@ const StaffForm = ({
               </div>
             </div>
           )}
-          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+          <div className="flex gap-4 justify-end">
             <button
               type="button"
               onClick={onClose}
-              style={{
-                padding: '0.75rem 1.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                background: 'white',
-                color: '#374151',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-6 py-3 border border-gray-300 rounded-lg bg-white text-gray-700 font-semibold cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Hủy
             </button>
             <button
               type="submit"
-              style={{
-                padding: '0.75rem 1.5rem',
-                border: 'none',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                color: 'white',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
             >
               {editingStaff ? 'Cập nhật' : 'Thêm mới'}
             </button>

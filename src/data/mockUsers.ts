@@ -1,4 +1,5 @@
 import type { User } from '../types';
+import { loadUsers } from '../utils/localStorage';
 
 export const mockUsers: User[] = [
   {
@@ -59,10 +60,24 @@ export const mockUsers: User[] = [
 ];
 
 export const authenticateUser = (username: string, password: string): User | null => {
-  const user = mockUsers.find(
+  // First check localStorage for dynamically created users (including admin-created staff)
+  try {
+    const allUsers = loadUsers(); // This includes both mockUsers and dynamically created users
+    const userFromStorage = allUsers.find(
+      (u) => u.username === username && u.password === password && (u.status === 'active' || u.isActive)
+    );
+    if (userFromStorage) {
+      return userFromStorage;
+    }
+  } catch (error) {
+    console.error('Error loading users from localStorage:', error);
+  }
+  
+  // Then check mockUsers (for backward compatibility with hardcoded users)
+  const mockUser = mockUsers.find(
     (u) => u.username === username && u.password === password
   );
-  return user || null;
+  return mockUser || null;
 };
 
 interface RegisterData {

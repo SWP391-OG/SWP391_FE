@@ -26,72 +26,33 @@ const LocationForm = ({
 }: LocationFormProps) => {
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-        padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          width: '100%',
-          maxWidth: '600px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-        }}
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.5rem',
-          borderBottom: '1px solid #e5e7eb',
-        }}>
-          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937' }}>
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800">
             {editingLocation ? 'Chỉnh sửa Địa điểm' : 'Thêm Địa điểm mới'}
           </h3>
           <button
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem',
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700 transition-colors"
             onClick={onClose}
           >
             ✕
           </button>
         </div>
         <form
-          style={{ padding: '1.5rem' }}
+          className="p-6"
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
           }}
         >
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Mã địa điểm *
             </label>
             <input
@@ -100,23 +61,11 @@ const LocationForm = ({
               value={locationFormData.code}
               onChange={(e) => onFormDataChange({ ...locationFormData, code: e.target.value })}
               placeholder="VD: LOC001, LOC002"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Tên địa điểm *
             </label>
             <input
@@ -125,23 +74,11 @@ const LocationForm = ({
               value={locationFormData.name}
               onChange={(e) => onFormDataChange({ ...locationFormData, name: e.target.value })}
               placeholder="VD: P301, WC Tầng 2"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Mô tả
             </label>
             <textarea
@@ -149,39 +86,19 @@ const LocationForm = ({
               onChange={(e) => onFormDataChange({ ...locationFormData, description: e.target.value })}
               placeholder="Mô tả về địa điểm"
               rows={3}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontWeight: 600,
-                color: '#374151',
-                fontSize: '0.9rem',
-              }}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm">
                 Loại địa điểm *
               </label>
               <select
                 required
                 value={locationFormData.type}
                 onChange={(e) => onFormDataChange({ ...locationFormData, type: e.target.value as Location['type'] })}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                }}
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
               >
                 <option value="classroom">Phòng học</option>
                 <option value="wc">Nhà vệ sinh</option>
@@ -191,25 +108,13 @@ const LocationForm = ({
               </select>
             </div>
             <div>
-              <label style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontWeight: 600,
-                color: '#374151',
-                fontSize: '0.9rem',
-              }}>
+              <label className="block mb-2 font-semibold text-gray-700 text-sm">
                 Tầng
               </label>
               <select
                 value={locationFormData.floor}
                 onChange={(e) => onFormDataChange({ ...locationFormData, floor: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                }}
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
               >
                 <option value="">Chọn tầng</option>
                 <option value="G">Tầng Trệt (G)</option>
@@ -221,50 +126,25 @@ const LocationForm = ({
               </select>
             </div>
           </div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{
-              display: 'block',
-              marginBottom: '0.5rem',
-              fontWeight: 600,
-              color: '#374151',
-              fontSize: '0.9rem',
-            }}>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Trạng thái *
             </label>
             <select
               required
               value={locationFormData.status}
               onChange={(e) => onFormDataChange({ ...locationFormData, status: e.target.value as 'active' | 'inactive' })}
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '8px',
-                fontSize: '1rem',
-              }}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="active">Hoạt động</option>
               <option value="inactive">Không hoạt động</option>
             </select>
           </div>
-          <div style={{
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'flex-end',
-            marginTop: '2rem',
-          }}>
+          <div className="flex gap-4 justify-end mt-8">
             <button
               type="button"
               onClick={onClose}
-              style={{
-                background: '#f3f4f6',
-                color: '#4b5563',
-                border: '1px solid #d1d5db',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
               Hủy
             </button>
@@ -277,37 +157,14 @@ const LocationForm = ({
                     onClose();
                   }
                 }}
-                style={{
-                  background: 'none',
-                  color: '#dc2626',
-                  border: '1px solid #dc2626',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = '#fee2e2';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'none';
-                }}
+                className="px-6 py-3 bg-white text-red-600 border border-red-600 rounded-lg font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
               >
                 Xóa
               </button>
             )}
             <button
               type="submit"
-              style={{
-                background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 1.5rem',
-                borderRadius: '8px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
             >
               {editingLocation ? 'Cập nhật' : 'Thêm mới'}
             </button>

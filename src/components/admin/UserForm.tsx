@@ -47,155 +47,75 @@ const UserForm = ({
     cancelled: 'Đã hủy',
   };
 
+  const statusColors: Record<string, { bg: string; text: string }> = {
+    open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+    'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+    resolved: { bg: 'bg-green-100', text: 'text-green-800' },
+    closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    cancelled: { bg: 'bg-red-100', text: 'text-red-800' },
+  };
+
   return (
     <div
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.5)',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        zIndex: 1000,
-        padding: '1rem',
-      }}
+      className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
       onClick={onClose}
     >
       <div
-        style={{
-          background: 'white',
-          borderRadius: '12px',
-          width: '100%',
-          maxWidth: '700px',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-        }}
+        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '1.5rem',
-          borderBottom: '1px solid #e5e7eb',
-        }}>
-          <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937' }}>
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800">
             {editingUser ? 'Thông tin Người dùng' : 'Thêm Người dùng mới'}
           </h3>
           <button
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '1.5rem',
-              cursor: 'pointer',
-              color: '#6b7280',
-              padding: '0.25rem',
-            }}
+            className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700 transition-colors"
             onClick={onClose}
           >
             ✕
           </button>
         </div>
 
-        <div style={{ padding: '1.5rem' }}>
+        <div className="p-6">
           {editingUser ? (
             // View mode - chỉ hiển thị thông tin
             <>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Mã người dùng
                 </label>
-                <div style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  background: '#f9fafb',
-                  color: '#6b7280',
-                }}>
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
                   {editingUser.id}
                 </div>
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Họ tên
                 </label>
-                <div style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  background: '#f9fafb',
-                  color: '#6b7280',
-                }}>
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
                   {editingUser.fullName}
                 </div>
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Email
                 </label>
-                <div style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  background: '#f9fafb',
-                  color: '#6b7280',
-                }}>
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
                   {editingUser.email}
                 </div>
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Trạng thái
                 </label>
-                <div style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  background: '#f9fafb',
-                  color: '#6b7280',
-                }}>
+                <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
                   {editingUser.status === 'active' ? 'Hoạt động' : editingUser.status === 'banned' ? 'Đã khóa' : editingUser.status}
                 </div>
               </div>
             </>
           ) : (
-            // Add mode - form để thêm mới (giữ nguyên)
+            // Add mode - form để thêm mới
             <form
               id="user-form"
               onSubmit={(e) => {
@@ -203,14 +123,8 @@ const UserForm = ({
                 if (onSubmit) onSubmit();
               }}
             >
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Tên đăng nhập *
                 </label>
                 <input
@@ -219,23 +133,11 @@ const UserForm = ({
                   value={userFormData?.username || ''}
                   onChange={(e) => onFormDataChange?.({ ...userFormData!, username: e.target.value })}
                   placeholder="VD: student001"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Mật khẩu *
                 </label>
                 <input
@@ -244,23 +146,11 @@ const UserForm = ({
                   value={userFormData?.password || ''}
                   onChange={(e) => onFormDataChange?.({ ...userFormData!, password: e.target.value })}
                   placeholder="Nhập mật khẩu"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Họ tên *
                 </label>
                 <input
@@ -269,23 +159,11 @@ const UserForm = ({
                   value={userFormData?.fullName || ''}
                   onChange={(e) => onFormDataChange?.({ ...userFormData!, fullName: e.target.value })}
                   placeholder="VD: Nguyễn Văn A"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '0.5rem',
-                  fontWeight: 600,
-                  color: '#374151',
-                  fontSize: '0.9rem',
-                }}>
+              <div className="mb-6">
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
                   Email *
                 </label>
                 <input
@@ -294,30 +172,18 @@ const UserForm = ({
                   value={userFormData?.email || ''}
                   onChange={(e) => onFormDataChange?.({ ...userFormData!, email: e.target.value })}
                   placeholder="VD: student@fpt.edu.vn"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #d1d5db',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                  }}
+                  className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
             </form>
           )}
 
           {editingUser && onToggleBan && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              background: '#f9fafb',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-            }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#1f2937', fontWeight: 600 }}>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-base font-semibold text-gray-800 mb-4">
                 Quản lý tài khoản
               </h4>
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div className="flex gap-4 flex-wrap">
                 {editingUser.status === 'active' ? (
                   <button
                     type="button"
@@ -326,22 +192,7 @@ const UserForm = ({
                         onToggleBan();
                       }
                     }}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: '1px solid #dc2626',
-                      borderRadius: '8px',
-                      background: 'none',
-                      color: '#dc2626',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#fee2e2';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
+                    className="px-6 py-3 border border-red-600 rounded-lg bg-white text-red-600 font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
                   >
                     Khóa tài khoản
                   </button>
@@ -353,22 +204,7 @@ const UserForm = ({
                         onToggleBan();
                       }
                     }}
-                    style={{
-                      padding: '0.75rem 1.5rem',
-                      border: '1px solid #10b981',
-                      borderRadius: '8px',
-                      background: 'none',
-                      color: '#10b981',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#d1fae5';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'none';
-                    }}
+                    className="px-6 py-3 border border-green-500 rounded-lg bg-white text-green-500 font-semibold cursor-pointer hover:bg-green-50 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                   >
                     Mở khóa tài khoản
                   </button>
@@ -376,22 +212,7 @@ const UserForm = ({
                 <button
                   type="button"
                   onClick={() => setShowTicketHistory(!showTicketHistory)}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    border: '1px solid #3b82f6',
-                    borderRadius: '8px',
-                    background: 'none',
-                    color: '#3b82f6',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#dbeafe';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'none';
-                  }}
+                  className="px-6 py-3 border border-blue-500 rounded-lg bg-white text-blue-500 font-semibold cursor-pointer hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   {showTicketHistory ? 'Ẩn' : 'Xem'} lịch sử tickets ({userTickets.length})
                 </button>
@@ -400,111 +221,60 @@ const UserForm = ({
           )}
 
           {showTicketHistory && editingUser && userTickets.length > 0 && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              background: '#f9fafb',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              maxHeight: '300px',
-              overflowY: 'auto',
-            }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', color: '#1f2937', fontWeight: 600 }}>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 max-h-[300px] overflow-y-auto">
+              <h4 className="text-base font-semibold text-gray-800 mb-4">
                 Lịch sử Tickets
               </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {userTickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    style={{
-                      padding: '0.75rem',
-                      background: 'white',
-                      borderRadius: '6px',
-                      border: '1px solid #e5e7eb',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                      <div style={{ fontWeight: 600, color: '#1f2937', fontSize: '0.875rem' }}>
-                        {ticket.title}
+              <div className="flex flex-col gap-3">
+                {userTickets.map((ticket) => {
+                  const statusInfo = statusColors[ticket.status] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+                  return (
+                    <div
+                      key={ticket.id}
+                      className="p-3 bg-white rounded-md border border-gray-200"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-semibold text-gray-800 text-sm">
+                          {ticket.title}
+                        </div>
+                        <span className={`inline-flex px-2 py-1 rounded-md text-xs font-semibold ${statusInfo.bg} ${statusInfo.text}`}>
+                          {statusLabels[ticket.status] || ticket.status}
+                        </span>
                       </div>
-                      <span style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        background: ticket.status === 'open' ? '#dbeafe' : ticket.status === 'resolved' ? '#d1fae5' : '#f3f4f6',
-                        color: ticket.status === 'open' ? '#1e40af' : ticket.status === 'resolved' ? '#065f46' : '#374151',
-                      }}>
-                        {statusLabels[ticket.status] || ticket.status}
-                      </span>
+                      <div className="text-xs text-gray-500">
+                        {formatDate(ticket.createdAt)}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                      {formatDate(ticket.createdAt)}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
           {showTicketHistory && editingUser && userTickets.length === 0 && (
-            <div style={{
-              marginBottom: '1.5rem',
-              padding: '1rem',
-              background: '#f9fafb',
-              borderRadius: '8px',
-              border: '1px solid #e5e7eb',
-              textAlign: 'center',
-              color: '#6b7280',
-            }}>
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
               Người dùng này chưa có ticket nào
             </div>
           )}
 
           {editingUser ? (
-            // View mode - chỉ có nút đóng và các thao tác
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              justifyContent: 'flex-end',
-              marginTop: '2rem',
-            }}>
+            // View mode - chỉ có nút đóng
+            <div className="flex gap-4 justify-end mt-8">
               <button
                 type="button"
                 onClick={onClose}
-                style={{
-                  background: '#f3f4f6',
-                  color: '#4b5563',
-                  border: '1px solid #d1d5db',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Đóng
               </button>
             </div>
           ) : (
             // Add mode - có nút hủy và thêm mới
-            <div style={{
-              display: 'flex',
-              gap: '1rem',
-              justifyContent: 'flex-end',
-              marginTop: '2rem',
-            }}>
+            <div className="flex gap-4 justify-end mt-8">
               <button
                 type="button"
                 onClick={onClose}
-                style={{
-                  background: '#f3f4f6',
-                  color: '#4b5563',
-                  border: '1px solid #d1d5db',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
               >
                 Hủy
               </button>
@@ -515,15 +285,7 @@ const UserForm = ({
                   e.preventDefault();
                   if (onSubmit) onSubmit();
                 }}
-                style={{
-                  background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
               >
                 Thêm mới
               </button>
@@ -536,4 +298,3 @@ const UserForm = ({
 };
 
 export default UserForm;
-

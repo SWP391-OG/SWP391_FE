@@ -161,6 +161,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     adminDepartments.forEach(dept => {
       dept.staffIds.forEach(staffId => {
         if (!staffMap.has(staffId)) {
+          // Try to find staff in users array first (for dynamically created staff)
+          const staffUser = users.find(u => u.id === staffId && (u.role === 'it-staff' || u.role === 'facility-staff'));
+          
+          // Fallback to hardcoded names for old staff IDs
           const staffNames: Record<string, string> = {
             'staff-001': 'Lý Văn K',
             'staff-002': 'Bùi Thị H',
@@ -168,16 +172,36 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             'staff-004': 'Ngô Văn M',
             'staff-005': 'Trần Văn B',
           };
+          
           staffMap.set(staffId, {
             id: staffId,
-            name: staffNames[staffId] || staffId,
+            name: staffUser?.fullName || staffNames[staffId] || staffId,
             departmentName: dept.name,
           });
         }
       });
     });
+    
+    // Also include staff users from admin's departments that might not be in dept.staffIds yet
+    const adminStaffUsers = users.filter(user => 
+      (user.role === 'it-staff' || user.role === 'facility-staff') &&
+      user.departmentId &&
+      adminDepartments.some(dept => dept.id === user.departmentId)
+    );
+    
+    adminStaffUsers.forEach(user => {
+      if (!staffMap.has(user.id)) {
+        const dept = adminDepartments.find(d => d.id === user.departmentId);
+        staffMap.set(user.id, {
+          id: user.id,
+          name: user.fullName,
+          departmentName: dept?.name || 'N/A',
+        });
+      }
+    });
+    
     return Array.from(staffMap.values());
-  }, [adminDepartments]);
+  }, [adminDepartments, users]);
 
   // Filter staff users
   const adminStaffUsers = useMemo(() => {
@@ -278,15 +302,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             {/* Members submenu */}
             <div>
               <button
-                className={`w-full py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 flex items-center justify-between ${
+                className={`w-full py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 flex items-center justify-between group ${
                   (activeTab === 'staff' || activeTab === 'users')
-                    ? 'bg-orange-50 text-orange-700 font-semibold border-l-4 border-orange-600'
-                    : 'text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-orange-500 text-white font-semibold border-l-4 border-orange-600'
+                    : 'text-gray-700 font-medium hover:bg-orange-500 hover:text-white'
                 }`}
                 onClick={() => setShowMembersSubmenu(!showMembersSubmenu)}
               >
                 <span>Quản lý thành viên</span>
-                <span className={`transition-transform duration-200 text-xs ${showMembersSubmenu ? 'rotate-90' : ''}`}>
+                <span className={`transition-all duration-200 text-xs ${
+                  (activeTab === 'staff' || activeTab === 'users')
+                    ? 'text-white'
+                    : 'text-gray-700 group-hover:text-white'
+                } ${showMembersSubmenu ? 'rotate-90' : ''}`}>
                   ▶
                 </span>
               </button>
@@ -697,6 +725,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 fullName: staffFormData.fullName,
                 email: staffFormData.email,
                 role: staffFormData.role,
+                departmentId: staffFormData.departmentId, // Set departmentId when creating staff
               });
               
               // Add to department's staffIds
@@ -777,8 +806,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       {selectedTicketForReview && (
         <TicketReviewModal
           ticket={selectedTicketForReview}
+          staffList={adminStaffList}
           onApprove={handleApproveTicket}
           onReject={handleRejectTicket}
+          onAssign={handleAssignTicket}
           onClose={() => setSelectedTicketForReview(null)}
         />
       )}
