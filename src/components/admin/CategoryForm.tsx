@@ -5,7 +5,6 @@ interface CategoryFormProps {
   categoryFormData: {
     code: string;
     name: string;
-    description: string;
     icon: string;
     color: string;
     slaResolveHours: number;
@@ -80,19 +79,6 @@ const CategoryForm = ({
               onChange={(e) => onFormDataChange({ ...categoryFormData, name: e.target.value })}
               placeholder="VD: Cơ sở vật chất"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Mô tả *
-            </label>
-            <textarea
-              required
-              value={categoryFormData.description}
-              onChange={(e) => onFormDataChange({ ...categoryFormData, description: e.target.value })}
-              placeholder="Mô tả về loại phản ánh này"
-              rows={3}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
           <div className="grid grid-cols-2 gap-4 mb-6">

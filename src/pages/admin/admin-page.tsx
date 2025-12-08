@@ -53,7 +53,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [categoryFormData, setCategoryFormData] = useState({
     code: '',
     name: '',
-    description: '',
     icon: '📋',
     color: '#3b82f6',
     slaResolveHours: 24,
@@ -73,9 +72,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [locationFormData, setLocationFormData] = useState({
     code: '',
     name: '',
-    description: '',
-    type: 'classroom' as 'classroom' | 'wc' | 'hall' | 'corridor' | 'other',
-    floor: '',
     status: 'active' as 'active' | 'inactive',
   });
 
@@ -427,7 +423,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setCategoryFormData({
                   code: '',
                   name: '',
-                  description: '',
                   icon: '📋',
                   color: '#3b82f6',
                   slaResolveHours: 24,
@@ -442,7 +437,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setCategoryFormData({
                   code: cat.code || '',
                   name: cat.name,
-                  description: cat.description,
                   icon: cat.icon,
                   color: cat.color,
                   slaResolveHours: cat.slaResolveHours,
@@ -492,9 +486,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setLocationFormData({
                   code: '',
                   name: '',
-                  description: '',
-                  type: 'classroom',
-                  floor: '',
                   status: 'active',
                 });
                 setIsFormOpen(true);
@@ -504,10 +495,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setLocationFormData({
                   code: location.code || '',
                   name: location.name,
-                  description: location.description || '',
-                  type: location.type,
-                  floor: location.floor || '',
-                  status: location.status,
+                  status: location.status || 'active',
                 });
                 setIsFormOpen(true);
               }}

@@ -5,9 +5,6 @@ interface LocationFormProps {
   locationFormData: {
     code: string;
     name: string;
-    description: string;
-    type: Location['type'];
-    floor: string;
     status: 'active' | 'inactive';
   };
   onFormDataChange: (data: LocationFormProps['locationFormData']) => void;
@@ -76,55 +73,6 @@ const LocationForm = ({
               placeholder="VD: P301, WC Tầng 2"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Mô tả
-            </label>
-            <textarea
-              value={locationFormData.description}
-              onChange={(e) => onFormDataChange({ ...locationFormData, description: e.target.value })}
-              placeholder="Mô tả về địa điểm"
-              rows={3}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                Loại địa điểm *
-              </label>
-              <select
-                required
-                value={locationFormData.type}
-                onChange={(e) => onFormDataChange({ ...locationFormData, type: e.target.value as Location['type'] })}
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-              >
-                <option value="classroom">Phòng học</option>
-                <option value="wc">Nhà vệ sinh</option>
-                <option value="hall">Sảnh</option>
-                <option value="corridor">Hành lang</option>
-                <option value="other">Khác</option>
-              </select>
-            </div>
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                Tầng
-              </label>
-              <select
-                value={locationFormData.floor}
-                onChange={(e) => onFormDataChange({ ...locationFormData, floor: e.target.value })}
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-              >
-                <option value="">Chọn tầng</option>
-                <option value="G">Tầng Trệt (G)</option>
-                <option value="1">Tầng 1</option>
-                <option value="2">Tầng 2</option>
-                <option value="3">Tầng 3</option>
-                <option value="4">Tầng 4</option>
-                <option value="5">Tầng 5</option>
-              </select>
-            </div>
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
