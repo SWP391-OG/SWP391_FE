@@ -302,6 +302,22 @@ function App() {
             onTicketCreated={(newTicket) => {
               setTickets(prev => [...prev, newTicket]);
             }}
+            onTicketUpdated={(updatedTicket) => {
+              setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
+            }}
+            onFeedbackUpdated={(ticketId, ratingStars, ratingComment) => {
+              setTickets(prev => prev.map(t => {
+                if (t.id === ticketId) {
+                  return {
+                    ...t,
+                    ratingStars,
+                    ratingComment,
+                    closedAt: t.closedAt || new Date().toISOString(),
+                  };
+                }
+                return t;
+              }));
+            }}
           />
         )}
 

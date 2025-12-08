@@ -133,6 +133,8 @@ export interface Ticket {
   slaDeadline?: string; // Deprecated - dùng deadlineAt thay thế
   resolvedAt?: string; // DB: resolved_at - Thời gian Staff hoàn thành
   closedAt?: string; // DB: closed_at - Thời gian Ticket chính thức đóng lại (sau khi User Feedback)
+  ratingStars?: number; // DB: rating_stars - Đánh giá sao (1-5)
+  ratingComment?: string; // DB: rating_comment - Mô tả feedback
   slaTracking?: SLATracking; // Frontend only - không có trong DB (thường tính toán từ các timestamp)
   notes?: string; // Frontend only - không có trong DB (thường lưu trong bảng riêng)
 }

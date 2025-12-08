@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { mockSLAEvents, type SLAEvent } from '../../data/mockData';
 
@@ -7,9 +7,25 @@ interface TicketDetailModalProps {
   onClose: () => void;
   onEscalate?: (ticketId: string) => void; // Optional - chỉ có khi mở từ staff page
   showEscalateButton?: boolean; // Hiển thị nút Escalate (chỉ cho staff)
+  isStudentView?: boolean; // Phân biệt student view để ẩn SLA tracking
+  onEdit?: (ticket: Ticket) => void; // Handler để edit ticket (chỉ cho student)
+  onUpdateFeedback?: (ticketId: string, ratingStars: number, ratingComment: string) => void; // Handler để update feedback
 }
 
-const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = false }: TicketDetailModalProps) => {
+const TicketDetailModal = ({ 
+  ticket, 
+  onClose, 
+  onEscalate, 
+  showEscalateButton = false,
+  isStudentView = false,
+  onEdit,
+  onUpdateFeedback
+}: TicketDetailModalProps) => {
+  // State for feedback form
+  const [ratingStars, setRatingStars] = useState<number>(ticket.ratingStars || 0);
+  const [ratingComment, setRatingComment] = useState<string>(ticket.ratingComment || '');
+  const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+
   // Close on ESC key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -19,11 +35,26 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
+  // Update local state when ticket changes
+  useEffect(() => {
+    setRatingStars(ticket.ratingStars || 0);
+    setRatingComment(ticket.ratingComment || '');
+  }, [ticket]);
+
   // Get SLA events for this ticket
   const slaEvents = mockSLAEvents[ticket.id] || [];
 
   // Calculate SLA progress
   const getSLAProgress = () => {
+    if (!ticket.slaDeadline) {
+      return {
+        progress: 0,
+        isOverdue: false,
+        hoursTotal: 0,
+        hoursElapsed: 0,
+        hoursRemaining: 0,
+      };
+    }
     const now = new Date();
     const created = new Date(ticket.createdAt);
     const deadline = new Date(ticket.slaDeadline);
@@ -46,6 +77,7 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
   // Get SLA color based on progress
   const getSLAColor = () => {
     if (ticket.status === 'resolved' || ticket.status === 'closed') {
+      if (!ticket.slaDeadline) return '#10b981';
       const resolvedAt = new Date(ticket.updatedAt || ticket.createdAt);
       const deadline = new Date(ticket.slaDeadline);
       return resolvedAt <= deadline ? '#10b981' : '#f59e0b';
@@ -140,77 +172,83 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
               {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
               {ticket.status === 'closed' && '⚫ Đã đóng'}
             </span>
-            <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
-              {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
-              {ticket.priority === 'high' && '🟠 Cao'}
-              {ticket.priority === 'medium' && '🟡 Trung bình'}
-              {ticket.priority === 'low' && '🟢 Thấp'}
-            </span>
-            <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-              {ticket.issueType.icon} {ticket.issueType.name}
-            </span>
+            {ticket.priority && (
+              <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
+                {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
+                {ticket.priority === 'high' && '🟠 Cao'}
+                {ticket.priority === 'medium' && '🟡 Trung bình'}
+                {ticket.priority === 'low' && '🟢 Thấp'}
+              </span>
+            )}
+            {ticket.issueType && (
+              <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
+                {ticket.issueType.icon} {ticket.issueType.name}
+              </span>
+            )}
           </div>
         </div>
 
         <div className="p-8">
-          {/* SLA Tracking */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              ⏱️ SLA Tracking
-            </h3>
-            <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6 mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-lg font-bold text-gray-800">Tiến Độ Xử Lý</div>
-                <div 
-                  className="py-2 px-4 rounded-full text-sm font-semibold text-white"
-                  style={{ backgroundColor: getSLAColor() }}
-                >
-                  {slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Quá hạn'}
-                  {!slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Đang xử lý'}
-                  {ticket.status === 'resolved' && new Date(ticket.updatedAt || '') <= new Date(ticket.slaDeadline) && 'Hoàn thành đúng hạn'}
-                  {ticket.status === 'resolved' && new Date(ticket.updatedAt || '') > new Date(ticket.slaDeadline) && 'Hoàn thành trễ'}
-                  {ticket.status === 'closed' && 'Đã đóng'}
-                </div>
-              </div>
-              
-              <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden mb-4 relative">
-                <div 
-                  className="h-full transition-all duration-300 rounded-md"
-                  style={{ 
-                    width: `${slaProgress.progress}%`, 
-                    backgroundColor: getSLAColor() 
-                  }}
-                ></div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="text-center">
-                  <div className="text-[0.85rem] text-gray-500 mb-1">Tổng thời gian SLA</div>
-                  <div className="text-2xl font-bold text-gray-800">
-                    {formatHours(slaProgress.hoursTotal).split(' ')[0]}
-                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursTotal).split(' ')[1] || ''}</span>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-[0.85rem] text-gray-500 mb-1">Đã trôi qua</div>
-                  <div className="text-2xl font-bold text-gray-800">
-                    {formatHours(slaProgress.hoursElapsed).split(' ')[0]}
-                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursElapsed).split(' ')[1] || ''}</span>
-                  </div>
-                </div>
-                <div className="text-center">
-                  <div className="text-[0.85rem] text-gray-500 mb-1">Còn lại</div>
+          {/* SLA Tracking - Chỉ hiển thị khi không phải student view */}
+          {!isStudentView && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ⏱️ SLA Tracking
+              </h3>
+              <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6 mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <div className="text-lg font-bold text-gray-800">Tiến Độ Xử Lý</div>
                   <div 
-                    className="text-2xl font-bold"
-                    style={{ color: getSLAColor() }}
+                    className="py-2 px-4 rounded-full text-sm font-semibold text-white"
+                    style={{ backgroundColor: getSLAColor() }}
                   >
-                    {formatHours(slaProgress.hoursRemaining).split(' ')[0]}
-                    <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursRemaining).split(' ')[1] || ''}</span>
+                    {slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Quá hạn'}
+                    {!slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Đang xử lý'}
+                    {ticket.status === 'resolved' && ticket.slaDeadline && new Date(ticket.updatedAt || '') <= new Date(ticket.slaDeadline) && 'Hoàn thành đúng hạn'}
+                    {ticket.status === 'resolved' && ticket.slaDeadline && new Date(ticket.updatedAt || '') > new Date(ticket.slaDeadline) && 'Hoàn thành trễ'}
+                    {ticket.status === 'closed' && 'Đã đóng'}
+                  </div>
+                </div>
+                
+                <div className="w-full h-3 bg-gray-200 rounded-md overflow-hidden mb-4 relative">
+                  <div 
+                    className="h-full transition-all duration-300 rounded-md"
+                    style={{ 
+                      width: `${slaProgress.progress}%`, 
+                      backgroundColor: getSLAColor() 
+                    }}
+                  ></div>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4 mt-4">
+                  <div className="text-center">
+                    <div className="text-[0.85rem] text-gray-500 mb-1">Tổng thời gian SLA</div>
+                    <div className="text-2xl font-bold text-gray-800">
+                      {formatHours(slaProgress.hoursTotal).split(' ')[0]}
+                      <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursTotal).split(' ')[1] || ''}</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[0.85rem] text-gray-500 mb-1">Đã trôi qua</div>
+                    <div className="text-2xl font-bold text-gray-800">
+                      {formatHours(slaProgress.hoursElapsed).split(' ')[0]}
+                      <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursElapsed).split(' ')[1] || ''}</span>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[0.85rem] text-gray-500 mb-1">Còn lại</div>
+                    <div 
+                      className="text-2xl font-bold"
+                      style={{ color: getSLAColor() }}
+                    >
+                      {formatHours(slaProgress.hoursRemaining).split(' ')[0]}
+                      <span className="text-sm font-normal text-gray-500">{formatHours(slaProgress.hoursRemaining).split(' ')[1] || ''}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Description */}
           <div className="mb-8">
@@ -242,10 +280,12 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
                 <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Ngày tạo</div>
                 <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.createdAt)}</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Deadline SLA</div>
-                <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.slaDeadline)}</div>
-              </div>
+              {!isStudentView && ticket.slaDeadline && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Deadline SLA</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.slaDeadline)}</div>
+                </div>
+              )}
               {ticket.assignedTo && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Người xử lý</div>
@@ -277,48 +317,178 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
             </div>
           )}
 
-          {/* Timeline */}
-          <div className="mb-8">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              📅 Lịch Sử Xử Lý
-            </h3>
-            <div className="relative pl-8">
-              <div className="absolute left-2 top-4 bottom-4 w-0.5 bg-gray-200"></div>
-              {slaEvents.map((event, index) => (
-                <div 
-                  key={event.id} 
-                  className={index === slaEvents.length - 1 ? 'relative' : 'relative pb-6'}
-                >
+          {/* Timeline - Chỉ hiển thị khi không phải student view */}
+          {!isStudentView && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                📅 Lịch Sử Xử Lý
+              </h3>
+              <div className="relative pl-8">
+                <div className="absolute left-2 top-4 bottom-4 w-0.5 bg-gray-200"></div>
+                {slaEvents.map((event, index) => (
                   <div 
-                    className="absolute -left-6 top-1 w-4 h-4 rounded-full border-[3px] border-white"
-                    style={{ 
-                      backgroundColor: eventColors[event.eventType],
-                      boxShadow: `0 0 0 2px ${eventColors[event.eventType]}`
-                    }}
-                  ></div>
-                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="text-base font-semibold text-gray-800 mb-1">{event.title}</div>
-                    <div className="text-sm text-gray-500 mb-2">{event.description}</div>
-                    <div className="flex justify-between text-[0.85rem] text-gray-400">
-                      <span>👤 {event.performedBy}</span>
-                      <span>{formatDateTime(event.timestamp)}</span>
+                    key={event.id} 
+                    className={index === slaEvents.length - 1 ? 'relative' : 'relative pb-6'}
+                  >
+                    <div 
+                      className="absolute -left-6 top-1 w-4 h-4 rounded-full border-[3px] border-white"
+                      style={{ 
+                        backgroundColor: eventColors[event.eventType],
+                        boxShadow: `0 0 0 2px ${eventColors[event.eventType]}`
+                      }}
+                    ></div>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <div className="text-base font-semibold text-gray-800 mb-1">{event.title}</div>
+                      <div className="text-sm text-gray-500 mb-2">{event.description}</div>
+                      <div className="flex justify-between text-[0.85rem] text-gray-400">
+                        <span>👤 {event.performedBy}</span>
+                        <span>{formatDateTime(event.timestamp)}</span>
+                      </div>
                     </div>
                   </div>
+                ))}
+                
+                {slaEvents.length === 0 && (
+                  <div className="text-center py-8 text-gray-400">
+                    Chưa có lịch sử xử lý
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Feedback Section - Chỉ hiển thị khi ticket đã được xử lý (resolved/closed) và là student view */}
+          {isStudentView && (ticket.status === 'resolved' || ticket.status === 'closed') && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ⭐ Phản Hồi
+              </h3>
+              {!isEditingFeedback && ticket.ratingStars ? (
+                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="text-lg font-semibold text-gray-800">Đánh giá:</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className="text-2xl"
+                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                  </div>
+                  {ticket.ratingComment && (
+                    <div className="mb-4">
+                      <div className="text-sm font-semibold text-gray-500 mb-2">Mô tả:</div>
+                      <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
+                        {ticket.ratingComment}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setIsEditingFeedback(true)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
+                  >
+                    Chỉnh sửa phản hồi
+                  </button>
                 </div>
-              ))}
-              
-              {slaEvents.length === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  Chưa có lịch sử xử lý
+              ) : (
+                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                  <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Đánh giá sao (1-5):</div>
+                    <div className="flex gap-2 items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setRatingStars(star)}
+                          className="text-3xl transition-all duration-200 hover:scale-110"
+                          style={{ color: star <= ratingStars ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </button>
+                      ))}
+                      <span className="ml-2 text-base font-semibold text-gray-700">({ratingStars}/5)</span>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Mô tả phản hồi:</label>
+                    <textarea
+                      value={ratingComment}
+                      onChange={(e) => setRatingComment(e.target.value)}
+                      placeholder="Nhập mô tả phản hồi của bạn..."
+                      className="w-full p-4 border-2 border-gray-200 rounded-lg text-base resize-none focus:outline-none focus:border-blue-500"
+                      rows={4}
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        if (onUpdateFeedback && ratingStars > 0) {
+                          onUpdateFeedback(ticket.id, ratingStars, ratingComment);
+                          setIsEditingFeedback(false);
+                          alert('Phản hồi đã được cập nhật thành công!');
+                        } else {
+                          alert('Vui lòng chọn số sao đánh giá (từ 1-5)');
+                        }
+                      }}
+                      className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
+                    >
+                      Lưu phản hồi
+                    </button>
+                    {ticket.ratingStars && (
+                      <button
+                        onClick={() => {
+                          setIsEditingFeedback(false);
+                          setRatingStars(ticket.ratingStars || 0);
+                          setRatingComment(ticket.ratingComment || '');
+                        }}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-all duration-200"
+                      >
+                        Hủy
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          )}
 
-          {/* Actions - Escalate button (only for staff) */}
-          {showEscalateButton && onEscalate && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
-            <div className="mt-8 pt-8 border-t-2 border-gray-100">
-              <div className="flex justify-end gap-4">
+          {/* Actions */}
+          <div className="mt-8 pt-8 border-t-2 border-gray-100">
+            <div className="flex justify-end gap-4">
+              {/* Edit button - chỉ hiển thị khi status = 'open' và là student view */}
+              {isStudentView && ticket.status === 'open' && onEdit && (
+                <button
+                  onClick={() => {
+                    onEdit(ticket);
+                    onClose();
+                  }}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                    />
+                  </svg>
+                  Chỉnh sửa Ticket
+                </button>
+              )}
+              
+              {/* Escalate button (only for staff) */}
+              {showEscalateButton && onEscalate && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
                 <button
                   onClick={() => {
                     if (confirm('Bạn có chắc chắn muốn escalate ticket này lên Admin? Ticket sẽ được chuyển cho Admin xử lý.')) {
@@ -344,9 +514,9 @@ const TicketDetailModal = ({ ticket, onClose, onEscalate, showEscalateButton = f
                   </svg>
                   Escalate lên Admin
                 </button>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

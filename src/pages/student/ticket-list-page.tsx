@@ -12,31 +12,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const [filterStatus, setFilterStatus] = useState<Ticket['status'] | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<Ticket['priority'] | 'all'>('all');
 
-  // Calculate SLA status
-  const getSLAStatus = (ticket: Ticket) => {
-    const now = new Date();
-    const deadline = new Date(ticket.slaDeadline);
-    const hoursRemaining = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
-    if (ticket.status === 'resolved' || ticket.status === 'closed') {
-      const resolvedAt = new Date(ticket.updatedAt || ticket.createdAt);
-      if (resolvedAt <= deadline) {
-        return { status: 'completed', label: 'Hoàn thành đúng hạn', color: '#10b981' };
-      } else {
-        return { status: 'completed-late', label: 'Hoàn thành trễ', color: '#f59e0b' };
-      }
-    }
-    
-    if (hoursRemaining < 0) {
-      return { status: 'overdue', label: 'Quá hạn', color: '#ef4444' };
-    } else if (hoursRemaining <= 2) {
-      return { status: 'critical', label: 'Sắp quá hạn', color: '#f97316' };
-    } else if (hoursRemaining <= 6) {
-      return { status: 'warning', label: 'Cần chú ý', color: '#f59e0b' };
-    } else {
-      return { status: 'on-time', label: 'Đúng hạn', color: '#10b981' };
-    }
-  };
 
   // Filter and search tickets
   const filteredTickets = useMemo(() => {
@@ -110,25 +85,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     }
   };
 
-  // Format time remaining
-  const formatTimeRemaining = (slaDeadline: string) => {
-    const now = new Date();
-    const deadline = new Date(slaDeadline);
-    const diffInHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 0) {
-      const overdue = Math.abs(Math.floor(diffInHours));
-      return `Quá hạn ${overdue} giờ`;
-    } else if (diffInHours < 1) {
-      const minutes = Math.floor(diffInHours * 60);
-      return `Còn ${minutes} phút`;
-    } else if (diffInHours < 24) {
-      return `Còn ${Math.floor(diffInHours)} giờ`;
-    } else {
-      const days = Math.floor(diffInHours / 24);
-      return `Còn ${days} ngày`;
-    }
-  };
 
   return (
     <div className="max-w-[1400px] mx-auto p-8">
@@ -220,7 +176,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
       ) : (
         <div className="flex flex-col gap-4">
           {filteredTickets.map((ticket) => {
-            const slaStatus = getSLAStatus(ticket);
             return (
               <div
                 key={ticket.id}
@@ -258,17 +213,8 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm">
-                    <span 
-                      className="inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold text-white"
-                      style={{ backgroundColor: slaStatus.color }}
-                    >
-                      {slaStatus.label}
-                    </span>
-                    <span className="text-gray-500 text-[0.85rem]">
-                      • {formatTimeRemaining(ticket.slaDeadline)}
-                    </span>
                     <span className="text-gray-400 text-[0.85rem]">
-                      • {formatDate(ticket.createdAt)}
+                      {formatDate(ticket.createdAt)}
                     </span>
                   </div>
                   <button

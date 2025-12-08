@@ -3,18 +3,21 @@ import type { Ticket, IssueType } from '../../types';
 import IssueSelectionPage from './issue-selection-page';
 import CreateTicketPage from './create-ticket-page';
 import TicketListPage from './ticket-list-page';
+import EditTicketPage from './edit-ticket-page';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 
-type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list';
+type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
 type StudentTab = 'pending' | 'processing' | 'completed';
 
 interface StudentHomePageProps {
   currentUser: { id: string; fullName?: string } | null;
   tickets: Ticket[];
   onTicketCreated: (ticket: Ticket) => void;
+  onTicketUpdated?: (ticket: Ticket) => void;
+  onFeedbackUpdated?: (ticketId: string, ratingStars: number, ratingComment: string) => void;
 }
 
-const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomePageProps) => {
+const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdated, onFeedbackUpdated }: StudentHomePageProps) => {
   const [studentView, setStudentView] = useState<StudentView>('home');
   const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -59,32 +62,6 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
-  // Calculate SLA status
-  const getSLAStatus = (ticket: Ticket) => {
-    const now = new Date();
-    const deadline = new Date(ticket.slaDeadline);
-    const hoursRemaining = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (ticket.status === 'resolved' || ticket.status === 'closed') {
-      const resolvedAt = new Date(ticket.updatedAt || ticket.createdAt);
-      if (resolvedAt <= deadline) {
-        return { status: 'completed', label: 'Hoàn thành đúng hạn', color: '#10b981' };
-      } else {
-        return { status: 'completed-late', label: 'Hoàn thành trễ', color: '#f59e0b' };
-      }
-    }
-
-    if (hoursRemaining < 0) {
-      return { status: 'overdue', label: 'Quá hạn', color: '#ef4444' };
-    } else if (hoursRemaining <= 2) {
-      return { status: 'critical', label: 'Sắp quá hạn', color: '#f97316' };
-    } else if (hoursRemaining <= 6) {
-      return { status: 'warning', label: 'Cần chú ý', color: '#f59e0b' };
-    } else {
-      return { status: 'on-time', label: 'Đúng hạn', color: '#10b981' };
-    }
-  };
-
   // Format date
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -98,26 +75,6 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
     } else {
       const days = Math.floor(diffInHours / 24);
       return `${days} ngày trước`;
-    }
-  };
-
-  // Format time remaining
-  const formatTimeRemaining = (slaDeadline: string) => {
-    const now = new Date();
-    const deadline = new Date(slaDeadline);
-    const diffInHours = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 0) {
-      const overdue = Math.abs(Math.floor(diffInHours));
-      return `Quá hạn ${overdue} giờ`;
-    } else if (diffInHours < 1) {
-      const minutes = Math.floor(diffInHours * 60);
-      return `Còn ${minutes} phút`;
-    } else if (diffInHours < 24) {
-      return `Còn ${Math.floor(diffInHours)} giờ`;
-    } else {
-      const days = Math.floor(diffInHours / 24);
-      return `Còn ${days} ngày`;
     }
   };
 
@@ -168,7 +125,8 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
         medium: 48,
         low: 72,
       };
-      created.setHours(created.getHours() + slaHours[priority]);
+      const priorityKey = priority || 'medium';
+      created.setHours(created.getHours() + slaHours[priorityKey]);
       return created.toISOString();
     };
 
@@ -352,7 +310,6 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
           ) : (
             <div className="flex flex-col gap-4">
               {displayedTickets.map((ticket) => {
-                const slaStatus = getSLAStatus(ticket);
                 return (
                   <div
                     key={ticket.id}
@@ -390,17 +347,8 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
 
                     <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-sm">
-                        <span
-                          className="inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold text-white"
-                          style={{ backgroundColor: slaStatus.color }}
-                        >
-                          {slaStatus.label}
-                        </span>
-                        <span className="text-gray-500 text-[0.85rem]">
-                          • {formatTimeRemaining(ticket.slaDeadline)}
-                        </span>
                         <span className="text-gray-400 text-[0.85rem]">
-                          • {formatDate(ticket.createdAt)}
+                          {formatDate(ticket.createdAt)}
                         </span>
                       </div>
                       <button
@@ -447,11 +395,34 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated }: StudentHomeP
         />
       )}
 
+      {studentView === 'edit-ticket' && selectedTicket && (
+        <EditTicketPage
+          ticket={selectedTicket}
+          onBack={() => {
+            setStudentView('home');
+            setSelectedTicket(null);
+          }}
+          onSubmit={(updatedTicket) => {
+            if (onTicketUpdated) {
+              onTicketUpdated(updatedTicket);
+            }
+            setStudentView('home');
+            setSelectedTicket(null);
+          }}
+        />
+      )}
+
       {/* Ticket Detail Modal */}
-      {selectedTicket && (
+      {selectedTicket && studentView !== 'edit-ticket' && (
         <TicketDetailModal
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
+          isStudentView={true}
+          onEdit={onTicketUpdated ? (ticket) => {
+            setSelectedTicket(ticket);
+            setStudentView('edit-ticket');
+          } : undefined}
+          onUpdateFeedback={onFeedbackUpdated}
         />
       )}
     </div>
