@@ -416,12 +416,14 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
       {selectedTicket && studentView !== 'edit-ticket' && (
         <TicketDetailModal
           ticket={selectedTicket}
-          onClose={() => setSelectedTicket(null)}
+          onClose={() => {
+            setSelectedTicket(null);
+          }}
           isStudentView={true}
-          onEdit={onTicketUpdated ? (ticket) => {
+          onEdit={(ticket) => {
             setSelectedTicket(ticket);
             setStudentView('edit-ticket');
-          } : undefined}
+          }}
           onUpdateFeedback={onFeedbackUpdated}
         />
       )}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { Ticket } from '../../types';
 
@@ -18,29 +18,35 @@ interface FormData {
 }
 
 const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
-  const [formData, setFormData] = useState<FormData>({
-    title: ticket.title || '',
-    description: ticket.description || '',
-    location: ticket.location || '',
-    roomNumber: ticket.roomNumber || '',
-    priority: ticket.priority || 'medium',
-    images: ticket.images || [],
-  });
+  // Initialize form data from ticket
+  const [formData, setFormData] = useState<FormData>(() => ({
+    title: ticket?.title || '',
+    description: ticket?.description || '',
+    location: ticket?.location || '',
+    roomNumber: ticket?.roomNumber || '',
+    priority: ticket?.priority || 'medium',
+    images: ticket?.images || [],
+  }));
 
-  const [imagePreview, setImagePreview] = useState<string[]>(ticket.images || []);
+  const [imagePreview, setImagePreview] = useState<string[]>(() => ticket?.images || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    setFormData({
-      title: ticket.title || '',
-      description: ticket.description || '',
-      location: ticket.location || '',
-      roomNumber: ticket.roomNumber || '',
-      priority: ticket.priority || 'medium',
-      images: ticket.images || [],
-    });
-    setImagePreview(ticket.images || []);
-  }, [ticket]);
+  // Validate ticket exists
+  if (!ticket) {
+    return (
+      <div className="max-w-[900px] mx-auto p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+          <p className="text-red-800">Lỗi: Không tìm thấy ticket để chỉnh sửa.</p>
+        </div>
+        <button 
+          className="py-3 px-6 bg-gray-200 text-gray-700 border-none rounded-lg cursor-pointer text-[0.95rem] font-medium transition-all duration-200 hover:bg-gray-300"
+          onClick={onBack}
+        >
+          ← Quay lại
+        </button>
+      </div>
+    );
+  }
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,13 +116,6 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
     }, 1000);
   };
 
-  const priorityLabels = {
-    low: { label: 'Thấp', emoji: '🟢' },
-    medium: { label: 'Trung bình', emoji: '🟡' },
-    high: { label: 'Cao', emoji: '🟠' },
-    urgent: { label: 'Khẩn cấp', emoji: '🔴' },
-  };
-
   const isFormValid = formData.title.trim() !== '' && formData.description.trim() !== '';
 
   return (
@@ -131,8 +130,8 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
       <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
         <div className="text-5xl">{ticket.issueType?.icon || '📝'}</div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold my-0 mb-2">Chỉnh sửa Ticket</h2>
-          <p className="text-[0.95rem] opacity-90 m-0">{ticket.issueType?.name || 'Cập nhật thông tin ticket'}</p>
+          <h2 className="text-2xl font-semibold my-0 mb-2">{ticket.issueType?.name || 'Chỉnh sửa Ticket'}</h2>
+          <p className="text-[0.95rem] opacity-90 m-0">{ticket.issueType?.description || 'Cập nhật thông tin ticket của bạn'}</p>
         </div>
       </div>
 

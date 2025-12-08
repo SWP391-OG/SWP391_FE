@@ -464,8 +464,10 @@ const TicketDetailModal = ({
               {isStudentView && ticket.status === 'open' && onEdit && (
                 <button
                   onClick={() => {
-                    onEdit(ticket);
-                    onClose();
+                    if (onEdit) {
+                      onEdit(ticket);
+                      // Modal sẽ tự đóng khi studentView thay đổi
+                    }
                   }}
                   className="px-6 py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
                 >
