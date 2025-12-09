@@ -137,7 +137,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Filter tickets by admin's departments
   const adminTickets = useMemo(() => {
-    return tickets.filter(ticket => {
+    console.log('🔍 DEBUG Admin Tickets Filtering:', {
+      totalTickets: tickets.length,
+      adminDepartmentIds,
+      availableCategories: categories.map(c => ({ name: c.name, departmentId: c.departmentId })),
+    });
+
+    const filtered = tickets.filter(ticket => {
       if (ticket.status === 'cancelled') return false;
       
       const matchingCategoryNames = categoryNameMap[ticket.category] || [];
@@ -145,11 +151,36 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         matchingCategoryNames.includes(cat.name)
       );
       
-      return matchingCategories.some(cat => 
+      const isMatch = matchingCategories.some(cat => 
         adminDepartmentIds.includes(cat.departmentId)
       );
+
+      // Debug each ticket
+      if (!isMatch || matchingCategories.length === 0) {
+        console.log(`❌ Ticket FILTERED OUT:`, {
+          id: ticket.id.substring(0, 8),
+          title: ticket.title,
+          category: ticket.category,
+          status: ticket.status,
+          expectedCategoryNames: matchingCategoryNames,
+          matchingCategories: matchingCategories.map(c => ({ name: c.name, deptId: c.departmentId })),
+          adminDepartmentIds,
+          reason: matchingCategories.length === 0 ? 'No matching category name' : 'Category not in admin departments',
+        });
+      } else {
+        console.log(`✅ Ticket INCLUDED:`, {
+          id: ticket.id.substring(0, 8),
+          title: ticket.title,
+          category: ticket.category,
+        });
+      }
+      
+      return isMatch;
     });
-  }, [tickets, categories, adminDepartmentIds]);
+
+    console.log(`📊 Result: ${filtered.length} of ${tickets.length} tickets shown`);
+    return filtered;
+  }, [tickets, categories, adminDepartmentIds, categoryNameMap]);
 
   // Get staff list for admin's departments
   const adminStaffList = useMemo(() => {

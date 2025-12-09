@@ -324,13 +324,6 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
                           <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
                             {statusLabels[ticket.status] || ticket.status}
                           </span>
-                          <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
-                            {priorityLabels[ticket.priority]}
-                          </span>
-                          <span className="flex items-center gap-2 text-sm text-gray-500">
-                            <span>{ticket.issueType.icon}</span>
-                            <span>{ticket.issueType.name}</span>
-                          </span>
                           {ticket.location && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
                               <span>📍</span>

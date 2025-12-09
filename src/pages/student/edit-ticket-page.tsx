@@ -12,7 +12,6 @@ interface FormData {
   title: string;
   description: string;
   location: string;
-  roomNumber: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   images: string[];
 }
@@ -23,7 +22,6 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
     title: ticket?.title || '',
     description: ticket?.description || '',
     location: ticket?.location || '',
-    roomNumber: ticket?.roomNumber || '',
     priority: ticket?.priority || 'medium',
     images: ticket?.images || [],
   }));
@@ -103,7 +101,6 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
         title: formData.title,
         description: formData.description,
         location: formData.location,
-        roomNumber: formData.roomNumber,
         priority: formData.priority,
         images: formData.images.length > 0 ? formData.images : undefined,
         updatedAt: new Date().toISOString(),
@@ -179,19 +176,6 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
             className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
           />
         </div>
-
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số phòng</label>
-          <input
-            type="text"
-            name="roomNumber"
-            value={formData.roomNumber}
-            onChange={handleInputChange}
-            placeholder="Ví dụ: 501"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-          />
-        </div>
-
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Mức độ ưu tiên</label>
           <select
