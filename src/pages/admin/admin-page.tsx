@@ -41,6 +41,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     isArray: Array.isArray(categories)
   });
 
+  // Debug departments
+  console.log('🏢 Admin Page - Departments:', {
+    count: departments?.length || 0,
+    departments: departments,
+    isArray: Array.isArray(departments)
+  });
+
   // UI State
   const [activeTab, setActiveTab] = useState<AdminTab>('tickets');
   const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
@@ -121,11 +128,33 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Filter departments by adminId
   const adminDepartments = useMemo(() => {
+    console.log('🔍 Filtering departments:', {
+      totalDepartments: departments.length,
+      currentAdminId: currentAdminId,
+      departments: departments.map(d => ({ code: d.deptCode, name: d.deptName, adminId: d.adminId }))
+    });
+    
+    // Tạm thời hiển thị tất cả departments vì API chưa trả về adminId
+    // TODO: Sau khi backend thêm adminId thì uncomment phần filter
+    return departments;
+    
+    /*
+    // Filter theo adminId khi backend có field này
     return departments.filter(dept => dept.adminId === currentAdminId);
+    */
   }, [departments, currentAdminId]);
 
   const adminDepartmentIds = useMemo(() => {
-    return adminDepartments.map(dept => dept.id);
+    // Map cả deptCode và id để tương thích với cả backend mới và code cũ
+    const ids = adminDepartments.flatMap(dept => [
+      dept.deptCode,           // Backend API format
+      dept.id,                 // Legacy format
+      dept.deptCode?.toString(), // String version
+      dept.id?.toString()      // String version
+    ].filter(Boolean));
+    
+    console.log('🔑 Admin Department IDs:', ids);
+    return [...new Set(ids)]; // Remove duplicates
   }, [adminDepartments]);
 
   // Filter categories by admin's departments
@@ -153,6 +182,17 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     });
     */
   }, [categories, adminDepartmentIds]);
+
+  // Debug filtered data (after useMemo declarations)
+  console.log('🏢 Admin Departments (filtered):', {
+    count: adminDepartments?.length || 0,
+    adminDepartments: adminDepartments
+  });
+  
+  console.log('📊 Admin Categories (filtered):', {
+    count: adminCategories?.length || 0,
+    adminCategories: adminCategories
+  });
 
   // Map IssueCategory to Category name for ticket filtering
   const categoryNameMap: Record<string, string[]> = {
@@ -214,27 +254,30 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const adminStaffList = useMemo(() => {
     const staffMap = new Map<string, { id: string; name: string; departmentName: string }>();
     adminDepartments.forEach(dept => {
-      dept.staffIds.forEach(staffId => {
-        if (!staffMap.has(staffId)) {
-          // Try to find staff in users array first (for dynamically created staff)
-          const staffUser = users.find(u => u.id === staffId && (u.role === 'it-staff' || u.role === 'facility-staff'));
+      // staffIds có thể undefined từ API, cần check
+      if (dept.staffIds && Array.isArray(dept.staffIds)) {
+        dept.staffIds.forEach(staffId => {
+          if (!staffMap.has(staffId)) {
+            // Try to find staff in users array first (for dynamically created staff)
+            const staffUser = users.find(u => u.id === staffId && (u.role === 'it-staff' || u.role === 'facility-staff'));
+            
+            // Fallback to hardcoded names for old staff IDs
+            const staffNames: Record<string, string> = {
+              'staff-001': 'Lý Văn K',
+              'staff-002': 'Bùi Thị H',
+              'staff-003': 'Hoàng Văn E',
+              'staff-004': 'Ngô Văn M',
+              'staff-005': 'Trần Văn B',
+            };
           
-          // Fallback to hardcoded names for old staff IDs
-          const staffNames: Record<string, string> = {
-            'staff-001': 'Lý Văn K',
-            'staff-002': 'Bùi Thị H',
-            'staff-003': 'Hoàng Văn E',
-            'staff-004': 'Ngô Văn M',
-            'staff-005': 'Trần Văn B',
-          };
-          
-          staffMap.set(staffId, {
-            id: staffId,
-            name: staffUser?.fullName || staffNames[staffId] || staffId,
-            departmentName: dept.name,
-          });
-        }
-      });
+            staffMap.set(staffId, {
+              id: staffId,
+              name: staffUser?.fullName || staffNames[staffId] || staffId,
+              departmentName: dept.deptName || dept.name || 'N/A',
+            });
+          }
+        });
+      }
     });
     
     // Also include staff users from admin's departments that might not be in dept.staffIds yet
@@ -262,7 +305,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const adminStaffUsers = useMemo(() => {
     const staffIds = new Set<string>();
     adminDepartments.forEach(dept => {
-      dept.staffIds.forEach(id => staffIds.add(id));
+      if (dept.staffIds && Array.isArray(dept.staffIds)) {
+        dept.staffIds.forEach(id => staffIds.add(id));
+      }
     });
     return users
       .filter(user => 
@@ -585,7 +630,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setIsFormOpen(true);
               }}
               onEditClick={(staff) => {
-                const dept = adminDepartments.find(d => d.staffIds.includes(staff.id));
+                const dept = adminDepartments.find(d => d.staffIds?.includes(staff.id));
                 setEditingStaff(staff);
                 setStaffFormData({
                   username: staff.username,
@@ -748,20 +793,20 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               });
               
               // Update department's staffIds if department changed
-              const oldDept = adminDepartments.find(d => d.staffIds.includes(editingStaff.id));
+              const oldDept = adminDepartments.find(d => d.staffIds?.includes(editingStaff.id));
               if (oldDept && oldDept.id !== staffFormData.departmentId) {
                 // Remove from old department
                 const oldDeptUpdated = departments.find(d => d.id === oldDept.id);
                 if (oldDeptUpdated) {
                   updateDepartment(oldDept.id, {
-                    staffIds: oldDeptUpdated.staffIds.filter(id => id !== editingStaff.id),
+                    staffIds: oldDeptUpdated.staffIds?.filter(id => id !== editingStaff.id) || [],
                   });
                 }
                 // Add to new department
                 const newDept = departments.find(d => d.id === staffFormData.departmentId);
                 if (newDept) {
                   updateDepartment(newDept.id, {
-                    staffIds: [...newDept.staffIds, editingStaff.id],
+                    staffIds: [...(newDept.staffIds || []), editingStaff.id],
                   });
                 }
               }
@@ -780,7 +825,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 const dept = departments.find(d => d.id === staffFormData.departmentId);
                 if (dept) {
                   updateDepartment(dept.id, {
-                    staffIds: [...dept.staffIds, newStaff.id],
+                    staffIds: [...(dept.staffIds || []), newStaff.id],
                   });
                 }
               }

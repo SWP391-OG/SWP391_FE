@@ -18,7 +18,9 @@ const DepartmentList = ({
   const filteredDepartments = departments.filter((dept) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    return dept.name.toLowerCase().includes(query);
+    const matchesCode = dept.deptCode?.toLowerCase().includes(query);
+    const matchesName = dept.deptName?.toLowerCase().includes(query);
+    return matchesCode || matchesName;
   });
 
   return (
@@ -39,7 +41,7 @@ const DepartmentList = ({
       <div className="mb-6">
         <input
           type="text"
-          placeholder="Tìm kiếm theo tên bộ phận..."
+          placeholder="Tìm kiếm theo mã hoặc tên bộ phận..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
@@ -51,23 +53,33 @@ const DepartmentList = ({
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b-2 border-gray-200">
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Mã Bộ phận</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Tên Bộ phận</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Mô tả</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Vị trí</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Trạng thái</th>
+                <th className="px-4 py-4 text-left font-semibold text-gray-700">Ngày tạo</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Thao tác</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredDepartments.map((dept) => (
-                <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={dept.deptCode} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 text-sm text-gray-600 font-medium">
+                    {dept.deptCode}
+                  </td>
                   <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
-                    {dept.name}
+                    {dept.deptName}
+                  </td>
+                  <td className="px-4 py-4">
+                    <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${
+                      dept.status === 'ACTIVE' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {dept.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
+                    </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    {dept.description}
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600">
-                    {dept.location}
+                    {dept.createdAt ? new Date(dept.createdAt).toLocaleDateString('vi-VN') : '-'}
                   </td>
                   <td className="px-4 py-4">
                     <button

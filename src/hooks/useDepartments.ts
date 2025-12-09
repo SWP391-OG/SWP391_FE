@@ -11,22 +11,24 @@ export const useDepartments = () => {
     loadDepartments();
   }, []);
 
-  const loadDepartments = () => {
+  const loadDepartments = async () => {
     setLoading(true);
     try {
-      const data = departmentService.getAll();
+      const data = await departmentService.getAll();
+      console.log('✅ Departments loaded in hook:', data.length);
       setDepartments(data);
     } catch (error) {
-      console.error('Error loading departments:', error);
+      console.error('❌ Error loading departments:', error);
+      setDepartments([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
   // Tạo department mới
-  const createDepartment = (department: Omit<Department, 'id' | 'createdAt'>) => {
+  const createDepartment = async (department: Omit<Department, 'id' | 'createdAt'>) => {
     try {
-      const newDepartment = departmentService.create(department);
+      const newDepartment = await departmentService.create(department);
       setDepartments([...departments, newDepartment]);
       return newDepartment;
     } catch (error) {
@@ -36,9 +38,9 @@ export const useDepartments = () => {
   };
 
   // Cập nhật department
-  const updateDepartment = (id: string, updates: Partial<Department>) => {
+  const updateDepartment = async (id: string, updates: Partial<Department>) => {
     try {
-      const updated = departmentService.update(id, updates);
+      const updated = await departmentService.update(id, updates);
       setDepartments(departments.map(d => d.id === id ? updated : d));
       return updated;
     } catch (error) {
@@ -48,9 +50,9 @@ export const useDepartments = () => {
   };
 
   // Xóa department
-  const deleteDepartment = (id: string) => {
+  const deleteDepartment = async (id: string) => {
     try {
-      departmentService.delete(id);
+      await departmentService.delete(id);
       setDepartments(departments.filter(d => d.id !== id));
     } catch (error) {
       console.error('Error deleting department:', error);
@@ -59,7 +61,7 @@ export const useDepartments = () => {
   };
 
   // Get departments by admin ID
-  const getDepartmentsByAdminId = (adminId: string) => {
+  const getDepartmentsByAdminId = async (adminId: string) => {
     return departmentService.getByAdminId(adminId);
   };
 

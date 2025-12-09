@@ -25,14 +25,25 @@ export interface User {
 
 // Department types
 export interface Department {
-  id: string;
-  name: string; // Tên Bộ phận
-  description?: string; // Frontend only - không có trong DB
-  location?: string; // Frontend only - không có trong DB
-  adminId?: string; // DB: admin_id (FK) - Người quản lý Bộ phận (Dept Admin)
-  staffIds?: string[]; // Frontend only - không có trong DB (quan hệ nhiều-nhiều thường dùng bảng trung gian)
-  isActive?: boolean; // DB: is_active (Soft Delete) - Cờ đánh dấu Bộ phận còn hoạt động
-  createdAt?: string; // Frontend only - không có trong DB
+  deptCode: string;          // Mã bộ phẫn (IT, MAINTAIN...)
+  deptName: string;          // Tên bộ phận
+  status: 'ACTIVE' | 'INACTIVE'; // Trạng thái
+  createdAt?: string;        // Thời gian tạo
+  // Legacy fields for backward compatibility
+  id?: string;               // Map từ deptCode
+  name?: string;             // Map từ deptName
+  description?: string;      // Frontend only
+  location?: string;         // Frontend only
+  adminId?: string;          // Frontend only
+  staffIds?: string[];       // Frontend only
+  isActive?: boolean;        // Map từ status === 'ACTIVE'
+}
+
+export interface DepartmentApiResponse {
+  status: boolean;
+  message: string;
+  data: Department[];
+  errors: string[];
 }
 
 // Location types (thay thế Room)
