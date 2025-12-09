@@ -52,30 +52,18 @@ export interface Location {
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 export interface Category {
-  id: string;
-  code?: string; // DB: code - Mã viết tắt (WIFI, AC, ELEC, FURNI)
-  name: string; // DB: name - Tên danh mục
-  description?: string; // Frontend only - không có trong DB
-  icon?: string; // Frontend only - không có trong DB
-  color?: string; // Frontend only - không có trong DB
-  slaResolveHours: number; // DB: sla_resolve_hours - Thời gian cam kết (SLA) tính bằng giờ
-  defaultPriority?: Priority; // Frontend only - không có trong DB
-  departmentId: string; // DB: department_id (FK) - Bộ phận chịu trách nhiệm xử lý
-  status?: 'active' | 'inactive'; // Frontend only - dùng isActive thay thế
-  isActive?: boolean; // DB: is_active (Soft Delete) - Cờ đánh dấu danh mục còn hiệu lực
-  createdAt?: string; // Frontend only - không có trong DB
+  categoryCode: string;
+  categoryName: string;
+  departmentId: number;
+  slaResolveHours: number;
+  status: 'ACTIVE' | 'INACTIVE';
 }
 
-// Issue types
-export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'classroom' | 'other';
-
-export interface IssueType {
-  id: string;
-  name: string;
-  category: IssueCategory;
-  icon: string;
-  description: string;
-  examples?: string[];
+export interface CategoryApiResponse {
+  status: boolean;
+  message: string;
+  data: Category[];
+  errors: string[];
 }
 
 // SLA Tracking types
@@ -112,8 +100,8 @@ export interface Ticket {
   ticketCode?: string; // DB: ticket_code - Mã Ticket hiển thị (TKT-0001, Duy nhất)
   title: string; // DB: title - Tiêu đề
   description: string; // DB: description - Nội dung chi tiết
-  issueType?: IssueType; // Frontend only - không có trong DB
-  category?: IssueCategory; // Frontend only - dùng categoryId thay thế
+  // issueType?: IssueType; // Frontend only - không có trong DB
+  // category?: IssueCategory; // Frontend only - dùng categoryId thay thế
   categoryId?: string; // DB: category_id (FK) - Loại sự cố
   priority?: 'low' | 'medium' | 'high' | 'urgent'; // Frontend only - không có trong DB
   status: TicketStatus; // DB: status - Trạng thái Ticket (New, Assigned, In_Progress, Resolved, Closed, Cancelled)

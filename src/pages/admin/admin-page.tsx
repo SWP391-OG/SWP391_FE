@@ -34,6 +34,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { locations, createLocation, updateLocation, deleteLocation } = useLocations();
   const { users, createUser, updateUser } = useUsers();
 
+  // Debug categories
+  console.log('📊 Admin Page - Categories:', {
+    count: categories?.length || 0,
+    categories: categories,
+    isArray: Array.isArray(categories)
+  });
+
   // UI State
   const [activeTab, setActiveTab] = useState<AdminTab>('tickets');
   const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
@@ -123,7 +130,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Filter categories by admin's departments
   const adminCategories = useMemo(() => {
-    return categories.filter(cat => adminDepartmentIds.includes(cat.departmentId));
+    if (!Array.isArray(categories)) {
+      console.warn('⚠️ categories is not an array:', categories);
+      return [];
+    }
+    
+    console.log('🔍 Filtering categories:', {
+      totalCategories: categories.length,
+      adminDepartmentIds: adminDepartmentIds,
+      categories: categories.map(c => ({ code: c.categoryCode, deptId: c.departmentId }))
+    });
+    
+    // Tạm thời hiển thị tất cả categories để test
+    // TODO: Sau khi có department data đúng thì uncomment phần filter
+    return categories;
+    
+    /*
+    // Convert departmentId to string for comparison
+    return categories.filter(cat => {
+      const deptIdStr = cat.departmentId?.toString();
+      return deptIdStr && adminDepartmentIds.includes(deptIdStr);
+    });
+    */
   }, [categories, adminDepartmentIds]);
 
   // Map IssueCategory to Category name for ticket filtering
@@ -304,10 +332,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
 
   return (
-    <div className="max-w-[1400px] mx-auto p-8">
+    <div className="min-h-screen max-w-[1400px] mx-auto p-8">
 
       {/* Dashboard Layout */}
-      <div className="flex gap-8 items-start">
+      <div className="flex gap-8 items-start">{/* Sidebar */}
         {/* Sidebar */}
         <div className="w-72 bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
           <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">

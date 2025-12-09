@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { UserRole, User, IssueType, Ticket } from './types';
+import type { UserRole, User, Ticket } from './types';
 import { 
   loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
@@ -360,7 +360,7 @@ function App() {
           />
           )}
         </div>
-         <Footer />
+        <Footer />
       </div>
       )}
     </>

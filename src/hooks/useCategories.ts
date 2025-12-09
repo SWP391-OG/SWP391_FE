@@ -11,22 +11,33 @@ export const useCategories = () => {
     loadCategories();
   }, []);
 
-  const loadCategories = () => {
+  const loadCategories = async () => {
     setLoading(true);
     try {
-      const data = categoryService.getAll();
+      const data = await categoryService.getAll();
+      console.log('✅ Categories loaded in hook:', data.length);
       setCategories(data);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('❌ Error loading categories:', error);
+      setCategories([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
   };
 
-  // Tạo category mới
-  const createCategory = (category: Omit<Category, 'id' | 'createdAt'>) => {
+  // Tạo category mới (TODO: implement API when backend is ready)
+  const createCategory = async (category: Omit<Category, 'categoryCode' | 'categoryName'>) => {
     try {
-      const newCategory = categoryService.create(category);
+      console.warn('⚠️ Create category API not implemented yet');
+      // Temporary: just add to local state
+      const newCategory: Category = {
+        categoryCode: `TEMP_${Date.now()}`,
+        categoryName: 'New Category',
+        departmentId: 1,
+        slaResolveHours: 24,
+        status: 'ACTIVE',
+        ...category,
+      };
       setCategories([...categories, newCategory]);
       return newCategory;
     } catch (error) {
@@ -35,23 +46,30 @@ export const useCategories = () => {
     }
   };
 
-  // Cập nhật category
-  const updateCategory = (id: string, updates: Partial<Category>) => {
+  // Cập nhật category (TODO: implement API when backend is ready)
+  const updateCategory = async (code: string, updates: Partial<Category>) => {
     try {
-      const updated = categoryService.update(id, updates);
-      setCategories(categories.map(c => c.id === id ? updated : c));
-      return updated;
+      console.warn('⚠️ Update category API not implemented yet');
+      // Temporary: just update local state
+      const updated = categories.find(c => c.categoryCode === code);
+      if (updated) {
+        const newCategory = { ...updated, ...updates };
+        setCategories(categories.map(c => c.categoryCode === code ? newCategory : c));
+        return newCategory;
+      }
+      throw new Error('Category not found');
     } catch (error) {
       console.error('Error updating category:', error);
       throw error;
     }
   };
 
-  // Xóa category
-  const deleteCategory = (id: string) => {
+  // Xóa category (TODO: implement API when backend is ready)
+  const deleteCategory = async (code: string) => {
     try {
-      categoryService.delete(id);
-      setCategories(categories.filter(c => c.id !== id));
+      console.warn('⚠️ Delete category API not implemented yet');
+      // Temporary: just remove from local state
+      setCategories(categories.filter(c => c.categoryCode !== code));
     } catch (error) {
       console.error('Error deleting category:', error);
       throw error;
@@ -59,8 +77,8 @@ export const useCategories = () => {
   };
 
   // Get categories by department
-  const getCategoriesByDepartment = (departmentId: string) => {
-    return categoryService.getByDepartmentId(departmentId);
+  const getCategoriesByDepartment = async (departmentId: number) => {
+    return categoryService.getByDepartment(departmentId);
   };
 
   return {

@@ -1,50 +1,65 @@
-import type { Category, Priority } from '../types';
-import { loadCategories, saveCategories } from '../utils/localStorage';
+import { apiClient } from './api';
+import type { Category, CategoryApiResponse } from '../types/index';
 
 export const categoryService = {
-  // Lấy tất cả categories
-  getAll(): Category[] {
-    return loadCategories();
+  /**
+   * Lấy danh sách tất cả categories
+   */
+  async getAll(): Promise<Category[]> {
+    try {
+      console.log('📋 Fetching categories...');
+      
+      const response = await apiClient.get<CategoryApiResponse>('/Category');
+      
+      if (!response.status || !response.data) {
+        console.error('❌ Failed to fetch categories:', response);
+        return [];
+      }
+
+      console.log('✅ Categories fetched:', response.data.length);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error fetching categories:', error);
+      return [];
+    }
   },
 
-  // Lấy category theo ID
-  getById(id: string): Category | null {
-    const categories = this.getAll();
-    return categories.find(c => c.id === id) || null;
+  /**
+   * Lấy categories theo department
+   */
+  async getByDepartment(departmentId: number): Promise<Category[]> {
+    try {
+      const allCategories = await this.getAll();
+      return allCategories.filter(cat => cat.departmentId === departmentId);
+    } catch (error) {
+      console.error('❌ Error filtering categories by department:', error);
+      return [];
+    }
   },
 
-  // Lấy categories theo department
-  getByDepartmentId(departmentId: string): Category[] {
-    return this.getAll().filter(cat => cat.departmentId === departmentId);
+  /**
+   * Lấy category theo code
+   */
+  async getByCode(categoryCode: string): Promise<Category | null> {
+    try {
+      const allCategories = await this.getAll();
+      return allCategories.find(cat => cat.categoryCode === categoryCode) || null;
+    } catch (error) {
+      console.error('❌ Error finding category by code:', error);
+      return null;
+    }
   },
 
-  // Tạo category mới
-  create(category: Omit<Category, 'id' | 'createdAt'>): Category {
-    const categories = this.getAll();
-    const newCategory: Category = {
-      ...category,
-      id: `cat-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    categories.push(newCategory);
-    saveCategories(categories);
-    return newCategory;
-  },
-
-  // Cập nhật category
-  update(id: string, updates: Partial<Category>): Category {
-    const categories = this.getAll();
-    const index = categories.findIndex(c => c.id === id);
-    if (index === -1) throw new Error('Category not found');
-    
-    categories[index] = { ...categories[index], ...updates };
-    saveCategories(categories);
-    return categories[index];
-  },
-
-  // Xóa category
-  delete(id: string): void {
-    const categories = this.getAll().filter(c => c.id !== id);
-    saveCategories(categories);
+  /**
+   * Lấy chỉ các categories ACTIVE
+   */
+  async getActiveCategories(): Promise<Category[]> {
+    try {
+      const allCategories = await this.getAll();
+      return allCategories.filter(cat => cat.status === 'ACTIVE');
+    } catch (error) {
+      console.error('❌ Error filtering active categories:', error);
+      return [];
+    }
   },
 };

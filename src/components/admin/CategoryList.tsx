@@ -20,8 +20,8 @@ const CategoryList = ({
   const filteredCategories = categories.filter((cat) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    const matchesCode = cat.code?.toLowerCase().includes(query);
-    const matchesName = cat.name?.toLowerCase().includes(query);
+    const matchesCode = cat.categoryCode?.toLowerCase().includes(query);
+    const matchesName = cat.categoryName?.toLowerCase().includes(query);
     return matchesCode || matchesName;
   });
 
@@ -65,15 +65,16 @@ const CategoryList = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredCategories.map((cat) => {
-                const deptName = departments.find(d => d.id === cat.departmentId)?.name || 'Unknown';
+                // departmentId từ API là number, cần convert sang string để so sánh
+                const deptName = departments.find(d => d.id === cat.departmentId?.toString())?.name || `Department ${cat.departmentId}`;
 
                 return (
-                  <tr key={cat.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={cat.categoryCode} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-4 text-sm text-gray-600 font-medium">
-                      {cat.code || '-'}
+                      {cat.categoryCode || '-'}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
-                      {cat.name}
+                      {cat.categoryName}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-600">
                       {cat.slaResolveHours < 24 
@@ -85,11 +86,11 @@ const CategoryList = ({
                     </td>
                     <td className="px-4 py-4">
                       <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${
-                        cat.status === 'active' 
+                        cat.status === 'ACTIVE' 
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {cat.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
+                        {cat.status === 'ACTIVE' ? 'Hoạt động' : 'Không hoạt động'}
                       </span>
                     </td>
                     <td className="px-4 py-4">
