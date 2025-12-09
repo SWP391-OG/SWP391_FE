@@ -11,9 +11,18 @@
  */
 
 // Đọc biến môi trường từ .env
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7151/api';
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 5000;
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+
+// Log API configuration for debugging
+if (import.meta.env.VITE_DEV_MODE === 'true') {
+  console.log('🔧 API Configuration:', {
+    baseUrl: API_BASE_URL,
+    timeout: API_TIMEOUT,
+    useMockData: USE_MOCK_DATA
+  });
+}
 
 // Types
 interface RequestOptions extends RequestInit {
@@ -22,9 +31,7 @@ interface RequestOptions extends RequestInit {
 
 // Helper function để lấy auth token từ localStorage
 const getAuthToken = (): string | null => {
-  // TODO: Implement khi có authentication
-  // return localStorage.getItem('auth_token');
-  return null;
+  return localStorage.getItem('auth_token');
 };
 
 // Helper function để tạo headers
@@ -74,7 +81,9 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
     const errorData = await response.json().catch(() => ({
       message: response.statusText || 'An error occurred',
     }));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
+    console.error(`❌ API Error [${response.status}]:`, errorMessage);
+    throw new Error(errorMessage);
   }
 
   // Nếu response không có body (204 No Content)

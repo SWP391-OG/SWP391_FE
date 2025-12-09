@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { User } from '../../types';
-import { authenticateUser, mockUsers } from '../../data/mockUsers';
+import { authService } from '../../services/authService';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -9,37 +9,35 @@ interface LoginPageProps {
 }
 
 const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }: LoginPageProps) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    const user = authenticateUser(username, password);
-    if (user) {
-      onLogin(user);
-    } else {
-      setError('Tên đăng nhập hoặc mật khẩu không đúng!');
+    try {
+      const user = await authService.login(email, password);
+      if (user) {
+        // Lưu user vào localStorage để persist session
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        onLogin(user);
+      } else {
+        setError('Email hoặc mật khẩu không đúng!');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại!');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getRoleName = (role: string) => {
-    switch (role) {
-      case 'student':
-        return 'Sinh viên';
-      case 'it-staff':
-        return 'IT Staff';
-      case 'facility-staff':
-        return 'Facility Staff';
-      case 'admin':
-        return 'Admin';
-      default:
-        return role;
-    }
-  };
+  
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-4">
@@ -71,15 +69,16 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tên đăng nhập
+                Email
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                placeholder="Nhập tên đăng nhập"
+                placeholder="Nhập email"
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -95,11 +94,13 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all pr-12"
                   placeholder="Nhập mật khẩu"
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  disabled={isLoading}
                 >
                   {showPassword ? '🙈' : '👁️'}
                 </button>
@@ -110,6 +111,7 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
                     type="button"
                     onClick={onNavigateToForgotPassword}
                     className="text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+                    disabled={isLoading}
                   >
                     Quên mật khẩu?
                   </button>
@@ -125,9 +127,10 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-br from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-br from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Đăng nhập
+              {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
             </button>
           </form>
 
@@ -148,31 +151,7 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
           )}
 
           {/* Demo Accounts */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center mb-3">📝 Tài khoản demo:</p>
-            <div className="space-y-2">
-              {mockUsers.map((user) => (
-                <button
-                  key={user.id}
-                  type="button"
-                  onClick={() => {
-                    setUsername(user.username);
-                    setPassword(user.password);
-                    setError('');
-                  }}
-                  className="w-full text-left px-3 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-xs"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <span className="font-semibold text-gray-700">{user.username}</span>
-                      <span className="text-gray-400 ml-2">({getRoleName(user.role)})</span>
-                    </div>
-                    <span className="text-gray-400">{user.password}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
+          
       </div>
     </div>
   );
