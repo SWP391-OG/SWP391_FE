@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { IssueType, Ticket } from '../../types';
 import { checkDuplicateTicket } from '../../utils/ticketUtils';
-import TicketDetailModal from '../../components/shared/ticket-detail-modal';
+import { useLocations } from '../../hooks/useLocations';
 
 interface CreateTicketPageProps {
   issueType: IssueType;
@@ -15,16 +15,22 @@ interface FormData {
   title: string;
   description: string;
   location: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  phoneNumber: string;
   images: string[];
 }
 
 const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }: CreateTicketPageProps) => {
+  // Load locations
+  const { locations } = useLocations();
+
+  // Get issue examples for dropdown
+  const issueExamples = issueType.examples || [];
+
   const [formData, setFormData] = useState<FormData>({
     title: '',
     description: '',
     location: '',
-    priority: 'medium',
+    phoneNumber: '',
     images: [],
   });
 
@@ -32,6 +38,7 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateTicket, setDuplicateTicket] = useState<Ticket | null>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -108,14 +115,15 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
     // Simulate API call
     setTimeout(() => {
       const now = new Date();
+      const finalTitle = formData.title === 'custom' ? customTitle : formData.title;
       const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
-        title: formData.title,
+        title: finalTitle,
         description: formData.description,
         issueType: issueType,
         category: issueType.category,
-        priority: formData.priority,
         status: 'open',
         location: formData.location,
+        phoneNumber: formData.phoneNumber,
         images: formData.images.length > 0 ? formData.images : undefined,
         createdBy: 'current-user-id', // This should come from auth context
         updatedAt: now.toISOString(),
@@ -145,14 +153,12 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
     proceedWithSubmit();
   };
 
-  const priorityLabels = {
-    low: { label: 'Thấp', emoji: '🟢' },
-    medium: { label: 'Trung bình', emoji: '🟡' },
-    high: { label: 'Cao', emoji: '🟠' },
-    urgent: { label: 'Khẩn cấp', emoji: '🔴' },
-  };
 
-  const isFormValid = formData.title.trim() !== '' && formData.description.trim() !== '';
+
+  const isFormValid = 
+    (formData.title.trim() !== '' && formData.title !== 'custom') ||
+    (formData.title === 'custom' && customTitle.trim() !== '') &&
+    formData.description.trim() !== '';
 
   return (
     <div className="max-w-[900px] mx-auto p-8">
@@ -176,15 +182,33 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
             Tiêu đề <span className="text-red-500">*</span>
           </label>
-          <input
-            type="text"
+          <select
             name="title"
             value={formData.title}
             onChange={handleInputChange}
-            placeholder="Ví dụ: Máy chiếu phòng 501 không hoạt động"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
             required
-          />
+          >
+            <option value="">-- Chọn loại lỗi --</option>
+            {issueExamples.map((example, index) => (
+              <option key={index} value={example}>
+                {example}
+              </option>
+            ))}
+            <option value="custom">Khác (nhập tùy chỉnh)</option>
+          </select>
+          
+          {formData.title === 'custom' && (
+            <input
+              type="text"
+              name="customTitle"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              placeholder="Nhập tiêu đề tùy chỉnh"
+              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border mt-2 focus:outline-none focus:border-blue-500"
+              required
+            />
+          )}
         </div>
 
         <div className="mb-6">
@@ -206,29 +230,31 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
 
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
-          <input
-            type="text"
+          <select
             name="location"
             value={formData.location}
             onChange={handleInputChange}
-            placeholder="Ví dụ: Tòa nhà Alpha"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-          />
+            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+          >
+            <option value="">-- Chọn địa điểm --</option>
+            {locations.map((location) => (
+              <option key={location.id} value={location.name}>
+                {location.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Mức độ ưu tiên</label>
-          <select
-            name="priority"
-            value={formData.priority}
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số điện thoại</label>
+          <input
+            type="tel"
+            name="phoneNumber"
+            value={formData.phoneNumber}
             onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-          >
-            <option value="low">Thấp</option>
-            <option value="medium">Trung bình</option>
-            <option value="high">Cao</option>
-            <option value="urgent">Khẩn cấp</option>
-          </select>
+            placeholder="Ví dụ: 0912345678"
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+          />
         </div>
 
         <div className="mb-6">

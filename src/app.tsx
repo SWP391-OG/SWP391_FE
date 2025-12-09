@@ -13,6 +13,7 @@ import RegisterPage from './pages/auth/register-page';
 import ForgotPasswordPage from './pages/auth/forgot-password-page';
 import ProfileModal from './components/shared/profile-modal';
 import NavbarNew from './components/shared/navbar-new';
+import Footer from './components/shared/footer';
 
 type StaffType = 'it' | 'facility';
 
@@ -272,7 +273,7 @@ function App() {
 
       {/* Main App - Show when logged in */}
       {currentUser && (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
           {/* Navbar */}
           <NavbarNew
             currentUser={currentUser}
@@ -359,6 +360,7 @@ function App() {
           />
           )}
         </div>
+         <Footer />
       </div>
       )}
     </>

@@ -29,11 +29,11 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
         <h2 className="text-2xl my-2 text-gray-800">Chọn Loại Vấn Đề</h2>
       </div>
 
-      <div className="grid grid-cols-3 gap-6 py-4 max-w-5xl mx-auto">
+      <div className="flex justify-center items-stretch gap-6 py-4 max-w-5xl mx-auto">
         {filteredIssueTypes.map((issueType) => (
           <div
             key={issueType.id}
-            className="bg-white rounded-xl p-8 border-2 border-gray-200 cursor-pointer transition-all duration-300 ease-in-out flex flex-col gap-4 hover:-translate-y-1 hover:shadow-lg hover:border-blue-500"
+            className="w-[380px] bg-white rounded-xl p-8 border-2 border-gray-200 cursor-pointer transition-all duration-300 ease-in-out flex flex-col gap-4 hover:-translate-y-1 hover:shadow-lg hover:border-blue-500"
             onClick={() => onSelectIssue(issueType)}
           >
             <div className="text-5xl text-center mb-2">{issueType.icon}</div>
