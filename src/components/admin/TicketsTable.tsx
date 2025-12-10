@@ -1,23 +1,21 @@
-import type { Ticket, Location, User } from '../../types';
-
-interface Staff {
-  id: string;
-  name: string;
-}
+import type { Ticket, Location, TicketFromApi } from '../../types';
 
 interface TicketsTableProps {
-  tickets: Ticket[];
+  tickets: Ticket[] | TicketFromApi[];
   locations: Location[];
-  staffList: Staff[];
-  onAssignTicket: (ticketId: string, staffId: string) => void;
-  onViewTicket: (ticket: Ticket) => void;
+  staffList: any; // Not used but kept for compatibility
+  onAssignTicket: any; // Not used but kept for compatibility
+  onViewTicket: (ticket: Ticket | TicketFromApi) => void;
 }
+
+// Helper function để check xem ticket có phải từ API không
+const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromApi => {
+  return 'ticketCode' in ticket && 'requesterCode' in ticket;
+};
 
 const TicketsTable = ({
   tickets,
   locations,
-  staffList,
-  onAssignTicket,
   onViewTicket,
 }: TicketsTableProps) => {
   const formatDate = (dateString: string) => {
@@ -29,6 +27,24 @@ const TicketsTable = ({
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
+  };
+
+  const getStatusInfo = (status: string) => {
+    const statusMap: Record<string, { bg: string; text: string; label: string }> = {
+      'open': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
+      'NEW': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
+      'acknowledged': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Đã giao việc' },
+      'ASSIGNED': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Đã giao việc' },
+      'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
+      'IN_PROGRESS': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
+      'resolved': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
+      'RESOLVED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
+      'closed': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
+      'CLOSED': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
+      'cancelled': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+      'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+    };
+    return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: status };
   };
 
   return (
@@ -46,10 +62,13 @@ const TicketsTable = ({
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  ID
+                  Mã Ticket
                 </th>
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Tiêu đề & Mô tả
+                  Tiêu đề
+                </th>
+                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  Mô tả
                 </th>
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Vị trí
@@ -58,13 +77,10 @@ const TicketsTable = ({
                   Trạng thái
                 </th>
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Độ ưu tiên
+                  Assigned To
                 </th>
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Người xử lý
-                </th>
-                <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
-                  Ngày tạo
+                  Hạn giải quyết
                 </th>
                 <th className="px-4 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                   Thao tác
@@ -74,42 +90,31 @@ const TicketsTable = ({
             <tbody className="bg-white divide-y divide-gray-200">
               {tickets.length > 0 ? (
                 tickets.map((ticket) => {
-                  const statusInfo = {
-                    open: { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
-                    'acknowledged': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Đã giao việc' },
-                    'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
-                    resolved: { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
-                    closed: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
-                    cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
-                  }[ticket.status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: ticket.status };
-
-                  const priorityInfo = {
-                    low: { bg: 'bg-green-100', text: 'text-green-800', label: 'Thấp' },
-                    medium: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Trung bình' },
-                    high: { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Cao' },
-                    urgent: { bg: 'bg-red-100', text: 'text-red-800', label: 'Khẩn cấp' },
-                  }[ticket.priority];
-
-                  // Get location name
-                  const location = locations.find(l => l.id === ticket.location);
-                  const locationName = location ? location.name : ticket.location || 'N/A';
-
-                  // Get assigned staff name
-                  const assignedStaff = staffList.find(s => s.id === ticket.assignedTo);
+                  const isFromApi = isTicketFromApi(ticket);
+                  const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
+                  const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
+                  const status = ticket.status;
+                  const statusInfo = getStatusInfo(status);
+                  const resolveDeadline = isFromApi ? ticket.resolveDeadline : (ticket.resolveDeadline || ticket.slaDeadline || ticket.createdAt);
+                  const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
 
                   return (
-                    <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                      {/* ID */}
-                      <td className="px-4 py-3.5 text-sm text-gray-500 font-mono">
-                        {ticket.id.substring(0, 8)}
+                    <tr key={isFromApi ? ticket.ticketCode : ticket.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => onViewTicket(ticket)}>
+                      {/* Mã Ticket */}
+                      <td className="px-4 py-3.5 text-sm text-gray-900 font-mono font-semibold">
+                        {ticketCode}
                       </td>
                       
-                      {/* Tiêu đề & Mô tả */}
+                      {/* Tiêu đề */}
                       <td className="px-4 py-3.5 max-w-xs">
-                        <div className="font-semibold text-sm text-gray-900 mb-1">
+                        <div className="font-semibold text-sm text-gray-900">
                           {ticket.title}
                         </div>
-                        <div className="text-xs text-gray-500 truncate max-w-[280px]">
+                      </td>
+                      
+                      {/* Mô tả */}
+                      <td className="px-4 py-3.5 max-w-md">
+                        <div className="text-sm text-gray-600 line-clamp-2">
                           {ticket.description}
                         </div>
                       </td>
@@ -126,65 +131,28 @@ const TicketsTable = ({
                         </span>
                       </td>
                       
-                      {/* Độ ưu tiên */}
-                      <td className="px-4 py-3.5">
-                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-semibold ${priorityInfo.bg} ${priorityInfo.text}`}>
-                          {priorityInfo.label}
-                        </span>
-                      </td>
-                      
-                      {/* Người xử lý */}
+                      {/* Assigned To */}
                       <td className="px-4 py-3.5 text-sm">
-                        {ticket.assignedTo ? (
-                          <div className="flex items-center gap-2">
-                            <span className={`${assignedStaff ? 'text-gray-900 font-medium' : 'text-red-600 font-semibold'}`}>
-                              {assignedStaff ? assignedStaff.name : `ID: ${ticket.assignedTo} (Không tìm thấy)`}
-                            </span>
-                            <select
-                              className="px-2 py-1 text-xs border border-gray-300 rounded-md cursor-pointer bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                              value={ticket.assignedTo}
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  onAssignTicket(ticket.id, e.target.value);
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <option value="">-- Chọn staff --</option>
-                              {staffList.map(staff => (
-                                <option key={staff.id} value={staff.id}>
-                                  {staff.name}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                        {assignedToName ? (
+                          <span className="text-gray-900 font-medium">{assignedToName}</span>
                         ) : (
-                          <button
-                            className="px-2.5 py-1.5 text-xs font-semibold border border-orange-500 rounded-md cursor-pointer bg-white text-orange-500 hover:bg-orange-50 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (staffList.length > 0) {
-                                const firstStaff = staffList[0];
-                                onAssignTicket(ticket.id, firstStaff.id);
-                              }
-                            }}
-                            title="Giao việc"
-                          >
-                            Assign +
-                          </button>
+                          <span className="text-gray-400 italic">Chưa assign</span>
                         )}
                       </td>
                       
-                      {/* Ngày tạo */}
-                      <td className="px-4 py-3.5 text-xs text-gray-500">
-                        {formatDate(ticket.createdAt)}
+                      {/* Hạn giải quyết */}
+                      <td className="px-4 py-3.5 text-sm text-gray-600">
+                        {formatDate(resolveDeadline)}
                       </td>
-                      
+
                       {/* Thao tác */}
                       <td className="px-4 py-3.5">
                         <button
                           className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                          onClick={() => onViewTicket(ticket)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onViewTicket(ticket);
+                          }}
                           title="Xem chi tiết"
                         >
                           Xem
@@ -196,7 +164,7 @@ const TicketsTable = ({
               ) : (
                 <tr>
                   <td colSpan={8} className="px-8 py-12 text-center text-gray-500">
-                    Không có ticket nào trong department của bạn
+                    Không có ticket nào
                   </td>
                 </tr>
               )}

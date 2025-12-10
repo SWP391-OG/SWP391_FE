@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { Ticket } from '../../types';
+import type { Ticket, TicketFromApi } from '../../types';
+import { ticketService } from '../../services/ticketService';
 
 interface Staff {
   id: string;
@@ -7,13 +8,19 @@ interface Staff {
 }
 
 interface TicketReviewModalProps {
-  ticket: Ticket;
+  ticket: Ticket | TicketFromApi;
   staffList: Staff[];
   onApprove: (ticketId: string) => void;
   onReject: (ticketId: string, reason: string) => void;
   onAssign?: (ticketId: string, staffId: string) => void;
   onClose: () => void;
+  onAssignSuccess?: () => void; // Callback để refresh tickets sau khi assign
 }
+
+// Helper function để check xem ticket có phải từ API không
+const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromApi => {
+  return 'ticketCode' in ticket && 'requesterCode' in ticket;
+};
 
 const TicketReviewModal = ({
   ticket,
@@ -22,9 +29,43 @@ const TicketReviewModal = ({
   onReject,
   onAssign,
   onClose,
+  onAssignSuccess,
 }: TicketReviewModalProps) => {
-  const [rejectReason, setRejectReason] = useState('');
-  const [selectedStaffId, setSelectedStaffId] = useState<string>(ticket.assignedTo || '');
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  const isFromApi = isTicketFromApi(ticket);
+  const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
+  const ticketLocation = isFromApi ? ticket.locationName : ticket.location || 'N/A';
+  const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
+  const ticketImages = 'images' in ticket ? ticket.images : undefined;
+
+  const handleAutoAssign = async () => {
+    if (!isFromApi) {
+      alert('Chỉ có thể assign ticket từ API');
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      const response = await ticketService.assignTicketAuto(ticket.ticketCode);
+      console.log('✅ Assign ticket response:', response);
+      
+      if (response.status) {
+        alert('✅ Đã assign ticket thành công!');
+        if (onAssignSuccess) {
+          onAssignSuccess(); // Refresh tickets list
+        }
+        onClose();
+      } else {
+        alert('❌ Assign ticket thất bại: ' + (response.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Error assigning ticket:', error);
+      alert('❌ Lỗi khi assign ticket: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -64,8 +105,8 @@ const TicketReviewModal = ({
           {/* Ticket Info */}
           <div className="mb-6">
             <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">ID Ticket:</span>
-              <span className="ml-2 font-mono text-gray-800">{ticket.id}</span>
+              <span className="text-sm text-gray-500 font-semibold">Mã Ticket:</span>
+              <span className="ml-2 font-mono text-gray-800">{ticketCode}</span>
             </div>
             <div className="mb-3">
               <span className="text-sm text-gray-500 font-semibold">Tiêu đề:</span>
@@ -81,7 +122,7 @@ const TicketReviewModal = ({
             </div>
             <div className="mb-3">
               <span className="text-sm text-gray-500 font-semibold">Vị trí:</span>
-              <span className="ml-2 text-gray-800">{ticket.location || 'N/A'}</span>
+              <span className="ml-2 text-gray-800">{ticketLocation}</span>
             </div>
             <div className="mb-3">
               <span className="text-sm text-gray-500 font-semibold">Ngày tạo:</span>
@@ -90,19 +131,25 @@ const TicketReviewModal = ({
             <div className="mb-3">
               <span className="text-sm text-gray-500 font-semibold">Trạng thái:</span>
               <span className="ml-2 inline-flex px-2 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">
-                {ticket.status === 'open' ? 'Mới tạo' : ticket.status}
+                {ticket.status === 'open' || ticket.status === 'NEW' ? 'Mới tạo' : ticket.status}
               </span>
             </div>
+            {assignedToName && (
+              <div className="mb-3">
+                <span className="text-sm text-gray-500 font-semibold">Người được assign:</span>
+                <span className="ml-2 text-gray-800 font-medium">{assignedToName}</span>
+              </div>
+            )}
           </div>
 
           {/* Images if any */}
-          {ticket.images && ticket.images.length > 0 && (
+          {ticketImages && ticketImages.length > 0 && (
             <div className="mb-6">
               <span className="text-sm text-gray-500 font-semibold block mb-2">
                 Hình ảnh:
               </span>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
-                {ticket.images.map((img, idx) => (
+                {ticketImages.map((img: string, idx: number) => (
                   <img
                     key={idx}
                     src={img}
@@ -114,41 +161,45 @@ const TicketReviewModal = ({
             </div>
           )}
 
-          {/* Assign Staff */}
-          {staffList.length > 0 && (
+          {/* Auto Assign Button - Chỉ hiển thị nếu là ticket từ API và chưa được assign */}
+          {isFromApi && !assignedToName && (
             <div className="mb-6">
-              <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                Chọn người xử lý:
-              </label>
-              <select
-                value={selectedStaffId}
-                onChange={(e) => setSelectedStaffId(e.target.value)}
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm bg-white text-gray-800 cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              <button
+                type="button"
+                onClick={handleAutoAssign}
+                disabled={isAssigning}
+                className={`w-full px-6 py-3 rounded-lg font-semibold text-white transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                  isAssigning 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-orange-500 hover:bg-orange-600 cursor-pointer'
+                }`}
               >
-                <option value="">-- Chọn staff --</option>
-                {staffList.map(staff => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.name}
-                  </option>
-                ))}
-              </select>
-              {selectedStaffId && onAssign && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onAssign(ticket.id, selectedStaffId);
-                    alert('Đã giao ticket cho staff thành công!');
-                  }}
-                  className="mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white border-none rounded-md text-sm font-semibold cursor-pointer transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                >
-                  Giao việc ngay
-                </button>
-              )}
+                {isAssigning ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                    Đang assign...
+                  </span>
+                ) : (
+                  '🎯 Assign Staff Tự Động'
+                )}
+              </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Hệ thống sẽ tự động chọn staff phù hợp nhất để xử lý ticket này
+              </p>
             </div>
           )}
 
-          {/* Reject Reason Input */}
-          <div className="mb-6">
+          {/* Hiển thị thông báo nếu đã được assign */}
+          {assignedToName && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-800">
+                ✅ Ticket này đã được assign cho: <strong>{assignedToName}</strong>
+              </p>
+            </div>
+          )}
+
+          {/* Reject Reason Input - Ẩn đi vì không dùng approve/reject */}
+          {/* <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Lý do từ chối (nếu từ chối):
             </label>
@@ -159,7 +210,7 @@ const TicketReviewModal = ({
               rows={3}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
-          </div>
+          </div> */}
 
           {/* Actions */}
           <div className="flex gap-4 justify-end mt-8">
@@ -168,35 +219,7 @@ const TicketReviewModal = ({
               onClick={onClose}
               className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
-              Hủy
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (rejectReason.trim()) {
-                  onReject(ticket.id, rejectReason.trim());
-                  onClose();
-                } else {
-                  alert('Vui lòng nhập lý do từ chối');
-                }
-              }}
-              className="px-6 py-3 bg-white text-red-600 border border-red-600 rounded-lg font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-            >
-              Từ chối
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                // If staff is selected, assign first, then approve
-                if (selectedStaffId && onAssign) {
-                  onAssign(ticket.id, selectedStaffId);
-                }
-                onApprove(ticket.id);
-                onClose();
-              }}
-              className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
-            >
-              {selectedStaffId ? 'Chấp nhận và giao việc' : 'Chấp nhận'}
+              Đóng
             </button>
           </div>
         </div>

@@ -115,7 +115,49 @@ export interface SLATracking {
 }
 
 // Ticket types
-export type TicketStatus = 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled';
+export type TicketStatus = 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+
+// API Response Types for Tickets
+export interface TicketFromApi {
+  ticketCode: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  requesterCode: string;
+  requesterName: string;
+  assignedToCode: string;
+  assignedToName: string;
+  managedByCode: string;
+  managedByName: string;
+  locationCode: string;
+  locationName: string;
+  categoryCode: string;
+  categoryName: string;
+  status: string;
+  contactPhone: string | null;
+  note: string | null;
+  createdAt: string;
+  resolveDeadline: string;
+  resolvedAt: string | null;
+  closedAt: string | null;
+  ratingStars: number | null;
+  ratingComment: string | null;
+}
+
+export interface GetAllTicketsResponse {
+  status: boolean;
+  message: string;
+  data: {
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+    items: TicketFromApi[];
+  };
+  errors: string[];
+}
 
 export interface Ticket {
   id: string;

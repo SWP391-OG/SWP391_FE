@@ -1,4 +1,4 @@
-import type { Ticket } from '../types';
+import type { Ticket, GetAllTicketsResponse, TicketFromApi } from '../types';
 import { loadTickets, saveTickets } from '../utils/localStorage';
 import { apiClient } from './api';
 
@@ -43,7 +43,34 @@ interface CreateTicketResponse {
 }
 
 export const ticketService = {
-  // Lấy tất cả tickets
+  // Lấy tất cả tickets từ API (cho Admin)
+  async getAllTicketsFromApi(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching all tickets:', error);
+      throw error;
+    }
+  },
+
+  // Assign ticket tự động (cho Admin) - PATCH method
+  async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: any; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: any; errors: string[] }>(
+        `/Ticket/${ticketCode}/assign`,
+        {} // Empty body for auto-assign
+      );
+      return response;
+    } catch (error) {
+      console.error('Error assigning ticket:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tất cả tickets (legacy - localStorage)
   getAll(): Ticket[] {
     return loadTickets();
   },
