@@ -59,6 +59,30 @@ export interface Location {
   createdAt?: string; // Frontend only - không có trong DB
 }
 
+// Location API types
+export interface LocationDto {
+  locationCode: string;
+  locationName: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
+export interface LocationApiResponse {
+  status: boolean;
+  message: string;
+  data: LocationDto[];  // Backend trả về array trực tiếp
+  errors: string[];
+}
+
+export interface LocationRequestDto {
+  locationCode: string;
+  locationName: string;
+}
+
+export interface LocationStatusUpdateDto {
+  locationCode: string;
+  status: 'ACTIVE' | 'INACTIVE';
+}
+
 // Category types
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'other';

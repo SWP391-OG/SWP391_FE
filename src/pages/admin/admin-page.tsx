@@ -31,7 +31,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { tickets, assignTicket, updateTicketPriority, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
   const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
-  const { locations, createLocation, updateLocation, deleteLocation } = useLocations();
+  const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation } = useLocations();
   const { users, createUser, updateUser } = useUsers();
 
   // Debug categories
@@ -581,6 +581,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'locations' && (
             <LocationList
               locations={locations}
+              loading={locationsLoading}
               searchQuery={locationSearchQuery}
               filterStatus={locationFilterStatus}
               onSearchChange={setLocationSearchQuery}
@@ -602,6 +603,16 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   status: location.status || 'active',
                 });
                 setIsFormOpen(true);
+              }}
+              onToggleStatus={(locationCode, currentStatus) => {
+                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                const message = newStatus === 'inactive' 
+                  ? 'Bạn có chắc chắn muốn vô hiệu hóa địa điểm này?'
+                  : 'Bạn có chắc chắn muốn kích hoạt lại địa điểm này?';
+                
+                if (confirm(message)) {
+                  updateLocationStatus(locationCode, newStatus);
+                }
               }}
             />
           )}
@@ -756,17 +767,46 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingLocation={editingLocation}
           locationFormData={locationFormData}
           onFormDataChange={setLocationFormData}
-          onSubmit={() => {
-            if (editingLocation) {
-              updateLocation(editingLocation.id, locationFormData);
-            } else {
-              createLocation(locationFormData);
+          onSubmit={async () => {
+            try {
+              if (editingLocation) {
+                // Update existing location
+                await updateLocation(
+                  editingLocation.code || editingLocation.id, 
+                  { name: locationFormData.name }
+                );
+                
+                // Update status if changed
+                if (locationFormData.status !== editingLocation.status) {
+                  await updateLocationStatus(
+                    editingLocation.code || editingLocation.id,
+                    locationFormData.status
+                  );
+                }
+              } else {
+                // Create new location
+                await createLocation({
+                  code: locationFormData.code,
+                  name: locationFormData.name,
+                });
+              }
+              
+              setIsFormOpen(false);
+              setEditingLocation(null);
+            } catch (error) {
+              console.error('Error saving location:', error);
+              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
-            setIsFormOpen(false);
-            setEditingLocation(null);
           }}
-          onDelete={editingLocation ? () => {
-            deleteLocation(editingLocation.id);
+          onDelete={editingLocation ? async () => {
+            try {
+              await deleteLocation(editingLocation.code || editingLocation.id);
+              setIsFormOpen(false);
+              setEditingLocation(null);
+            } catch (error) {
+              console.error('Error deleting location:', error);
+              alert('Có lỗi xảy ra khi xóa: ' + (error instanceof Error ? error.message : 'Unknown error'));
+            }
           } : undefined}
           onClose={() => {
             setIsFormOpen(false);

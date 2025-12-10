@@ -1,69 +1,116 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Location } from '../types';
 import { locationService } from '../services/locationService';
 
 export const useLocations = () => {
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load locations
-  useEffect(() => {
-    loadLocations();
+  /**
+   * Load locations từ API
+   */
+  const loadLocations = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await locationService.getAll();
+      setLocations(data);
+    } catch (err) {
+      console.error('Error loading locations:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load locations');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadLocations = () => {
+  // Load khi component mount
+  useEffect(() => {
+    loadLocations();
+  }, [loadLocations]);
+
+  /**
+   * Tạo location mới
+   */
+  const createLocation = async (location: { code: string; name: string }) => {
     setLoading(true);
+    setError(null);
     try {
-      const data = locationService.getAll();
-      setLocations(data);
-    } catch (error) {
-      console.error('Error loading locations:', error);
+      const newLocation = await locationService.create(location);
+      await loadLocations(); // Reload list
+      return newLocation;
+    } catch (err) {
+      console.error('Error creating location:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create location');
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // Tạo location mới
-  const createLocation = (location: Omit<Location, 'id' | 'createdAt'>) => {
+  /**
+   * Cập nhật location
+   */
+  const updateLocation = async (locationCode: string, updates: { name?: string }) => {
+    setLoading(true);
+    setError(null);
     try {
-      const newLocation = locationService.create(location);
-      setLocations([...locations, newLocation]);
-      return newLocation;
-    } catch (error) {
-      console.error('Error creating location:', error);
-      throw error;
-    }
-  };
-
-  // Cập nhật location
-  const updateLocation = (id: string, updates: Partial<Location>) => {
-    try {
-      const updated = locationService.update(id, updates);
-      setLocations(locations.map(l => l.id === id ? updated : l));
+      const updated = await locationService.update(locationCode, updates);
+      await loadLocations(); // Reload list
       return updated;
-    } catch (error) {
-      console.error('Error updating location:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error updating location:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update location');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Xóa location
-  const deleteLocation = (id: string) => {
+  /**
+   * Cập nhật status
+   */
+  const updateLocationStatus = async (locationCode: string, status: 'active' | 'inactive') => {
+    setLoading(true);
+    setError(null);
     try {
-      locationService.delete(id);
-      setLocations(locations.filter(l => l.id !== id));
-    } catch (error) {
-      console.error('Error deleting location:', error);
-      throw error;
+      await locationService.updateStatus(locationCode, status);
+      await loadLocations(); // Reload list
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update status');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Xóa location
+   */
+  const deleteLocation = async (locationCode: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await locationService.delete(locationCode);
+      await loadLocations(); // Reload list
+    } catch (err) {
+      console.error('Error deleting location:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete location');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   return {
     locations,
     loading,
+    error,
+    loadLocations,
     createLocation,
     updateLocation,
+    updateLocationStatus,
     deleteLocation,
-    loadLocations,
   };
 };
