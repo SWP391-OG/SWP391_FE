@@ -286,7 +286,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Get staff list for admin's departments
   const adminStaffList = useMemo(() => {
-    const staffMap = new Map<string, { id: string; name: string; departmentName: string }>();
+    const staffMap = new Map<string, { id: string; name: string; departmentName: string; userCode?: string }>();
     adminDepartments.forEach(dept => {
       // staffIds có thể undefined từ API, cần check
       if (dept.staffIds && Array.isArray(dept.staffIds)) {
@@ -308,6 +308,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               id: staffId,
               name: staffUser?.fullName || staffNames[staffId] || staffId,
               departmentName: dept.deptName || dept.name || 'N/A',
+              userCode: staffUser?.userCode || staffId, // Thêm userCode
             });
           }
         });
@@ -328,6 +329,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           id: user.id,
           name: user.fullName,
           departmentName: dept?.name || 'N/A',
+          userCode: user.userCode || user.id, // Thêm userCode
         });
       }
     });

@@ -56,16 +56,43 @@ export const ticketService = {
     }
   },
 
-  // Assign ticket tự động (cho Admin) - PATCH method
-  async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: any; errors: string[] }> {
+  // Lấy tickets của student hiện tại từ API
+  async getMyTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
     try {
-      const response = await apiClient.patch<{ status: boolean; message: string; data: any; errors: string[] }>(
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket/my-tickets?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching my tickets:', error);
+      throw error;
+    }
+  },
+
+  // Assign ticket tự động (cho Admin) - PATCH method
+  async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
         `/Ticket/${ticketCode}/assign`,
         {} // Empty body for auto-assign
       );
       return response;
     } catch (error) {
       console.error('Error assigning ticket:', error);
+      throw error;
+    }
+  },
+
+  // Assign ticket thủ công (cho Admin) - PATCH method
+  async assignTicketManual(ticketCode: string, manualStaffCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/assign/manual`,
+        { manualStaffCode }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error manually assigning ticket:', error);
       throw error;
     }
   },

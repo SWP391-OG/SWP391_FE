@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
-import type { Ticket } from '../../types';
-import { mockTickets } from '../../data/mockData';
+import { useState, useMemo, useEffect } from 'react';
+import type { Ticket, TicketFromApi } from '../../types';
+import { ticketService } from '../../services/ticketService';
 
 interface TicketListPageProps {
   onViewDetail: (ticket: Ticket) => void;
@@ -11,11 +11,76 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<Ticket['status'] | 'all'>('all');
   const [filterPriority, setFilterPriority] = useState<Ticket['priority'] | 'all'>('all');
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // Load tickets from API
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        setLoading(true);
+        const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
+        
+        // Map API response to Ticket format
+        const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
+          id: apiTicket.ticketCode,
+          title: apiTicket.title,
+          description: apiTicket.description,
+          status: mapApiStatus(apiTicket.status),
+          priority: 'medium' as const, // API doesn't have priority, default to medium
+          issueType: {
+            id: apiTicket.categoryCode,
+            name: apiTicket.categoryName,
+            icon: '🔧',
+            description: ''
+          },
+          location: apiTicket.locationName,
+          roomNumber: '',
+          createdBy: apiTicket.requesterCode,
+          createdByName: apiTicket.requesterName,
+          assignedTo: apiTicket.assignedToCode || undefined,
+          assignedToName: apiTicket.assignedToName || undefined,
+          createdAt: apiTicket.createdAt,
+          updatedAt: apiTicket.createdAt,
+          imageUrl: apiTicket.imageUrl,
+          contactPhone: apiTicket.contactPhone,
+          notes: apiTicket.note,
+          slaDeadline: apiTicket.resolveDeadline,
+          slaTracking: {
+            createdAt: apiTicket.createdAt,
+            deadline: apiTicket.resolveDeadline,
+            isOverdue: false,
+            timeline: []
+          }
+        }));
+        
+        setTickets(mappedTickets);
+      } catch (error) {
+        console.error('Error fetching tickets:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTickets();
+  }, []);
+
+  // Map API status to UI status
+  const mapApiStatus = (apiStatus: string): Ticket['status'] => {
+    const statusMap: Record<string, Ticket['status']> = {
+      'OPEN': 'open',
+      'ASSIGNED': 'acknowledged',
+      'IN_PROGRESS': 'in-progress',
+      'RESOLVED': 'resolved',
+      'CLOSED': 'closed',
+      'CANCELLED': 'cancelled'
+    };
+    return statusMap[apiStatus] || 'open';
+  };
 
   // Filter and search tickets
   const filteredTickets = useMemo(() => {
-    return mockTickets.filter((ticket) => {
+    return tickets.filter((ticket) => {
       const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            ticket.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = filterStatus === 'all' || ticket.status === filterStatus;
@@ -63,10 +128,10 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
 
   // Calculate stats
   const stats = {
-    total: mockTickets.length,
-    open: mockTickets.filter(t => t.status === 'open').length,
-    inProgress: mockTickets.filter(t => t.status === 'in-progress').length,
-    resolved: mockTickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
+    total: tickets.length,
+    open: tickets.filter(t => t.status === 'open').length,
+    inProgress: tickets.filter(t => t.status === 'in-progress').length,
+    resolved: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
   };
 
   // Format date
@@ -88,7 +153,14 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
 
   return (
     <div className="max-w-[1400px] mx-auto p-8">
-      <div className="mb-8">
+      {loading ? (
+        <div className="text-center py-16">
+          <div className="text-4xl mb-4">⏳</div>
+          <p className="text-lg text-gray-500">Đang tải tickets...</p>
+        </div>
+      ) : (
+        <>
+          <div className="mb-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl m-0 text-gray-800">📋 Danh Sách Ticket</h2>
           <button 
@@ -231,6 +303,8 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

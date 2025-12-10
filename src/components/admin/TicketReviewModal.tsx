@@ -5,6 +5,7 @@ import { ticketService } from '../../services/ticketService';
 interface Staff {
   id: string;
   name: string;
+  userCode?: string; // Mã nhân viên cần cho backend
 }
 
 interface TicketReviewModalProps {
@@ -25,13 +26,15 @@ const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromAp
 const TicketReviewModal = ({
   ticket,
   staffList,
-  onApprove,
-  onReject,
-  onAssign,
+  onApprove: _onApprove,
+  onReject: _onReject,
+  onAssign: _onAssign,
   onClose,
   onAssignSuccess,
 }: TicketReviewModalProps) => {
   const [isAssigning, setIsAssigning] = useState(false);
+  const [assignMode, setAssignMode] = useState<'auto' | 'manual'>('auto');
+  const [selectedStaffCode, setSelectedStaffCode] = useState<string>('');
 
   const isFromApi = isTicketFromApi(ticket);
   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
@@ -64,6 +67,51 @@ const TicketReviewModal = ({
       alert('❌ Lỗi khi assign ticket: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsAssigning(false);
+    }
+  };
+
+  const handleManualAssign = async () => {
+    if (!isFromApi) {
+      alert('Chỉ có thể assign ticket từ API');
+      return;
+    }
+
+    if (!selectedStaffCode) {
+      alert('Vui lòng chọn staff để assign');
+      return;
+    }
+
+    // Tìm staff được chọn để lấy userCode
+    const selectedStaff = staffList.find(s => s.id === selectedStaffCode);
+    const staffCode = selectedStaff?.userCode || selectedStaffCode; // Fallback to id if userCode not available
+
+    setIsAssigning(true);
+    try {
+      const response = await ticketService.assignTicketManual(ticket.ticketCode, staffCode);
+      console.log('✅ Manual assign ticket response:', response);
+      
+      if (response.status) {
+        alert('✅ Đã assign ticket thành công!');
+        if (onAssignSuccess) {
+          onAssignSuccess(); // Refresh tickets list
+        }
+        onClose();
+      } else {
+        alert('❌ Assign ticket thất bại: ' + (response.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Error manually assigning ticket:', error);
+      alert('❌ Lỗi khi assign ticket: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleAssign = () => {
+    if (assignMode === 'auto') {
+      handleAutoAssign();
+    } else {
+      handleManualAssign();
     }
   };
 
@@ -161,15 +209,76 @@ const TicketReviewModal = ({
             </div>
           )}
 
-          {/* Auto Assign Button - Chỉ hiển thị nếu là ticket từ API và chưa được assign */}
+          {/* Assign Section - Chỉ hiển thị nếu là ticket từ API và chưa được assign */}
           {isFromApi && !assignedToName && (
-            <div className="mb-6">
+            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Assign Ticket</h4>
+              
+              {/* Radio Buttons */}
+              <div className="flex gap-6 mb-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="assignMode"
+                    value="auto"
+                    checked={assignMode === 'auto'}
+                    onChange={() => {
+                      setAssignMode('auto');
+                      setSelectedStaffCode('');
+                    }}
+                    className="w-4 h-4 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Tự động</span>
+                </label>
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="radio"
+                    name="assignMode"
+                    value="manual"
+                    checked={assignMode === 'manual'}
+                    onChange={() => setAssignMode('manual')}
+                    className="w-4 h-4 text-orange-500 focus:ring-orange-500"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Thủ công</span>
+                </label>
+              </div>
+
+              {/* Staff Dropdown - Chỉ hiển thị khi chọn manual */}
+              {assignMode === 'manual' && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Chọn Staff
+                  </label>
+                  <select
+                    value={selectedStaffCode}
+                    onChange={(e) => setSelectedStaffCode(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="">-- Chọn staff --</option>
+                    {staffList.map((staff) => (
+                      <option key={staff.id} value={staff.id}>
+                        {staff.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Description */}
+              <p className="text-xs text-gray-500 mb-3">
+                {assignMode === 'auto' 
+                  ? 'Hệ thống sẽ tự động chọn staff phù hợp nhất để xử lý ticket này'
+                  : 'Chọn staff cụ thể để assign ticket này'
+                }
+              </p>
+
+              {/* Assign Button */}
               <button
                 type="button"
-                onClick={handleAutoAssign}
-                disabled={isAssigning}
-                className={`w-full px-6 py-3 rounded-lg font-semibold text-white transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
-                  isAssigning 
+                onClick={handleAssign}
+                disabled={isAssigning || (assignMode === 'manual' && !selectedStaffCode)}
+                className={`w-full px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                  isAssigning || (assignMode === 'manual' && !selectedStaffCode)
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-orange-500 hover:bg-orange-600 cursor-pointer'
                 }`}
@@ -180,12 +289,9 @@ const TicketReviewModal = ({
                     Đang assign...
                   </span>
                 ) : (
-                  '🎯 Assign Staff Tự Động'
+                  '🎯 Assign Staff'
                 )}
               </button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Hệ thống sẽ tự động chọn staff phù hợp nhất để xử lý ticket này
-              </p>
             </div>
           )}
 
