@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Ticket, IssueType } from '../../types';
+import type { Ticket, Category } from '../../types';
 import IssueSelectionPage from './issue-selection-page';
 import CreateTicketPage from './create-ticket-page';
 import TicketListPage from './ticket-list-page';
@@ -19,7 +19,7 @@ interface StudentHomePageProps {
 
 const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdated, onFeedbackUpdated }: StudentHomePageProps) => {
   const [studentView, setStudentView] = useState<StudentView>('home');
-  const [selectedIssue, setSelectedIssue] = useState<IssueType | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<Category | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [studentTab, setStudentTab] = useState<StudentTab>('pending');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
@@ -364,8 +364,8 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
 
       {studentView === 'issue-selection' && (
         <IssueSelectionPage
-          onSelectIssue={(issueType: IssueType) => {
-            setSelectedIssue(issueType);
+          onSelectIssue={(category: Category) => {
+            setSelectedIssue(category);
             setStudentView('create-ticket');
           }}
           onBack={() => setStudentView('home')}
@@ -374,10 +374,9 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
 
       {studentView === 'create-ticket' && selectedIssue && (
         <CreateTicketPage
-          issueType={selectedIssue}
+          category={selectedIssue}
           onBack={() => setStudentView('issue-selection')}
           onSubmit={handleCreateTicket}
-          existingTickets={tickets}
         />
       )}
 

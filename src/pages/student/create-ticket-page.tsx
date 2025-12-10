@@ -1,44 +1,99 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import type { IssueType, Ticket } from '../../types';
-import { checkDuplicateTicket } from '../../utils/ticketUtils';
-import { useLocations } from '../../hooks/useLocations';
+import type { Category, Ticket } from '../../types';
+import { ticketService } from '../../services/ticketService';
+import { imageUploadService } from '../../services/imageUploadService';
+import { campusService, type Campus, type Location } from '../../services/campusService';
 
 interface CreateTicketPageProps {
-  issueType: IssueType;
+  category?: Category; // Optional - will use default if not provided
   onBack: () => void;
   onSubmit: (ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'>) => void;
-  existingTickets?: Ticket[]; // Tickets hiện có để kiểm tra duplicate
 }
 
 interface FormData {
   title: string;
   description: string;
-  location: string;
+  campusCode: string;
+  locationCode: string;
   phoneNumber: string;
-  images: string[];
+  imageFiles: File[];
 }
 
-const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }: CreateTicketPageProps) => {
-  // Load locations
-  const { locations } = useLocations();
+const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps) => {
+  // Fallback if category is not provided
+  const defaultCategory: Category = {
+    categoryCode: 'default',
+    categoryName: 'Vấn đề chung',
+    departmentId: 0,
+    slaResolveHours: 24,
+    status: 'ACTIVE'
+  };
 
-  // Get issue examples for dropdown
-  const issueExamples = issueType.examples || [];
+  const currentCategory = category || defaultCategory;
+
+  // Campus and Location states
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isLoadingCampuses, setIsLoadingCampuses] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
-    title: '',
+    title: currentCategory?.categoryName || 'Vấn đề chung', // Auto-populate with category name
     description: '',
-    location: '',
+    campusCode: '',
+    locationCode: '',
     phoneNumber: '',
-    images: [],
+    imageFiles: [],
   });
 
   const [imagePreview, setImagePreview] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [duplicateTicket, setDuplicateTicket] = useState<Ticket | null>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
-  const [customTitle, setCustomTitle] = useState('');
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Load campuses on mount
+  useEffect(() => {
+    loadCampuses();
+  }, []);
+
+  // Load locations when campus changes
+  useEffect(() => {
+    if (formData.campusCode) {
+      loadLocations(formData.campusCode);
+    } else {
+      setLocations([]);
+      setFormData(prev => ({ ...prev, locationCode: '' }));
+    }
+  }, [formData.campusCode]);
+
+  const loadCampuses = async () => {
+    try {
+      setIsLoadingCampuses(true);
+      const data = await campusService.getAllCampuses();
+      setCampuses(data);
+    } catch (error) {
+      console.error('Error loading campuses:', error);
+      setSubmitError('Không thể tải danh sách campus. Vui lòng thử lại.');
+    } finally {
+      setIsLoadingCampuses(false);
+    }
+  };
+
+  const loadLocations = async (campusCode: string) => {
+    try {
+      setIsLoadingLocations(true);
+      const data = await campusService.getLocationsByCampus(campusCode);
+      setLocations(data);
+    } catch (error) {
+      console.error('Error loading locations:', error);
+      setSubmitError('Không thể tải danh sách địa điểm. Vui lòng thử lại.');
+    } finally {
+      setIsLoadingLocations(false);
+    }
+  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -52,21 +107,21 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
     const files = e.target.files;
     if (!files) return;
 
-    const newImages: string[] = [];
+    const newFiles: File[] = [];
     const newPreviews: string[] = [];
 
     Array.from(files).forEach((file) => {
       if (file.type.startsWith('image/')) {
+        newFiles.push(file);
         const reader = new FileReader();
         reader.onloadend = () => {
           const result = reader.result as string;
-          newImages.push(result);
           newPreviews.push(result);
           
-          if (newImages.length === files.length) {
+          if (newPreviews.length === newFiles.length) {
             setFormData((prev) => ({
               ...prev,
-              images: [...prev.images, ...newImages],
+              imageFiles: [...prev.imageFiles, ...newFiles],
             }));
             setImagePreview((prev) => [...prev, ...newPreviews]);
           }
@@ -79,72 +134,102 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
   const removeImage = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      imageFiles: prev.imageFiles.filter((_, i) => i !== index),
     }));
     setImagePreview((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     
-    // Kiểm tra duplicate ticket
-    const duplicate = checkDuplicateTicket(
-      {
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
-        roomNumber: '', // TODO: Add roomNumber field if needed
-        issueType: issueType,
-      },
-      existingTickets
-    );
+    // Kiểm tra duplicate ticket (optional - có thể comment nếu không dùng)
+    // const duplicate = checkDuplicateTicket(
+    //   {
+    //     title: formData.title,
+    //     description: formData.description,
+    //     location: formData.locationCode,
+    //     roomNumber: '',
+    //     issueType: currentCategory,
+    //   },
+    //   existingTickets
+    // );
 
-    if (duplicate) {
-      setDuplicateTicket(duplicate);
-      setShowDuplicateModal(true);
-      return;
-    }
+    // if (duplicate) {
+    //   setDuplicateTicket(duplicate);
+    //   setShowDuplicateModal(true);
+    //   return;
+    // }
 
     // Nếu không có duplicate, tiếp tục submit
     proceedWithSubmit();
   };
 
-  const proceedWithSubmit = () => {
+  const proceedWithSubmit = async () => {
     setIsSubmitting(true);
+    setSubmitError(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      const now = new Date();
-      const finalTitle = formData.title === 'custom' ? customTitle : formData.title;
-      const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
-        title: finalTitle,
+    try {
+      // 1. Upload images to Cloudinary if any
+      let imageUrl = '';
+      if (formData.imageFiles.length > 0) {
+        try {
+          imageUrl = await imageUploadService.uploadMultiple(formData.imageFiles);
+        } catch (error) {
+          console.error('Image upload error:', error);
+          setSubmitError('Không thể upload ảnh. Vui lòng thử lại.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // 2. Get location code from selected location
+      const locationCode = formData.locationCode || '';
+
+      // 3. Create ticket via API
+      const response = await ticketService.createTicket({
+        title: formData.title,
         description: formData.description,
-        issueType: issueType,
-        category: issueType.category,
-        status: 'open',
-        location: formData.location,
-        phoneNumber: formData.phoneNumber,
-        images: formData.images.length > 0 ? formData.images : undefined,
-        createdBy: 'current-user-id', // This should come from auth context
-        updatedAt: now.toISOString(),
-        slaTracking: {
-          createdAt: now.toISOString(),
-          deadline: '', // Will be set by service
-          isOverdue: false,
-          timeline: [{
-            id: `event-${Date.now()}`,
-            timestamp: now.toISOString(),
-            status: 'open',
-            actor: 'current-user-id',
-            actorRole: 'student',
-            action: 'Ticket created',
-          }],
-        },
-      };
+        imageUrl: imageUrl,
+        locationCode: locationCode,
+        categoryCode: currentCategory.categoryCode, // Use category code
+      });
 
-      onSubmit(ticket);
+      if (response.status) {
+        setSubmitSuccess(true);
+        // Create a ticket object for the onSubmit callback
+        const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
+          title: response.data.title,
+          description: response.data.description,
+          status: 'open',
+          location: response.data.locationName,
+          images: response.data.imageUrl ? response.data.imageUrl.split(',') : undefined,
+          createdBy: response.data.requesterCode,
+          updatedAt: response.data.createdAt,
+          slaTracking: {
+            createdAt: response.data.createdAt,
+            deadline: response.data.resolveDeadline,
+            isOverdue: false,
+            timeline: [{
+              id: `event-${Date.now()}`,
+              timestamp: response.data.createdAt,
+              status: 'open',
+              actor: response.data.requesterCode,
+              actorRole: 'student',
+              action: 'Ticket created',
+            }],
+          },
+        };
+        onSubmit(ticket);
+      } else {
+        setSubmitError(response.message || 'Không thể tạo ticket. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Submit error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Đã xảy ra lỗi. Vui lòng thử lại.');
+    } finally {
       setIsSubmitting(false);
-    }, 1000);
+    }
   };
 
   const handleCreateAnyway = () => {
@@ -156,9 +241,10 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
 
 
   const isFormValid = 
-    (formData.title.trim() !== '' && formData.title !== 'custom') ||
-    (formData.title === 'custom' && customTitle.trim() !== '') &&
-    formData.description.trim() !== '';
+    (formData.title?.trim() ?? '') !== '' &&
+    (formData.description?.trim() ?? '') !== '' &&
+    (formData.campusCode?.trim() ?? '') !== '' &&
+    (formData.locationCode?.trim() ?? '') !== '';
 
   return (
     <div className="max-w-[900px] mx-auto p-8">
@@ -170,10 +256,10 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
       </button>
 
       <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
-        <div className="text-5xl">{issueType.icon}</div>
+        <div className="text-5xl">📝</div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold my-0 mb-2">{issueType.name}</h2>
-          <p className="text-[0.95rem] opacity-90 m-0">{issueType.description}</p>
+          <h2 className="text-2xl font-semibold my-0 mb-2">{currentCategory.categoryName}</h2>
+          <p className="text-[0.95rem] opacity-90 m-0">Tạo ticket cho danh mục: {currentCategory.categoryName}</p>
         </div>
       </div>
 
@@ -182,33 +268,18 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
             Tiêu đề <span className="text-red-500">*</span>
           </label>
-          <select
+          <input
+            type="text"
             name="title"
             value={formData.title}
             onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            required
-          >
-            <option value="">-- Chọn loại lỗi --</option>
-            {issueExamples.map((example, index) => (
-              <option key={index} value={example}>
-                {example}
-              </option>
-            ))}
-            <option value="custom">Khác (nhập tùy chỉnh)</option>
-          </select>
-          
-          {formData.title === 'custom' && (
-            <input
-              type="text"
-              name="customTitle"
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder="Nhập tiêu đề tùy chỉnh"
-              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border mt-2 focus:outline-none focus:border-blue-500"
-              required
-            />
-          )}
+            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-gray-50 transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            placeholder="Tiêu đề được tự động điền từ loại vấn đề"
+            readOnly
+          />
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            💡 Tiêu đề được tự động lấy từ tên danh mục: <strong>{currentCategory.categoryName}</strong>
+          </div>
         </div>
 
         <div className="mb-6">
@@ -229,20 +300,55 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
         </div>
 
         <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Campus <span className="text-red-500">*</span>
+          </label>
           <select
-            name="location"
-            value={formData.location}
+            name="campusCode"
+            value={formData.campusCode}
             onChange={handleInputChange}
             className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            required
+            disabled={isLoadingCampuses}
           >
-            <option value="">-- Chọn địa điểm --</option>
-            {locations.map((location) => (
-              <option key={location.id} value={location.name}>
-                {location.name}
+            <option value="">-- Chọn campus --</option>
+            {campuses.map((campus) => (
+              <option key={campus.campusCode} value={campus.campusCode}>
+                {campus.campusName}
               </option>
             ))}
           </select>
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            {isLoadingCampuses ? 'Đang tải...' : 'Chọn campus nơi xảy ra sự cố'}
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Địa điểm <span className="text-red-500">*</span>
+          </label>
+          <select
+            name="locationCode"
+            value={formData.locationCode}
+            onChange={handleInputChange}
+            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            required
+            disabled={!formData.campusCode || isLoadingLocations}
+          >
+            <option value="">-- Chọn địa điểm --</option>
+            {locations.map((location) => (
+              <option key={location.locationCode} value={location.locationCode}>
+                {location.locationName}
+              </option>
+            ))}
+          </select>
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            {!formData.campusCode 
+              ? 'Vui lòng chọn campus trước' 
+              : isLoadingLocations 
+              ? 'Đang tải địa điểm...' 
+              : 'Chọn địa điểm cụ thể xảy ra sự cố'}
+          </div>
         </div>
 
         <div className="mb-6">
@@ -294,11 +400,28 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
           )}
         </div>
 
+        {/* Error message */}
+        {submitError && (
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+            <div className="text-red-700 font-semibold mb-1">❌ Lỗi</div>
+            <div className="text-red-600 text-sm">{submitError}</div>
+          </div>
+        )}
+
+        {/* Success message */}
+        {submitSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
+            <div className="text-green-700 font-semibold mb-1">✅ Thành công</div>
+            <div className="text-green-600 text-sm">Ticket đã được tạo thành công!</div>
+          </div>
+        )}
+
         <div className="flex gap-4 mt-8">
           <button
             type="button"
             className="py-4 px-8 bg-gray-100 text-gray-700 border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 hover:bg-gray-200"
             onClick={onBack}
+            disabled={isSubmitting}
           >
             Hủy
           </button>
@@ -311,7 +434,7 @@ const CreateTicketPage = ({ issueType, onBack, onSubmit, existingTickets = [] }:
             }`}
             disabled={!isFormValid || isSubmitting}
           >
-            {isSubmitting ? 'Đang gửi...' : 'Gửi Ticket'}
+            {isSubmitting ? '⏳ Đang gửi...' : '📨 Gửi Ticket'}
           </button>
         </div>
       </form>

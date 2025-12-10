@@ -1,5 +1,46 @@
 import type { Ticket } from '../types';
 import { loadTickets, saveTickets } from '../utils/localStorage';
+import { apiClient } from './api';
+
+// Request/Response types for API
+interface CreateTicketRequest {
+  title: string;
+  description: string;
+  imageUrl: string;
+  locationCode: string;
+  categoryCode: string;
+}
+
+interface CreateTicketResponse {
+  status: boolean;
+  message: string;
+  data: {
+    ticketCode: string;
+    title: string;
+    description: string;
+    imageUrl: string;
+    requesterCode: string;
+    requesterName: string;
+    assignedToCode: string;
+    assignedToName: string;
+    managedByCode: string;
+    managedByName: string;
+    locationCode: string;
+    locationName: string;
+    categoryCode: string;
+    categoryName: string;
+    status: string;
+    contactPhone: string;
+    note: string;
+    createdAt: string;
+    resolveDeadline: string;
+    resolvedAt: string;
+    closedAt: string;
+    ratingStars: number;
+    ratingComment: string;
+  };
+  errors: string[];
+}
 
 export const ticketService = {
   // Lấy tất cả tickets
@@ -18,7 +59,18 @@ export const ticketService = {
     return this.getAll().filter(ticket => ticket.createdBy === userId);
   },
 
-  // Tạo ticket mới
+  // Tạo ticket mới qua API
+  async createTicket(data: CreateTicketRequest): Promise<CreateTicketResponse> {
+    try {
+      const response = await apiClient.post<CreateTicketResponse>('/Ticket', data);
+      return response;
+    } catch (error) {
+      console.error('Error creating ticket:', error);
+      throw error;
+    }
+  },
+
+  // Tạo ticket mới (legacy - localStorage)
   create(ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaTracking'>): Ticket {
     const tickets = this.getAll();
     const now = new Date();

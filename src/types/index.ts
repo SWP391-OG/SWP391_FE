@@ -61,6 +61,7 @@ export interface Location {
 
 // Category types
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'other';
 
 export interface Category {
   categoryCode: string;
@@ -75,6 +76,16 @@ export interface CategoryApiResponse {
   message: string;
   data: Category[];
   errors: string[];
+}
+
+// Issue types (Frontend only - for UI flow)
+export interface IssueType {
+  id: string;
+  name: string;
+  category: IssueCategory;
+  icon: string;
+  description: string;
+  examples: string[];
 }
 
 // SLA Tracking types
