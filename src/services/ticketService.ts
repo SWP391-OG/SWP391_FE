@@ -210,7 +210,21 @@ export const ticketService = {
     return newTicket;
   },
 
-  // Cập nhật ticket
+  // Cập nhật ticket qua API (PUT method)
+  async updateTicket(ticketCode: string, description: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.put<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}`,
+        { description }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      throw error;
+    }
+  },
+
+  // Cập nhật ticket (legacy - localStorage)
   update(id: string, updates: Partial<Ticket>): Ticket {
     const tickets = this.getAll();
     const index = tickets.findIndex(t => t.id === id);

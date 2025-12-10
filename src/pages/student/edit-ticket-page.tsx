@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { Ticket } from '../../types';
+import { ticketService } from '../../services/ticketService';
+import { campusService, type Campus, type Location } from '../../services/campusService';
 
 interface EditTicketPageProps {
   ticket: Ticket;
@@ -9,25 +11,46 @@ interface EditTicketPageProps {
 }
 
 interface FormData {
-  title: string;
   description: string;
-  location: string;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  images: string[];
 }
 
 const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
-  // Initialize form data from ticket
+  // Only description is editable
   const [formData, setFormData] = useState<FormData>(() => ({
-    title: ticket?.title || '',
     description: ticket?.description || '',
-    location: ticket?.location || '',
-    priority: ticket?.priority || 'medium',
-    images: ticket?.images || [],
   }));
 
-  const [imagePreview, setImagePreview] = useState<string[]>(() => ticket?.images || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+
+  // Load campus and location data for display
+  useEffect(() => {
+    loadCampusAndLocation();
+  }, []);
+
+  const loadCampusAndLocation = async () => {
+    try {
+      const campusData = await campusService.getAllCampuses();
+      setCampuses(campusData);
+      
+      // Find the campus for this ticket to load locations
+      if (ticket.location) {
+        // Try to find campus from location
+        for (const campus of campusData) {
+          const locs = await campusService.getLocationsByCampus(campus.campusCode);
+          const matchingLocation = locs.find(loc => loc.locationName === ticket.location);
+          if (matchingLocation) {
+            setLocations(locs);
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading campus/location data:', error);
+    }
+  };
 
   // Validate ticket exists
   if (!ticket) {
@@ -46,74 +69,47 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
     );
   }
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-
-    const newImages: string[] = [];
-    const newPreviews: string[] = [];
-
-    Array.from(files).forEach((file) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const result = reader.result as string;
-          newImages.push(result);
-          newPreviews.push(result);
-          
-          if (newImages.length === files.length) {
-            setFormData((prev) => ({
-              ...prev,
-              images: [...prev.images, ...newImages],
-            }));
-            setImagePreview((prev) => [...prev, ...newPreviews]);
-          }
-        };
-        reader.readAsDataURL(file);
-      }
+  const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const { value } = e.target;
+    setFormData({
+      description: value,
     });
   };
 
-  const removeImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
-    setImagePreview((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const updatedTicket: Ticket = {
-        ...ticket,
-        title: formData.title,
-        description: formData.description,
-        location: formData.location,
-        priority: formData.priority,
-        images: formData.images.length > 0 ? formData.images : undefined,
-        updatedAt: new Date().toISOString(),
-      };
+    try {
+      // Get ticketCode from ticket
+      const ticketCode = ticket.id || '';
+      
+      // Call API to update ticket
+      const response = await ticketService.updateTicket(ticketCode, formData.description);
 
-      onSubmit(updatedTicket);
+      if (response.status) {
+        const updatedTicket: Ticket = {
+          ...ticket,
+          description: formData.description,
+          updatedAt: new Date().toISOString(),
+        };
+
+        onSubmit(updatedTicket);
+        alert('Ticket đã được cập nhật thành công! 🎉');
+        onBack();
+      } else {
+        setSubmitError(response.message || 'Không thể cập nhật ticket. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Đã xảy ra lỗi. Vui lòng thử lại.');
+    } finally {
       setIsSubmitting(false);
-      alert('Ticket đã được cập nhật thành công! 🎉');
-      onBack();
-    }, 1000);
+    }
   };
 
-  const isFormValid = formData.title.trim() !== '' && formData.description.trim() !== '';
+  const isFormValid = formData.description.trim() !== '';
 
   return (
     <div className="max-w-[900px] mx-auto p-8">
@@ -125,29 +121,32 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
       </button>
 
       <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
-        <div className="text-5xl">{ticket.issueType?.icon || '📝'}</div>
+        <div className="text-5xl">📝</div>
         <div className="flex-1">
-          <h2 className="text-2xl font-semibold my-0 mb-2">{ticket.issueType?.name || 'Chỉnh sửa Ticket'}</h2>
-          <p className="text-[0.95rem] opacity-90 m-0">{ticket.issueType?.description || 'Cập nhật thông tin ticket của bạn'}</p>
+          <h2 className="text-2xl font-semibold my-0 mb-2">Chỉnh sửa Ticket</h2>
+          <p className="text-[0.95rem] opacity-90 m-0">Cập nhật thông tin mô tả ticket của bạn</p>
         </div>
       </div>
 
       <form className="bg-white rounded-xl p-8 shadow-sm border border-gray-200" onSubmit={handleSubmit}>
+        
+        {/* Title - Read Only */}
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
-            Tiêu đề <span className="text-red-500">*</span>
+            Tiêu đề
           </label>
           <input
             type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            placeholder="Ví dụ: Máy chiếu phòng 501 không hoạt động"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            required
+            value={ticket.title}
+            disabled
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed box-border"
           />
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            Tiêu đề không thể chỉnh sửa
+          </div>
         </div>
 
+        {/* Description - Editable */}
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
             Mô tả chi tiết <span className="text-red-500">*</span>
@@ -165,68 +164,75 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
           </div>
         </div>
 
+        {/* Campus - Read Only */}
         <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Địa điểm</label>
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Campus
+          </label>
           <input
             type="text"
-            name="location"
-            value={formData.location}
-            onChange={handleInputChange}
-            placeholder="Ví dụ: Tòa nhà Alpha"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            value={ticket.campusName || 'N/A'}
+            disabled
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed box-border"
           />
-        </div>
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Mức độ ưu tiên</label>
-          <select
-            name="priority"
-            value={formData.priority}
-            onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-          >
-            <option value="low">Thấp</option>
-            <option value="medium">Trung bình</option>
-            <option value="high">Cao</option>
-            <option value="urgent">Khẩn cấp</option>
-          </select>
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            Campus không thể chỉnh sửa
+          </div>
         </div>
 
+        {/* Location - Read Only */}
         <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh (Tùy chọn)</label>
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-all duration-200 bg-gray-50 hover:border-blue-500 hover:bg-blue-50"
-            onClick={() => document.getElementById('imageUpload')?.click()}
-          >
-            <div className="text-5xl mb-4">📸</div>
-            <div className="text-gray-500 text-[0.95rem] mb-2">Nhấp để tải lên hình ảnh</div>
-            <div className="text-gray-400 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
+            Địa điểm
+          </label>
+          <input
+            type="text"
+            value={ticket.location || ticket.locationName || 'N/A'}
+            disabled
+            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed box-border"
+          />
+          <div className="text-[0.85rem] text-gray-500 mt-2">
+            Địa điểm không thể chỉnh sửa
+          </div>
+        </div>
+
+        {/* Phone Number - Read Only */}
+        {ticket.contactPhone && (
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số điện thoại</label>
             <input
-              id="imageUpload"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-              className="hidden"
+              type="text"
+              value={ticket.contactPhone}
+              disabled
+              className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed box-border"
             />
           </div>
+        )}
 
-          {imagePreview.length > 0 && (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mt-4">
-              {imagePreview.map((preview, index) => (
+        {/* Images - Read Only Display */}
+        {ticket.images && ticket.images.length > 0 && (
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh</label>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+              {ticket.images.map((image, index) => (
                 <div key={index} className="relative rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
-                  <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    className="absolute top-2 right-2 bg-red-500/90 text-white border-none rounded-full w-7 h-7 cursor-pointer text-base flex items-center justify-center font-bold transition-all duration-200 hover:bg-red-600 hover:scale-110"
-                    onClick={() => removeImage(index)}
-                  >
-                    ×
-                  </button>
+                  <img src={image} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
-          )}
-        </div>
+            <div className="text-[0.85rem] text-gray-500 mt-2">
+              Hình ảnh không thể chỉnh sửa
+            </div>
+          </div>
+        )}
+
+        {/* Error message */}
+        {submitError && (
+          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+            <div className="text-red-700 font-semibold mb-1">❌ Lỗi</div>
+            <div className="text-red-600 text-sm">{submitError}</div>
+          </div>
+        )}
 
         <div className="flex gap-4 mt-8">
           <button
@@ -254,4 +260,3 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
 };
 
 export default EditTicketPage;
-
