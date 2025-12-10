@@ -7,6 +7,7 @@ const StaffPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<TicketFromApi | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   // Fetch assigned tickets
   useEffect(() => {
@@ -56,10 +57,68 @@ const StaffPage = () => {
     setSelectedTicket(null);
   };
 
-  const handleFix = () => {
-    // TODO: Implement fix logic
-    console.log('Fix ticket:', selectedTicket?.ticketCode);
-    alert('Chức năng đang được phát triển');
+  const handleUpdateStatus = async () => {
+    if (!selectedTicket) return;
+
+    try {
+      setIsUpdatingStatus(true);
+      
+      // Xác định trạng thái tiếp theo
+      let nextStatus: 'IN_PROGRESS' | 'RESOLVED';
+      
+      if (selectedTicket.status === 'ASSIGNED') {
+        nextStatus = 'IN_PROGRESS';
+      } else if (selectedTicket.status === 'IN_PROGRESS') {
+        nextStatus = 'RESOLVED';
+      } else {
+        // Ticket đã RESOLVED, không làm gì
+        alert('Ticket đã được giải quyết');
+        return;
+      }
+
+      console.log(`🔄 Current status: ${selectedTicket.status}`);
+      console.log(`🔄 Next status: ${nextStatus}`);
+      console.log(`📤 Updating ticket ${selectedTicket.ticketCode} status to ${nextStatus}`);
+      console.log(`📤 API URL: /Ticket/${selectedTicket.ticketCode}/status?newStatus=${nextStatus}`);
+      
+      const response = await ticketService.updateTicketStatus(selectedTicket.ticketCode, nextStatus);
+      
+      console.log('📥 API Response:', response);
+      
+      if (response.status) {
+        console.log('✅ Status updated successfully');
+        
+        // Cập nhật ticket trong danh sách
+        setTickets(prevTickets => 
+          prevTickets.map(t => 
+            t.ticketCode === selectedTicket.ticketCode 
+              ? { ...t, status: nextStatus }
+              : t
+          )
+        );
+        
+        // Cập nhật selectedTicket
+        setSelectedTicket({ ...selectedTicket, status: nextStatus });
+        
+        // Hiển thị thông báo thành công
+        const statusText = nextStatus === 'IN_PROGRESS' ? 'đang sửa chữa' : 'đã hoàn thành';
+        alert(`Cập nhật trạng thái thành công! Ticket ${statusText}.`);
+        
+        // Nếu đã RESOLVED, đóng modal sau 1 giây
+        if (nextStatus === 'RESOLVED') {
+          setTimeout(() => {
+            handleCloseDetail();
+          }, 1000);
+        }
+      } else {
+        alert('Không thể cập nhật trạng thái ticket');
+      }
+    } catch (err) {
+      console.error('❌ Error updating ticket status:', err);
+      alert('Đã xảy ra lỗi khi cập nhật trạng thái ticket');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
   };
 
   // Stats
@@ -162,9 +221,9 @@ const StaffPage = () => {
                   selectedTicket.status === 'RESOLVED' ? 'bg-green-100 text-green-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
-                  {selectedTicket.status === 'ASSIGNED' ? 'Đã giao' :
-                   selectedTicket.status === 'IN_PROGRESS' ? 'Đang xử lý' :
-                   selectedTicket.status === 'RESOLVED' ? 'Đã giải quyết' :
+                  {selectedTicket.status === 'ASSIGNED' ? '🔔 Được giao' :
+                   selectedTicket.status === 'IN_PROGRESS' ? '🔧 Đang sửa chữa' :
+                   selectedTicket.status === 'RESOLVED' ? '✅ Đã hoàn thành' :
                    selectedTicket.status}
                 </span>
               </div>
@@ -242,15 +301,65 @@ const StaffPage = () => {
               <button
                 onClick={handleCloseDetail}
                 className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                disabled={isUpdatingStatus}
               >
                 Đóng
               </button>
-              <button
-                onClick={handleFix}
-                className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-              >
-                Sửa chữa
-              </button>
+              
+              {/* Hiển thị nút tùy theo trạng thái */}
+              {selectedTicket.status === 'ASSIGNED' && (
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={isUpdatingStatus}
+                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isUpdatingStatus ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Bắt đầu sửa chữa</span>
+                    </>
+                  )}
+                </button>
+              )}
+              
+              {selectedTicket.status === 'IN_PROGRESS' && (
+                <button
+                  onClick={handleUpdateStatus}
+                  disabled={isUpdatingStatus}
+                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isUpdatingStatus ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Đang xử lý...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>Hoàn thành</span>
+                    </>
+                  )}
+                </button>
+              )}
+              
+              {selectedTicket.status === 'RESOLVED' && (
+                <div className="px-6 py-2.5 bg-green-100 text-green-800 rounded-lg font-medium flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Đã hoàn thành</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

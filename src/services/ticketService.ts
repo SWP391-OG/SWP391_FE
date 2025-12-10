@@ -110,6 +110,49 @@ export const ticketService = {
     }
   },
 
+  // Cập nhật trạng thái ticket (cho Staff) - PATCH method
+  async updateTicketStatus(ticketCode: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED'): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      // Thử nhiều format khác nhau
+      console.log('🔍 Trying to update status with:', { ticketCode, newStatus });
+      
+      // Format 1: Query parameter
+      try {
+        const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+          `/Ticket/${ticketCode}/status?newStatus=${newStatus}`,
+          {}
+        );
+        console.log('✅ Success with query parameter format');
+        return response;
+      } catch (err1) {
+        console.log('❌ Failed with query parameter, trying body format...');
+        
+        // Format 2: Body với key "status"
+        try {
+          const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+            `/Ticket/${ticketCode}/status`,
+            { status: newStatus }
+          );
+          console.log('✅ Success with body format (status key)');
+          return response;
+        } catch (err2) {
+          console.log('❌ Failed with body format (status key), trying newStatus key...');
+          
+          // Format 3: Body với key "newStatus"
+          const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+            `/Ticket/${ticketCode}/status`,
+            { newStatus }
+          );
+          console.log('✅ Success with body format (newStatus key)');
+          return response;
+        }
+      }
+    } catch (error) {
+      console.error('❌ All formats failed. Error updating ticket status:', error);
+      throw error;
+    }
+  },
+
   // Lấy tất cả tickets (legacy - localStorage)
   getAll(): Ticket[] {
     return loadTickets();
