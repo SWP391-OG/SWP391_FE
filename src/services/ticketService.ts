@@ -1,4 +1,4 @@
-import type { Ticket, GetAllTicketsResponse, TicketFromApi } from '../types';
+import type { Ticket, GetAllTicketsResponse } from '../types';
 import { loadTickets, saveTickets } from '../utils/localStorage';
 import { apiClient } from './api';
 
@@ -65,6 +65,19 @@ export const ticketService = {
       return response;
     } catch (error) {
       console.error('Error fetching my tickets:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tickets được assign cho staff hiện tại từ API
+  async getMyAssignedTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket/my-assigned-tickets?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching assigned tickets:', error);
       throw error;
     }
   },
@@ -143,7 +156,7 @@ export const ticketService = {
           id: `event-${Date.now()}`,
           timestamp: now.toISOString(),
           status: 'open',
-          actor: ticket.createdBy,
+          actor: ticket.createdBy || 'Unknown',
           actorRole: 'student',
           action: 'Ticket created',
         }],

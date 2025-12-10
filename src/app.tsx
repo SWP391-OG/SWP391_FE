@@ -1,21 +1,17 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import type { UserRole, User, Ticket } from './types';
 import { 
   loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
-import ITStaffPage from './pages/staff/it-staff-page';
-import FacilityStaffPage from './pages/staff/facility-staff-page';
+import StaffPage from './pages/staff/staff-page';
 import AdminPage from './pages/admin/admin-page';
 import StudentHomePage from './pages/student/student-home-page';
-import TicketDetailModal from './components/shared/ticket-detail-modal';
 import LoginPage from './pages/auth/login-page';
 import RegisterPage from './pages/auth/register-page';
 import ForgotPasswordPage from './pages/auth/forgot-password-page';
 import ProfileModal from './components/shared/profile-modal';
 import NavbarNew from './components/shared/navbar-new';
 import Footer from './components/shared/footer';
-
-type StaffType = 'it' | 'facility';
 
 function App() {
   // Auth state - Load from localStorage on mount
@@ -35,16 +31,8 @@ function App() {
   // Mock current user IDs (sẽ thay bằng authentication sau)
   const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
   
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    const savedUser = loadCurrentUser();
-    return savedUser?.role || 'admin';
-  });
-  const [staffType, setStaffType] = useState<StaffType>(() => {
-    const savedUser = loadCurrentUser();
-    if (savedUser?.role === 'it-staff') return 'it';
-    if (savedUser?.role === 'facility-staff') return 'facility';
-    return 'it';
-  });
+  // Derive currentRole from currentUser instead of using state
+  const currentRole = currentUser?.role || 'admin';
   
   // Initialize tickets state from localStorage
   const [tickets, setTickets] = useState<Ticket[]>(() => loadTickets());
@@ -80,33 +68,17 @@ function App() {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
-  }, [tickets.length]); // Re-run if tickets length changes
-  
-  // Student page state - REMOVED, now handled in StudentHomePage
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-
+  }, [tickets]);
 
   // Save currentUser to localStorage whenever it changes
   useEffect(() => {
     saveCurrentUser(currentUser);
-    if (currentUser) {
-      setCurrentRole(currentUser.role);
-      // Set staffType based on role
-      if (currentUser.role === 'it-staff') {
-        setStaffType('it');
-      } else if (currentUser.role === 'facility-staff') {
-        setStaffType('facility');
-      }
-    } else {
-      setCurrentRole('admin');
-      setStaffType('it');
-    }
   }, [currentUser]);
 
   // Login handlers
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    // currentRole and staffType will be set by useEffect above
+    // currentRole is derived from currentUser
   };
 
   const handleLogout = () => {
@@ -126,78 +98,9 @@ function App() {
     // No action needed as the page is already showing the correct home
   };
 
-  // Get tickets created by a specific user
-  const getUserTickets = (userId: string) => {
-    return tickets.filter(ticket => ticket.createdBy === userId);
-  };
-
-
-  // Get current staff ID from currentUser
-  const getCurrentStaffId = () => {
-    // Use currentUser.id if available (for dynamically created staff)
-    if (currentUser && isStaffRole(currentUser.role)) {
-      return currentUser.id;
-    }
-    // Fallback to hardcoded IDs for backward compatibility
-    if (staffType === 'it') return 'staff-001'; // IT Staff
-    return 'staff-003'; // Facility Staff
-  };
-
   // Helper function to check if role is staff
   const isStaffRole = (role: UserRole): boolean => {
     return role === 'it-staff' || role === 'facility-staff';
-  };
-
-  // Filter tickets assigned to current staff
-  const staffTickets = useMemo(() => {
-    if (!isStaffRole(currentRole) || !currentUser) return [];
-    const staffId = getCurrentStaffId();
-    return tickets.filter(ticket => ticket.assignedTo === staffId);
-  }, [tickets, currentRole, staffType, currentUser]);
-
-  // Handle update ticket status (for Staff)
-  const handleUpdateTicketStatus = (ticketId: string, newStatus: Ticket['status']) => {
-    setTickets(tickets.map(t => {
-      if (t.id === ticketId) {
-        return {
-          ...t,
-          status: newStatus,
-          updatedAt: new Date().toISOString(),
-        };
-      }
-      return t;
-    }));
-  };
-
-  // Handle escalate ticket (for Staff)
-  const handleEscalateTicket = (ticketId: string) => {
-    setTickets(tickets.map(t => {
-      if (t.id === ticketId) {
-        const now = new Date().toISOString();
-        // Add escalate event to timeline
-        const escalateEvent = {
-          id: `event-escalate-${Date.now()}`,
-          timestamp: now,
-          status: 'in-progress' as const,
-          actor: currentUser?.fullName || 'Staff',
-          actorRole: currentUser?.role || 'it-staff',
-          action: 'Ticket escalated to Admin',
-          note: 'Ticket được escalate lên Admin do gặp khó khăn trong xử lý',
-        };
-        
-        return {
-          ...t,
-          // Mark as escalated (có thể thêm field escalated: true)
-          slaTracking: {
-            ...t.slaTracking,
-            timeline: [...(t.slaTracking?.timeline || []), escalateEvent],
-          },
-          updatedAt: now,
-        };
-      }
-      return t;
-    }));
-    alert('Ticket đã được escalate lên Admin. Admin sẽ xem xét và xử lý.');
   };
 
   // Auto-escalate overdue tickets (check periodically)
@@ -326,39 +229,13 @@ function App() {
 
         {/* Staff Pages */}
         {isStaffRole(currentRole) && (
-          <>
-            {staffType === 'it' && (
-              <ITStaffPage
-                tickets={staffTickets}
-                onUpdateStatus={handleUpdateTicketStatus}
-                onViewDetail={(ticket: Ticket) => setSelectedTicket(ticket)}
-              />
-            )}
-            {staffType === 'facility' && (
-              <FacilityStaffPage
-                tickets={staffTickets}
-                onUpdateStatus={handleUpdateTicketStatus}
-                onViewDetail={(ticket: Ticket) => setSelectedTicket(ticket)}
-              />
-            )}
-          </>
+          <StaffPage />
         )}
 
         {/* Admin Page */}
         {currentRole === 'admin' && (
           <AdminPage currentAdminId={currentAdminId} />
         )}
-
-        
-        {/* Ticket Detail Modal for Admin and Staff */}
-        {(currentRole === 'admin' || isStaffRole(currentRole)) && selectedTicket && (
-          <TicketDetailModal
-            ticket={selectedTicket!}
-            onClose={() => setSelectedTicket(null)}
-            onEscalate={isStaffRole(currentRole) ? handleEscalateTicket : undefined}
-            showEscalateButton={isStaffRole(currentRole)}
-          />
-          )}
         </div>
         <Footer />
       </div>
