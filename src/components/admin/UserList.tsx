@@ -2,6 +2,7 @@ import type { User } from '../../types';
 
 interface UserListProps {
   users: User[];
+  loading?: boolean;
   searchQuery: string;
   currentPage: number;
   itemsPerPage: number;
@@ -9,10 +10,12 @@ interface UserListProps {
   onSearchChange: (query: string) => void;
   onPageChange: (page: number) => void;
   onEditClick: (user: User) => void;
+  onToggleStatus?: (userCode: string, currentStatus: 'active' | 'inactive' | 'banned') => void;
 }
 
 const UserList = ({
   users,
+  loading = false,
   searchQuery,
   currentPage,
   itemsPerPage,
@@ -20,6 +23,7 @@ const UserList = ({
   onSearchChange,
   onPageChange,
   onEditClick,
+  onToggleStatus,
 }: UserListProps) => {
   const filteredUsers = users.filter((user: User) => {
     if (!searchQuery) return true;
@@ -78,10 +82,28 @@ const UserList = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.length === 0 ? (
+              {loading ? (
+                // Loading skeleton
+                [...Array(5)].map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="px-4 py-3.5"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                    <td className="px-4 py-3.5"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                    <td className="px-4 py-3.5"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
+                    <td className="px-4 py-3.5"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
+                    <td className="px-4 py-3.5"><div className="h-8 bg-gray-200 rounded w-16"></div></td>
+                  </tr>
+                ))
+              ) : filteredUsers.length === 0 ? (
                 <tr key="no-users">
                   <td colSpan={5} className="px-8 py-12 text-center text-gray-500">
-                    {searchQuery ? 'Không tìm thấy người dùng nào phù hợp với từ khóa tìm kiếm' : 'Chưa có người dùng nào'}
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <p className="text-sm">
+                        {searchQuery ? 'Không tìm thấy người dùng nào phù hợp với từ khóa tìm kiếm' : 'Chưa có người dùng nào'}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -110,27 +132,47 @@ const UserList = ({
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
-                        <button
-                          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md font-medium transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                          onClick={() => onEditClick(user)}
-                          title="Chỉnh sửa"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className="w-5 h-5"
+                        <div className="flex gap-2">
+                          <button
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md font-medium transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={() => onEditClick(user)}
+                            disabled={loading}
+                            title="Chỉnh sửa"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                            />
-                          </svg>
-                          <span className="text-sm">Sửa</span>
-                        </button>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth={2}
+                              stroke="currentColor"
+                              className="w-5 h-5"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                              />
+                            </svg>
+                            <span className="text-sm">Sửa</span>
+                          </button>
+                          
+                          {onToggleStatus && (
+                            <button
+                              className={`px-3 py-2 rounded-md text-sm font-medium transition-all shadow-sm hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                user.status === 'banned'
+                                  ? 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-500'
+                                  : user.status === 'active'
+                                  ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white focus:ring-blue-500'
+                              }`}
+                              onClick={() => onToggleStatus(user.userCode || user.id, user.status)}
+                              disabled={loading}
+                              title={user.status === 'banned' ? 'Mở khóa' : user.status === 'active' ? 'Khóa' : 'Kích hoạt'}
+                            >
+                              {user.status === 'banned' ? 'Mở khóa' : user.status === 'active' ? 'Khóa' : 'Kích hoạt'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

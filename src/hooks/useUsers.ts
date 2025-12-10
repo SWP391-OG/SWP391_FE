@@ -1,93 +1,138 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { User, UserRole } from '../types';
 import { userService } from '../services/userService';
 
 export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Load users
-  useEffect(() => {
-    loadUsers();
+  /**
+   * Load users từ API
+   */
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await userService.getAll();
+      setUsers(data);
+    } catch (err) {
+      console.error('Error loading users:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load users');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  const loadUsers = () => {
+  // Load khi component mount
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  /**
+   * Tạo user mới
+   */
+  const createUser = async (userData: {
+    userCode: string;
+    fullName: string;
+    password: string;
+    email: string;
+    phoneNumber?: string;
+    role: UserRole;
+    departmentId?: number;
+  }) => {
     setLoading(true);
+    setError(null);
     try {
-      const data = userService.getAll();
-      setUsers(data);
-    } catch (error) {
-      console.error('Error loading users:', error);
+      const newUser = await userService.create(userData);
+      await loadUsers(); // Reload list
+      return newUser;
+    } catch (err) {
+      console.error('Error creating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create user');
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
-  // Tạo user mới
-  const createUser = (user: Omit<User, 'id' | 'status' | 'createdAt'>) => {
+  /**
+   * Cập nhật user
+   */
+  const updateUser = async (userCode: string, updates: {
+    fullName?: string;
+    phoneNumber?: string;
+    role?: UserRole;
+    departmentId?: number;
+    status?: 'active' | 'inactive' | 'banned';
+  }) => {
+    setLoading(true);
+    setError(null);
     try {
-      const newUser = userService.create(user);
-      setUsers([...users, newUser]);
-      return newUser;
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
-  };
-
-  // Cập nhật user
-  const updateUser = (id: string, updates: Partial<User>) => {
-    try {
-      const updated = userService.update(id, updates);
-      setUsers(users.map(u => u.id === id ? updated : u));
+      const updated = await userService.update(userCode, updates);
+      await loadUsers(); // Reload list
       return updated;
-    } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error updating user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update user');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Xóa user
-  const deleteUser = (id: string) => {
+  /**
+   * Xóa user
+   */
+  const deleteUser = async (userCode: string) => {
+    setLoading(true);
+    setError(null);
     try {
-      userService.delete(id);
-      setUsers(users.filter(u => u.id !== id));
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
+      await userService.delete(userCode);
+      await loadUsers(); // Reload list
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+      throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Get users by role
-  const getUsersByRole = (role: UserRole) => {
-    return userService.getByRole(role);
-  };
+  /**
+   * Filter users by role (computed from users state)
+   */
+  const getUsersByRole = useCallback((role: UserRole) => {
+    return users.filter(u => u.role === role);
+  }, [users]);
 
-  // Get staff users
-  const getStaffUsers = () => {
-    return userService.getStaffUsers();
-  };
+  /**
+   * Get staff users (it-staff, facility-staff) - KHÔNG bao gồm admin
+   */
+  const getStaffUsers = useMemo(() => {
+    return users.filter(u => u.role === 'it-staff' || u.role === 'facility-staff');
+  }, [users]);
 
-  // Get student users
-  const getStudentUsers = () => {
-    return userService.getStudentUsers();
-  };
-
-  // Login
-  const login = (username: string, password: string) => {
-    return userService.login(username, password);
-  };
+  /**
+   * Get student/teacher users - KHÔNG bao gồm admin và staff
+   */
+  const getStudentUsers = useMemo(() => {
+    return users.filter(u => 
+      u.role === 'student' || 
+      u.role === 'teacher'
+    );
+  }, [users]);
 
   return {
     users,
     loading,
+    error,
     createUser,
     updateUser,
     deleteUser,
     getUsersByRole,
     getStaffUsers,
     getStudentUsers,
-    login,
     loadUsers,
   };
 };

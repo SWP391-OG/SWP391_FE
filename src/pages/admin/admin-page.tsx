@@ -32,7 +32,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
   const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation } = useLocations();
-  const { users, createUser, updateUser } = useUsers();
+  const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers } = useUsers();
 
   // Debug categories
   console.log('📊 Admin Page - Categories:', {
@@ -302,24 +302,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   }, [adminDepartments, users]);
 
   // Filter staff users
+  // Filter staff users - Lấy từ hook getStaffUsers (đã filter it-staff + facility-staff)
   const adminStaffUsers = useMemo(() => {
-    const staffIds = new Set<string>();
-    adminDepartments.forEach(dept => {
-      if (dept.staffIds && Array.isArray(dept.staffIds)) {
-        dept.staffIds.forEach(id => staffIds.add(id));
-      }
-    });
-    return users
-      .filter(user => 
-        (user.role === 'it-staff' || user.role === 'facility-staff') && 
-        staffIds.has(user.id)
-      )
+    return getStaffUsers
       .sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bTime - aTime;
       });
-  }, [users, adminDepartments]);
+  }, [getStaffUsers]);
 
   const paginatedStaffUsers = useMemo(() => {
     const startIndex = (staffPage - 1) * itemsPerPage;
@@ -329,16 +320,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   const totalStaffPages = Math.ceil(adminStaffUsers.length / itemsPerPage);
 
-  // Filter student users
+  // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
-    return users
-      .filter(user => user.role === 'student' || user.role === 'teacher')
+    return getStudentUsers
       .sort((a, b) => {
         const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return bTime - aTime;
       });
-  }, [users]);
+  }, [getStudentUsers]);
 
   const paginatedStudentUsers = useMemo(() => {
     const startIndex = (usersPage - 1) * itemsPerPage;
@@ -622,6 +612,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             <StaffList
               staffUsers={adminStaffUsers}
               departments={adminDepartments}
+              loading={usersLoading}
               searchQuery={staffSearchQuery}
               currentPage={staffPage}
               itemsPerPage={itemsPerPage}
@@ -641,7 +632,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 setIsFormOpen(true);
               }}
               onEditClick={(staff) => {
-                const dept = adminDepartments.find(d => d.staffIds?.includes(staff.id));
+                // Tìm department của staff dựa vào staff.departmentId
+                const dept = adminDepartments.find(d => d.id === staff.departmentId);
                 setEditingStaff(staff);
                 setStaffFormData({
                   username: staff.username,
@@ -649,25 +641,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   fullName: staff.fullName,
                   email: staff.email,
                   role: staff.role,
-                  departmentId: dept?.id || '',
+                  departmentId: dept?.id || staff.departmentId || '',
                 });
                 setIsFormOpen(true);
               }}
               onResetPassword={(staffId) => {
                 const newPassword = prompt('Nhập mật khẩu mới:');
                 if (newPassword && newPassword.trim()) {
-                  updateUser(staffId, { password: newPassword.trim() });
-                  alert('Đã cấp lại mật khẩu thành công!');
+                  // Note: Reset password cần endpoint riêng (chưa có trong API spec)
+                  alert('Tính năng reset password đang được phát triển');
                 }
               }}
-              onToggleStatus={(staffId, currentStatus) => {
-                if (currentStatus === 'active') {
-                  if (confirm('Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.')) {
-                    updateUser(staffId, { status: 'inactive' });
-                  }
-                } else {
-                  if (confirm('Bạn có chắc chắn muốn kích hoạt lại staff này?')) {
-                    updateUser(staffId, { status: 'active' });
+              onToggleStatus={async (userCode, currentStatus) => {
+                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                const message = newStatus === 'inactive' 
+                  ? 'Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.'
+                  : 'Bạn có chắc chắn muốn kích hoạt lại staff này?';
+                
+                if (confirm(message)) {
+                  try {
+                    await updateUser(userCode, { status: newStatus });
+                  } catch (error) {
+                    alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
                   }
                 }
               }}
@@ -678,6 +673,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'users' && (
             <UserList
               users={studentUsers}
+              loading={usersLoading}
               searchQuery={userSearchQuery}
               currentPage={usersPage}
               itemsPerPage={itemsPerPage}
@@ -693,6 +689,29 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: user.email,
                 });
                 setIsFormOpen(true);
+              }}
+              onToggleStatus={async (userCode, currentStatus) => {
+                let newStatus: 'active' | 'inactive' | 'banned';
+                let message: string;
+                
+                if (currentStatus === 'banned') {
+                  newStatus = 'active';
+                  message = 'Bạn có chắc chắn muốn mở khóa người dùng này?';
+                } else if (currentStatus === 'active') {
+                  newStatus = 'banned';
+                  message = 'Bạn có chắc chắn muốn khóa người dùng này? Người dùng sẽ không thể đăng nhập nữa.';
+                } else {
+                  newStatus = 'active';
+                  message = 'Bạn có chắc chắn muốn kích hoạt lại người dùng này?';
+                }
+                
+                if (confirm(message)) {
+                  try {
+                    await updateUser(userCode, { status: newStatus });
+                  } catch (error) {
+                    alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
+                  }
+                }
               }}
             />
           )}
@@ -822,57 +841,37 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           staffFormData={staffFormData}
           adminDepartments={adminDepartments}
           onFormDataChange={setStaffFormData}
-          onSubmit={() => {
-            if (editingStaff) {
-              updateUser(editingStaff.id, {
-                username: staffFormData.username,
-                password: staffFormData.password,
-                fullName: staffFormData.fullName,
-                email: staffFormData.email,
-                role: staffFormData.role,
-              });
-              
-              // Update department's staffIds if department changed
-              const oldDept = adminDepartments.find(d => d.staffIds?.includes(editingStaff.id));
-              if (oldDept && oldDept.id !== staffFormData.departmentId) {
-                // Remove from old department
-                const oldDeptUpdated = departments.find(d => d.id === oldDept.id);
-                if (oldDeptUpdated) {
-                  updateDepartment(oldDept.id, {
-                    staffIds: oldDeptUpdated.staffIds?.filter(id => id !== editingStaff.id) || [],
-                  });
-                }
-                // Add to new department
-                const newDept = departments.find(d => d.id === staffFormData.departmentId);
-                if (newDept) {
-                  updateDepartment(newDept.id, {
-                    staffIds: [...(newDept.staffIds || []), editingStaff.id],
-                  });
-                }
+          onSubmit={async () => {
+            try {
+              if (editingStaff) {
+                // Update existing staff
+                await updateUser(editingStaff.userCode || editingStaff.id, {
+                  fullName: staffFormData.fullName,
+                  phoneNumber: staffFormData.email, // Temp - cần phoneNumber field
+                  role: staffFormData.role,
+                  departmentId: parseInt(staffFormData.departmentId),
+                });
+              } else {
+                // Create new staff
+                await createUser({
+                  userCode: staffFormData.username, // Use username as userCode
+                  fullName: staffFormData.fullName,
+                  password: staffFormData.password,
+                  email: staffFormData.email,
+                  phoneNumber: '', // Optional
+                  role: staffFormData.role,
+                  departmentId: parseInt(staffFormData.departmentId),
+                });
+                
+                setStaffPage(1);
               }
-            } else {
-              const newStaff = createUser({
-                username: staffFormData.username,
-                password: staffFormData.password,
-                fullName: staffFormData.fullName,
-                email: staffFormData.email,
-                role: staffFormData.role,
-                departmentId: staffFormData.departmentId, // Set departmentId when creating staff
-              });
               
-              // Add to department's staffIds
-              if (staffFormData.departmentId) {
-                const dept = departments.find(d => d.id === staffFormData.departmentId);
-                if (dept) {
-                  updateDepartment(dept.id, {
-                    staffIds: [...(dept.staffIds || []), newStaff.id],
-                  });
-                }
-              }
-              setStaffPage(1);
+              setIsFormOpen(false);
+              setEditingStaff(null);
+            } catch (error) {
+              console.error('Error saving staff:', error);
+              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
-            setIsFormOpen(false);
-            setEditingStaff(null);
           }}
           onResetPassword={editingStaff ? () => {
             const newPassword = prompt('Nhập mật khẩu mới:');
@@ -901,22 +900,37 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           userFormData={userFormData}
           userTickets={editingUser ? getTicketsByUserId(editingUser.id) : []}
           onFormDataChange={setUserFormData}
-          onSubmit={() => {
-            // Chỉ cho phép tạo user mới, không cho phép cập nhật
-            if (!editingUser) {
-              createUser({
-                ...userFormData,
-                role: 'student', // Default role for new users
-              });
+          onSubmit={async () => {
+            try {
+              if (editingUser) {
+                // Update existing user
+                await updateUser(editingUser.userCode || editingUser.id, {
+                  fullName: userFormData.fullName,
+                });
+              } else {
+                // Create new user
+                await createUser({
+                  userCode: userFormData.username,
+                  fullName: userFormData.fullName,
+                  password: userFormData.password,
+                  email: userFormData.email,
+                  role: 'student', // Default role
+                });
+              }
+              
               setIsFormOpen(false);
               setEditingUser(null);
+            } catch (error) {
+              console.error('Error saving user:', error);
+              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           }}
-          onToggleBan={editingUser ? () => {
-            if (editingUser.status === 'active') {
-              updateUser(editingUser.id, { status: 'banned' });
-            } else if (editingUser.status === 'banned') {
-              updateUser(editingUser.id, { status: 'active' });
+          onToggleBan={editingUser ? async () => {
+            try {
+              const newStatus = editingUser.status === 'active' ? 'banned' : 'active';
+              await updateUser(editingUser.userCode || editingUser.id, { status: newStatus });
+            } catch (error) {
+              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           } : undefined}
           onClose={() => {

@@ -23,6 +23,75 @@ export interface User {
   updatedAt?: string; // DB: updated_at - Thời gian cập nhật
 }
 
+// User API types
+export interface UserDto {
+  userCode: string;
+  fullName: string;
+  passwordHash: string;
+  email: string;
+  phoneNumber: string | null;
+  roleId: number;
+  departmentId: number | null;
+  status: string; // "ACTIVE" | "INACTIVE" | "BANNED"
+  createdAt: string | null;
+}
+
+export interface UserApiResponse {
+  status: boolean;
+  message: string;
+  data: UserDto[]; // Backend trả về array trực tiếp
+  errors: string[];
+}
+
+export interface UserSingleApiResponse {
+  status: boolean;
+  message: string;
+  data: UserDto; // Single user
+  errors: string[];
+}
+
+export interface UserRequestDto {
+  userCode: string;
+  fullName: string;
+  passwordHash: string;
+  email: string;
+  phoneNumber?: string;
+  roleId: number;
+  departmentId?: number;
+  status: string;
+}
+
+export interface UserUpdateDto {
+  fullName?: string;
+  phoneNumber?: string;
+  roleId?: number;
+  departmentId?: number;
+  status?: string;
+}
+
+export interface UserUpdateProfileDto {
+  fullName?: string;
+  email?: string;
+  phoneNumber?: string;
+}
+
+// Role mapping constants (dựa vào database thực tế)
+export const ROLE_ID_MAP: Record<number, UserRole> = {
+  1: 'admin',        // AD01 - Admin
+  2: 'it-staff',     // ST01 - Staff (IT hoặc Facility - cần phân biệt sau)
+  3: 'student',      // ST101 - Student
+  4: 'teacher',      // Teacher (nếu có)
+  5: 'facility-staff', // Facility staff (nếu khác với IT staff)
+};
+
+export const ROLE_TO_ID_MAP: Record<UserRole, number> = {
+  'admin': 1,
+  'it-staff': 2,
+  'student': 3,
+  'teacher': 4,
+  'facility-staff': 5,
+};
+
 // Department types
 export interface Department {
   deptCode: string;          // Mã bộ phẫn (IT, MAINTAIN...)
