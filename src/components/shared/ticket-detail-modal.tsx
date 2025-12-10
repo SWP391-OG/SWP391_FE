@@ -46,7 +46,8 @@ const TicketDetailModal = ({
 
   // Calculate SLA progress
   const getSLAProgress = () => {
-    if (!ticket.slaDeadline) {
+    const deadline = ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt;
+    if (!deadline) {
       return {
         progress: 0,
         isOverdue: false,
@@ -57,18 +58,18 @@ const TicketDetailModal = ({
     }
     const now = new Date();
     const created = new Date(ticket.createdAt);
-    const deadline = new Date(ticket.slaDeadline);
+    const deadlineDate = new Date(deadline);
     
-    const totalDuration = deadline.getTime() - created.getTime();
+    const totalDuration = deadlineDate.getTime() - created.getTime();
     const elapsed = now.getTime() - created.getTime();
     const progress = Math.min((elapsed / totalDuration) * 100, 100);
     
     return {
       progress,
-      isOverdue: now > deadline,
+      isOverdue: now > deadlineDate,
       hoursTotal: totalDuration / (1000 * 60 * 60),
       hoursElapsed: elapsed / (1000 * 60 * 60),
-      hoursRemaining: (deadline.getTime() - now.getTime()) / (1000 * 60 * 60),
+      hoursRemaining: (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60),
     };
   };
 
@@ -76,11 +77,12 @@ const TicketDetailModal = ({
 
   // Get SLA color based on progress
   const getSLAColor = () => {
+    const deadline = ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt;
     if (ticket.status === 'resolved' || ticket.status === 'closed') {
-      if (!ticket.slaDeadline) return '#10b981';
+      if (!deadline) return '#10b981';
       const resolvedAt = new Date(ticket.updatedAt || ticket.createdAt);
-      const deadline = new Date(ticket.slaDeadline);
-      return resolvedAt <= deadline ? '#10b981' : '#f59e0b';
+      const deadlineDate = new Date(deadline);
+      return resolvedAt <= deadlineDate ? '#10b981' : '#f59e0b';
     }
     
     if (slaProgress.isOverdue) return '#ef4444';
@@ -204,8 +206,8 @@ const TicketDetailModal = ({
                   >
                     {slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Quá hạn'}
                     {!slaProgress.isOverdue && ticket.status !== 'resolved' && ticket.status !== 'closed' && 'Đang xử lý'}
-                    {ticket.status === 'resolved' && ticket.slaDeadline && new Date(ticket.updatedAt || '') <= new Date(ticket.slaDeadline) && 'Hoàn thành đúng hạn'}
-                    {ticket.status === 'resolved' && ticket.slaDeadline && new Date(ticket.updatedAt || '') > new Date(ticket.slaDeadline) && 'Hoàn thành trễ'}
+                    {ticket.status === 'resolved' && (ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) && new Date(ticket.updatedAt || '') <= new Date(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '') && 'Hoàn thành đúng hạn'}
+                    {ticket.status === 'resolved' && (ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) && new Date(ticket.updatedAt || '') > new Date(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '') && 'Hoàn thành trễ'}
                     {ticket.status === 'closed' && 'Đã đóng'}
                   </div>
                 </div>
@@ -264,10 +266,16 @@ const TicketDetailModal = ({
               ℹ️ Thông Tin
             </h3>
             <div className="grid grid-cols-2 gap-4">
-              {ticket.location && (
+              {ticket.campusName && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Địa điểm</div>
-                  <div className="text-base text-gray-800 font-medium">{ticket.location}</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🏫 Campus</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.campusName}</div>
+                </div>
+              )}
+              {(ticket.location || ticket.locationName) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📍 Địa điểm</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.locationName || ticket.location}</div>
                 </div>
               )}
               {ticket.roomNumber && (
@@ -277,24 +285,26 @@ const TicketDetailModal = ({
                 </div>
               )}
               <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Ngày tạo</div>
+                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📅 Ngày tạo</div>
                 <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.createdAt)}</div>
               </div>
-              {!isStudentView && ticket.slaDeadline && (
+              {(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Deadline SLA</div>
-                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.slaDeadline)}</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">⏰ Deadline</div>
+                  <div className="text-base text-gray-800 font-medium">
+                    {formatDateTime(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '')}
+                  </div>
                 </div>
               )}
               {ticket.assignedTo && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Người xử lý</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👤 Người xử lý</div>
                   <div className="text-base text-gray-800 font-medium">{ticket.assignedTo}</div>
                 </div>
               )}
               {ticket.updatedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Cập nhật lần cuối</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔄 Cập nhật lần cuối</div>
                   <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.updatedAt)}</div>
                 </div>
               )}

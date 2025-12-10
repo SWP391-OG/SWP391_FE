@@ -197,12 +197,20 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
 
       if (response.status) {
         setSubmitSuccess(true);
+        
+        // Extract campus name from selected campus
+        const selectedCampus = campuses.find(c => c.campusCode === formData.campusCode);
+        const campusName = selectedCampus?.campusName || '';
+        
         // Create a ticket object for the onSubmit callback
         const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
           title: response.data.title,
           description: response.data.description,
           status: 'open',
-          location: response.data.locationName,
+          locationName: response.data.locationName,
+          location: response.data.locationName, // For backward compatibility
+          campusName: campusName,
+          resolveDeadline: response.data.resolveDeadline,
           images: response.data.imageUrl ? response.data.imageUrl.split(',') : undefined,
           createdBy: response.data.requesterCode,
           updatedAt: response.data.createdAt,

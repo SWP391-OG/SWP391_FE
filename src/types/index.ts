@@ -129,6 +129,8 @@ export interface Ticket {
   status: TicketStatus; // DB: status - Trạng thái Ticket (New, Assigned, In_Progress, Resolved, Closed, Cancelled)
   location?: string; // Frontend only - dùng locationId thay thế
   locationId?: string; // DB: location_id (FK) - Địa điểm xảy ra
+  locationName?: string; // From API: locationName - Tên địa điểm chi tiết
+  campusName?: string; // From API: Tên campus (extracted from locationName or separate field)
   roomNumber?: string; // Frontend only - không có trong DB
   images?: string[]; // Frontend only - không có trong DB (thường lưu trong bảng riêng)
   createdBy?: string; // Deprecated - dùng requesterId thay thế
@@ -141,6 +143,7 @@ export interface Ticket {
   updatedAt?: string; // Frontend only - không có trong DB
   deadlineAt?: string; // DB: deadline_at - Hạn chót xử lý (Tính từ created_at + sla_resolve_hours)
   slaDeadline?: string; // Deprecated - dùng deadlineAt thay thế
+  resolveDeadline?: string; // From API: resolve_deadline - Hạn giải quyết từ backend
   resolvedAt?: string; // DB: resolved_at - Thời gian Staff hoàn thành
   closedAt?: string; // DB: closed_at - Thời gian Ticket chính thức đóng lại (sau khi User Feedback)
   ratingStars?: number; // DB: rating_stars - Đánh giá sao (1-5)
