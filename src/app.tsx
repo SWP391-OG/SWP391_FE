@@ -186,12 +186,12 @@ function App() {
           />
 
           {/* Profile Modal */}
-          {showProfileModal && currentUser && (
+          {showProfileModal && (
             <ProfileModal
-              user={currentUser}
               onClose={() => setShowProfileModal(false)}
-              onUpdate={(updatedUser: User) => {
-                setCurrentUser(updatedUser);
+              onUpdate={() => {
+                // Profile đã được cập nhật, có thể refresh data nếu cần
+                console.log('✅ Profile updated successfully');
               }}
             />
           )}

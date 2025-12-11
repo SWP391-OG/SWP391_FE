@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, ROLE_ID_MAP, ROLE_TO_ID_MAP } from '../types';
+import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, UserProfileApiResponse, UserUpdateProfileDto, ROLE_ID_MAP, ROLE_TO_ID_MAP } from '../types';
 
 // Import role mappings (dựa vào database thực tế)
 const ROLE_ID_MAP: Record<number, UserRole> = {
@@ -58,23 +58,45 @@ export const userService = {
    * Lấy user profile của current user
    * GET /api/User/profile
    */
-  async getProfile(): Promise<User | null> {
+  async getProfile(): Promise<UserProfileDto | null> {
     try {
       console.log('👤 Fetching user profile...');
       
-      const response = await apiClient.get<UserSingleApiResponse>('/User/profile');
+      const response = await apiClient.get<UserProfileApiResponse>('/User/profile');
       
       if (!response.status || !response.data) {
         console.error('❌ Failed to fetch profile:', response);
         return null;
       }
 
-      const user = this.mapDtoToUser(response.data);
-      console.log('✅ Profile fetched:', user);
-      return user;
+      console.log('✅ Profile fetched:', response.data);
+      return response.data;
     } catch (error) {
       console.error('❌ Error fetching profile:', error);
       return null;
+    }
+  },
+
+  /**
+   * Cập nhật profile của current user
+   * PUT /api/User/profile
+   */
+  async updateProfile(updates: UserUpdateProfileDto): Promise<UserProfileDto | null> {
+    try {
+      console.log('👤 Updating user profile...', updates);
+      
+      const response = await apiClient.put<UserProfileApiResponse>('/User/profile', updates);
+      
+      if (!response.status || !response.data) {
+        console.error('❌ Failed to update profile:', response);
+        throw new Error(response.message || 'Failed to update profile');
+      }
+
+      console.log('✅ Profile updated:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error updating profile:', error);
+      throw error;
     }
   },
 
