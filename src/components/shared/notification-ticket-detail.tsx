@@ -67,7 +67,7 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
             ×
           </button>
           
-          <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center justify-between gap-4 mb-4 pr-12">
             <div className="text-2xl font-bold text-gray-900">{ticketCode}</div>
             <span className={`px-4 py-2 rounded-full text-sm font-semibold ${statusDisplay.bg} ${statusDisplay.text}`}>
               {statusDisplay.icon} {statusDisplay.text}
