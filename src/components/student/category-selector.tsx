@@ -6,13 +6,15 @@ import CategoryCard from './category-card';
 interface CategorySelectorProps {
   onSelectCategory: (category: Category) => void;
   selectedCategory?: Category | null;
-  departmentId?: number; // Optional: filter by department
+  departmentId?: number;
+  searchQuery?: string; // Thêm prop này
 }
 
 const CategorySelector: React.FC<CategorySelectorProps> = ({ 
   onSelectCategory,
   selectedCategory = null,
-  departmentId
+  departmentId,
+  searchQuery = '' // Thêm prop này
 }) => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +45,15 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     }
   };
 
+  // Thêm logic filter
+  const filteredCategories = searchQuery
+    ? categories.filter(cat => 
+        cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.categoryCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : categories;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -67,14 +78,25 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     );
   }
 
+  // Hiển thị thông báo nếu không tìm thấy kết quả
+  if (filteredCategories.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">
+          Không tìm thấy danh mục nào phù hợp với "<span className="font-semibold">{searchQuery}</span>"
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <h3 className="text-lg font-semibold text-gray-800 mb-4">
-        Chọn loại lỗi ({categories.length})
+        Chọn loại lỗi ({filteredCategories.length}/{categories.length})
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {categories.map((category) => (
+        {filteredCategories.map((category) => (
           <CategoryCard
             key={category.categoryCode}
             category={category}

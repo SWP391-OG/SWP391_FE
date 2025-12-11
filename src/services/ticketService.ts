@@ -1,4 +1,4 @@
-import type { Ticket } from '../types';
+import type { Ticket, GetAllTicketsResponse } from '../types';
 import { loadTickets, saveTickets } from '../utils/localStorage';
 import { apiClient } from './api';
 
@@ -43,7 +43,117 @@ interface CreateTicketResponse {
 }
 
 export const ticketService = {
-  // Lấy tất cả tickets
+  // Lấy tất cả tickets từ API (cho Admin)
+  async getAllTicketsFromApi(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching all tickets:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tickets của student hiện tại từ API
+  async getMyTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket/my-tickets?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching my tickets:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tickets được assign cho staff hiện tại từ API
+  async getMyAssignedTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket/my-assigned-tickets?pageNumber=${pageNumber}&pageSize=${pageSize}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching assigned tickets:', error);
+      throw error;
+    }
+  },
+
+  // Assign ticket tự động (cho Admin) - PATCH method
+  async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/assign`,
+        {} // Empty body for auto-assign
+      );
+      return response;
+    } catch (error) {
+      console.error('Error assigning ticket:', error);
+      throw error;
+    }
+  },
+
+  // Assign ticket thủ công (cho Admin) - PATCH method
+  async assignTicketManual(ticketCode: string, manualStaffCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/assign/manual`,
+        { manualStaffCode }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error manually assigning ticket:', error);
+      throw error;
+    }
+  },
+
+  // Cập nhật trạng thái ticket (cho Staff) - PATCH method
+  async updateTicketStatus(ticketCode: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED'): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      // Thử nhiều format khác nhau
+      console.log('🔍 Trying to update status with:', { ticketCode, newStatus });
+      
+      // Format 1: Query parameter
+      try {
+        const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+          `/Ticket/${ticketCode}/status?newStatus=${newStatus}`,
+          {}
+        );
+        console.log('✅ Success with query parameter format');
+        return response;
+      } catch (err1) {
+        console.log('❌ Failed with query parameter, trying body format...');
+        
+        // Format 2: Body với key "status"
+        try {
+          const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+            `/Ticket/${ticketCode}/status`,
+            { status: newStatus }
+          );
+          console.log('✅ Success with body format (status key)');
+          return response;
+        } catch (err2) {
+          console.log('❌ Failed with body format (status key), trying newStatus key...');
+          
+          // Format 3: Body với key "newStatus"
+          const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+            `/Ticket/${ticketCode}/status`,
+            { newStatus }
+          );
+          console.log('✅ Success with body format (newStatus key)');
+          return response;
+        }
+      }
+    } catch (error) {
+      console.error('❌ All formats failed. Error updating ticket status:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tất cả tickets (legacy - localStorage)
   getAll(): Ticket[] {
     return loadTickets();
   },
@@ -89,7 +199,7 @@ export const ticketService = {
           id: `event-${Date.now()}`,
           timestamp: now.toISOString(),
           status: 'open',
-          actor: ticket.createdBy,
+          actor: ticket.createdBy || 'Unknown',
           actorRole: 'student',
           action: 'Ticket created',
         }],
@@ -100,7 +210,21 @@ export const ticketService = {
     return newTicket;
   },
 
-  // Cập nhật ticket
+  // Cập nhật ticket qua API (PUT method)
+  async updateTicket(ticketCode: string, description: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.put<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}`,
+        { description }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating ticket:', error);
+      throw error;
+    }
+  },
+
+  // Cập nhật ticket (legacy - localStorage)
   update(id: string, updates: Partial<Ticket>): Ticket {
     const tickets = this.getAll();
     const index = tickets.findIndex(t => t.id === id);

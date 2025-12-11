@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { UserRole, User, Department, Location, Category, Priority, Ticket } from '../../types';
+import type { UserRole, User, Department, Location, Category, Priority, Ticket, TicketFromApi } from '../../types';
 import { useTickets } from '../../hooks/useTickets';
 import { useCategories } from '../../hooks/useCategories';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
+import { ticketService } from '../../services/ticketService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import TicketReviewModal from '../../components/admin/TicketReviewModal';
 import CategoryForm from '../../components/admin/CategoryForm';
@@ -34,6 +35,31 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers } = useUsers();
 
+  // State for API tickets
+  const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [ticketsError, setTicketsError] = useState<string | null>(null);
+
+  // Fetch tickets from API
+  const fetchTickets = async () => {
+    setLoadingTickets(true);
+    setTicketsError(null);
+    try {
+      const response = await ticketService.getAllTicketsFromApi(1, 100); // Fetch first 100 tickets
+      console.log('✅ Fetched tickets from API:', response);
+      setApiTickets(response.data.items);
+    } catch (error) {
+      console.error('❌ Error fetching tickets:', error);
+      setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTickets();
+  }, []); // Run once on mount
+
   // Debug categories
   console.log('📊 Admin Page - Categories:', {
     count: categories?.length || 0,
@@ -48,12 +74,20 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     isArray: Array.isArray(departments)
   });
 
+  // Debug tickets
+  console.log('🎫 Admin Page - Tickets:', {
+    apiTicketsCount: apiTickets.length,
+    localTicketsCount: tickets.length,
+    loadingTickets,
+    ticketsError
+  });
+
   // UI State
   const [activeTab, setActiveTab] = useState<AdminTab>('tickets');
   const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | null>(null);
+  const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | TicketFromApi | null>(null);
   const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
 
   // Form state
@@ -252,7 +286,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Get staff list for admin's departments
   const adminStaffList = useMemo(() => {
-    const staffMap = new Map<string, { id: string; name: string; departmentName: string }>();
+    const staffMap = new Map<string, { id: string; name: string; departmentName: string; userCode?: string }>();
     adminDepartments.forEach(dept => {
       // staffIds có thể undefined từ API, cần check
       if (dept.staffIds && Array.isArray(dept.staffIds)) {
@@ -274,6 +308,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               id: staffId,
               name: staffUser?.fullName || staffNames[staffId] || staffId,
               departmentName: dept.deptName || dept.name || 'N/A',
+              userCode: staffUser?.userCode || staffId, // Thêm userCode
             });
           }
         });
@@ -294,6 +329,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           id: user.id,
           name: user.fullName,
           departmentName: dept?.name || 'N/A',
+          userCode: user.userCode || user.id, // Thêm userCode
         });
       }
     });
@@ -496,13 +532,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <div className="flex-1 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
           {/* Tickets Management */}
           {activeTab === 'tickets' && (
-            <TicketsTable
-              tickets={adminTickets}
-              locations={locations}
-              staffList={adminStaffList}
-              onAssignTicket={handleAssignTicket}
-              onViewTicket={setSelectedTicketForReview}
-            />
+            <>
+              {loadingTickets && (
+                <div className="text-center py-8">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                  <p className="mt-2 text-gray-600">Đang tải tickets...</p>
+                </div>
+              )}
+              {ticketsError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+                  <strong>Lỗi:</strong> {ticketsError}
+                </div>
+              )}
+              {!loadingTickets && !ticketsError && (
+                <TicketsTable
+                  tickets={apiTickets}
+                  locations={locations}
+                  staffList={adminStaffList}
+                  onAssignTicket={handleAssignTicket}
+                  onViewTicket={setSelectedTicketForReview}
+                />
+              )}
+            </>
           )}
 
           {/* Category Management */}
@@ -957,6 +1008,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           onReject={handleRejectTicket}
           onAssign={handleAssignTicket}
           onClose={() => setSelectedTicketForReview(null)}
+          onAssignSuccess={fetchTickets}
         />
       )}
     </div>

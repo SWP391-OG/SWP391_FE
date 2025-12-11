@@ -267,28 +267,11 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
         <div className="text-5xl">📝</div>
         <div className="flex-1">
           <h2 className="text-2xl font-semibold my-0 mb-2">{currentCategory.categoryName}</h2>
-          <p className="text-[0.95rem] opacity-90 m-0">Tạo ticket cho danh mục: {currentCategory.categoryName}</p>
         </div>
       </div>
 
       <form className="bg-white rounded-xl p-8 shadow-sm border border-gray-200" onSubmit={handleSubmit}>
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
-            Tiêu đề <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="title"
-            value={formData.title}
-            onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-gray-50 transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            placeholder="Tiêu đề được tự động điền từ loại vấn đề"
-            readOnly
-          />
-          <div className="text-[0.85rem] text-gray-500 mt-2">
-            💡 Tiêu đề được tự động lấy từ tên danh mục: <strong>{currentCategory.categoryName}</strong>
-          </div>
-        </div>
+
 
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">

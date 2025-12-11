@@ -1,10 +1,11 @@
-import { useState } from 'react';
-import type { Ticket, Category } from '../../types';
+import { useState, useEffect } from 'react';
+import type { Ticket, Category, TicketFromApi } from '../../types';
 import IssueSelectionPage from './issue-selection-page';
 import CreateTicketPage from './create-ticket-page';
 import TicketListPage from './ticket-list-page';
 import EditTicketPage from './edit-ticket-page';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
+import { ticketService } from '../../services/ticketService';
 
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
 type StudentTab = 'pending' | 'processing' | 'completed';
@@ -17,7 +18,7 @@ interface StudentHomePageProps {
   onFeedbackUpdated?: (ticketId: string, ratingStars: number, ratingComment: string) => void;
 }
 
-const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdated, onFeedbackUpdated }: StudentHomePageProps) => {
+const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeedbackUpdated }: StudentHomePageProps) => {
   const [studentView, setStudentView] = useState<StudentView>('home');
   const [selectedIssue, setSelectedIssue] = useState<Category | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -25,13 +26,82 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [studentFilterStatus, setStudentFilterStatus] = useState<Ticket['status'] | 'all'>('all');
   const [studentFilterPriority, setStudentFilterPriority] = useState<Ticket['priority'] | 'all'>('all');
+  
+  // State for API tickets
+  const [apiTickets, setApiTickets] = useState<Ticket[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [ticketsError, setTicketsError] = useState<string | null>(null);
 
-  // Get student tickets
-  const getUserTickets = (userId: string) => {
-    return tickets.filter(ticket => ticket.createdBy === userId);
+  // Fetch tickets from API
+  useEffect(() => {
+    const fetchMyTickets = async () => {
+      try {
+        setLoadingTickets(true);
+        setTicketsError(null);
+        const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
+        
+        // Map API response to Ticket format
+        const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
+          id: apiTicket.ticketCode,
+          title: apiTicket.title,
+          description: apiTicket.description,
+          status: mapApiStatus(apiTicket.status),
+          priority: 'medium' as const, // API doesn't have priority, default to medium
+          issueType: {
+            id: apiTicket.categoryCode,
+            name: apiTicket.categoryName,
+            icon: '🔧',
+            description: ''
+          },
+          location: apiTicket.locationName,
+          roomNumber: '',
+          createdBy: apiTicket.requesterCode,
+          createdByName: apiTicket.requesterName,
+          assignedTo: apiTicket.assignedToCode || undefined,
+          assignedToName: apiTicket.assignedToName || undefined,
+          createdAt: apiTicket.createdAt,
+          updatedAt: apiTicket.createdAt,
+          imageUrl: apiTicket.imageUrl,
+          contactPhone: apiTicket.contactPhone,
+          notes: apiTicket.note || undefined,
+          slaDeadline: apiTicket.resolveDeadline,
+          slaTracking: {
+            createdAt: apiTicket.createdAt,
+            deadline: apiTicket.resolveDeadline,
+            isOverdue: false,
+            timeline: []
+          }
+        }));
+        
+        setApiTickets(mappedTickets);
+      } catch (error) {
+        console.error('Error fetching my tickets:', error);
+        setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
+      } finally {
+        setLoadingTickets(false);
+      }
+    };
+
+    if (currentUser) {
+      fetchMyTickets();
+    }
+  }, [currentUser]);
+
+  // Map API status to UI status
+  const mapApiStatus = (apiStatus: string): Ticket['status'] => {
+    const statusMap: Record<string, Ticket['status']> = {
+      'OPEN': 'open',
+      'ASSIGNED': 'acknowledged',
+      'IN_PROGRESS': 'in-progress',
+      'RESOLVED': 'resolved',
+      'CLOSED': 'closed',
+      'CANCELLED': 'cancelled'
+    };
+    return statusMap[apiStatus] || 'open';
   };
 
-  const studentTickets = currentUser ? getUserTickets(currentUser.id) : [];
+  // Use API tickets instead of prop tickets
+  const studentTickets = apiTickets;
 
   // Filter tickets by tab
   const pendingTickets = studentTickets.filter(t => t.status === 'open');
@@ -88,21 +158,21 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
     cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
   };
 
-  // Priority colors
-  const priorityColors = {
-    low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-    medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
-    high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-    urgent: { bg: 'bg-red-100', text: 'text-red-800' },
-  };
+  // Priority colors (if needed in future)
+  // const priorityColors = {
+  //   low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  //   medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
+  //   high: { bg: 'bg-orange-100', text: 'text-orange-700' },
+  //   urgent: { bg: 'bg-red-100', text: 'text-red-800' },
+  // };
 
-  // Priority labels
-  const priorityLabels = {
-    low: 'Thấp',
-    medium: 'Trung bình',
-    high: 'Cao',
-    urgent: 'Khẩn cấp',
-  };
+  // Priority labels (if needed in future)
+  // const priorityLabels = {
+  //   low: 'Thấp',
+  //   medium: 'Trung bình',
+  //   high: 'Cao',
+  //   urgent: 'Khẩn cấp',
+  // };
 
   // Status labels
   const statusLabels: Record<string, string> = {
@@ -153,7 +223,7 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
 
     // Generate new ticket ID
     const getNextTicketId = (): string => {
-      const existingIds = tickets.map(t => t.id);
+      const existingIds = apiTickets.map(t => t.id);
       const maxNumber = existingIds
         .map(id => {
           const match = id.match(/TKT-(\d+)/);
@@ -173,17 +243,19 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
       id: newTicketId,
       title: ticketData.title,
       description: ticketData.description,
-      issueType: ticketData.issueType,
-      category: ticketData.category,
+      categoryId: ticketData.categoryId,
       priority: ticketData.priority,
       status: ticketData.status,
       location: ticketData.location,
+      locationId: ticketData.locationId,
       images: ticketData.images,
       createdBy: currentUser?.id || 'unknown',
+      requesterId: currentUser?.id || 'unknown',
       createdByName: currentUser?.fullName,
       createdAt,
       updatedAt: createdAt,
       slaDeadline,
+      deadlineAt: slaDeadline,
       slaTracking,
     };
 
@@ -197,6 +269,24 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
     <div className="max-w-[1400px] mx-auto p-8">
       {studentView === 'home' && (
         <>
+          {loadingTickets ? (
+            <div className="text-center py-16">
+              <div className="text-4xl mb-4">⏳</div>
+              <p className="text-lg text-gray-500">Đang tải tickets...</p>
+            </div>
+          ) : ticketsError ? (
+            <div className="text-center py-16">
+              <div className="text-4xl mb-4">❌</div>
+              <p className="text-lg text-red-500">Lỗi: {ticketsError}</p>
+              <button
+                className="mt-4 py-2 px-6 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                onClick={() => window.location.reload()}
+              >
+                Thử lại
+              </button>
+            </div>
+          ) : (
+          <>
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl m-0 text-gray-800">My tickets</h2>
@@ -358,6 +448,8 @@ const StudentHomePage = ({ currentUser, tickets, onTicketCreated, onTicketUpdate
                 );
               })}
             </div>
+          )}
+          </>
           )}
         </>
       )}
