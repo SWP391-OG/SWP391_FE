@@ -284,58 +284,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return filtered;
   }, [tickets, categories, adminDepartmentIds, categoryNameMap]);
 
-  // Get staff list for admin's departments
+  // Get staff list for admin's departments - Đơn giản hóa để lấy tất cả staff từ API
   const adminStaffList = useMemo(() => {
-    const staffMap = new Map<string, { id: string; name: string; departmentName: string; userCode?: string }>();
-    adminDepartments.forEach(dept => {
-      // staffIds có thể undefined từ API, cần check
-      if (dept.staffIds && Array.isArray(dept.staffIds)) {
-        dept.staffIds.forEach(staffId => {
-          if (!staffMap.has(staffId)) {
-            // Try to find staff in users array first (for dynamically created staff)
-            const staffUser = users.find(u => u.id === staffId && (u.role === 'it-staff' || u.role === 'facility-staff'));
-            
-            // Fallback to hardcoded names for old staff IDs
-            const staffNames: Record<string, string> = {
-              'staff-001': 'Lý Văn K',
-              'staff-002': 'Bùi Thị H',
-              'staff-003': 'Hoàng Văn E',
-              'staff-004': 'Ngô Văn M',
-              'staff-005': 'Trần Văn B',
-            };
-          
-            staffMap.set(staffId, {
-              id: staffId,
-              name: staffUser?.fullName || staffNames[staffId] || staffId,
-              departmentName: dept.deptName || dept.name || 'N/A',
-              userCode: staffUser?.userCode || staffId, // Thêm userCode
-            });
-          }
-        });
-      }
+    // Lấy tất cả staff users (it-staff + facility-staff) từ hook
+    const staffList = getStaffUsers.map(user => {
+      const dept = departments.find(d => d.id === user.departmentId);
+      return {
+        id: user.id,
+        name: user.fullName,
+        departmentName: dept?.name || dept?.deptName || 'N/A',
+        userCode: user.userCode || user.id, // userCode để gửi cho backend
+      };
     });
     
-    // Also include staff users from admin's departments that might not be in dept.staffIds yet
-    const adminStaffUsers = users.filter(user => 
-      (user.role === 'it-staff' || user.role === 'facility-staff') &&
-      user.departmentId &&
-      adminDepartments.some(dept => dept.id === user.departmentId)
-    );
-    
-    adminStaffUsers.forEach(user => {
-      if (!staffMap.has(user.id)) {
-        const dept = adminDepartments.find(d => d.id === user.departmentId);
-        staffMap.set(user.id, {
-          id: user.id,
-          name: user.fullName,
-          departmentName: dept?.name || 'N/A',
-          userCode: user.userCode || user.id, // Thêm userCode
-        });
-      }
+    console.log('👥 Admin Staff List:', {
+      count: staffList.length,
+      staffList,
+      getStaffUsersCount: getStaffUsers.length,
+      departmentsCount: departments.length,
     });
     
-    return Array.from(staffMap.values());
-  }, [adminDepartments, users]);
+    return staffList;
+  }, [getStaffUsers, departments]);
 
   // Filter staff users
   // Filter staff users - Lấy từ hook getStaffUsers (đã filter it-staff + facility-staff)

@@ -41,6 +41,13 @@ const TicketReviewModal = ({
   const ticketLocation = isFromApi ? ticket.locationName : ticket.location || 'N/A';
   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
   const ticketImages = 'images' in ticket ? ticket.images : undefined;
+  
+  // Debug staffList
+  console.log('📋 TicketReviewModal - Staff List:', {
+    count: staffList.length,
+    staffList,
+    ticket: ticketCode,
+  });
 
   const handleAutoAssign = async () => {
     if (!isFromApi) {
