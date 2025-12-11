@@ -996,6 +996,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <TicketDetailModal
           ticket={selectedTicket}
           onClose={() => setSelectedTicket(null)}
+          isStudentView={false}
         />
       )}
 

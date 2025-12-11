@@ -3,6 +3,7 @@ import type { UserRole, User, Ticket } from './types';
 import { 
   loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
+import { useTicketByCode } from './hooks/useTicketByCode';
 import StaffPage from './pages/staff/staff-page';
 import AdminPage from './pages/admin/admin-page';
 import StudentHomePage from './pages/student/student-home-page';
@@ -10,6 +11,7 @@ import LoginPage from './pages/auth/login-page';
 import RegisterPage from './pages/auth/register-page';
 import ForgotPasswordPage from './pages/auth/forgot-password-page';
 import ProfileModal from './components/shared/profile-modal';
+import NotificationTicketDetail from './components/shared/notification-ticket-detail';
 import NavbarNew from './components/shared/navbar-new';
 import Footer from './components/shared/footer';
 
@@ -27,6 +29,11 @@ function App() {
   });
   const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password'>('login');
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showTicketDetailModal, setShowTicketDetailModal] = useState(false);
+  const [selectedTicketCode, setSelectedTicketCode] = useState<string | null>(null);
+  
+  // Fetch ticket from API by code
+  const { ticket: selectedTicket } = useTicketByCode(showTicketDetailModal ? selectedTicketCode : null);
   
   // Mock current user IDs (sẽ thay bằng authentication sau)
   const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
@@ -183,6 +190,10 @@ function App() {
             onLogoClick={handleLogoClick}
             onProfileClick={() => setShowProfileModal(true)}
             onLogout={handleLogout}
+            onNotificationClick={(ticketCode: string) => {
+              setSelectedTicketCode(ticketCode);
+              setShowTicketDetailModal(true);
+            }}
           />
 
           {/* Profile Modal */}
@@ -192,6 +203,17 @@ function App() {
               onClose={() => setShowProfileModal(false)}
               onUpdate={(updatedUser: User) => {
                 setCurrentUser(updatedUser);
+              }}
+            />
+          )}
+
+          {/* Ticket Detail Modal from Notification */}
+          {showTicketDetailModal && selectedTicket && (
+            <NotificationTicketDetail
+              ticket={selectedTicket}
+              onClose={() => {
+                setShowTicketDetailModal(false);
+                setSelectedTicketCode(null);
               }}
             />
           )}
