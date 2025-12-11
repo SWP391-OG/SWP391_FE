@@ -211,11 +211,20 @@ export const ticketService = {
   },
 
   // Cập nhật ticket qua API (PUT method)
-  async updateTicket(ticketCode: string, description: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+  async updateTicket(
+    ticketCode: string, 
+    description: string, 
+    imageUrl?: string
+  ): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
+      const body: { description: string; imageUrl?: string } = { description };
+      if (imageUrl !== undefined) {
+        body.imageUrl = imageUrl;
+      }
+      
       const response = await apiClient.put<{ status: boolean; message: string; data: unknown; errors: string[] }>(
         `/Ticket/${ticketCode}`,
-        { description }
+        body
       );
       return response;
     } catch (error) {

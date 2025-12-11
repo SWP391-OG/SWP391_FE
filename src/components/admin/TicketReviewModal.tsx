@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Ticket, TicketFromApi } from '../../types';
 import { ticketService } from '../../services/ticketService';
+import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface Staff {
   id: string;
@@ -40,7 +41,7 @@ const TicketReviewModal = ({
   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
   const ticketLocation = isFromApi ? ticket.locationName : ticket.location || 'N/A';
   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
-  const ticketImages = 'images' in ticket ? ticket.images : undefined;
+  const ticketImages = parseTicketImages(ticket);
   
   // Debug staffList
   console.log('📋 TicketReviewModal - Staff List:', {

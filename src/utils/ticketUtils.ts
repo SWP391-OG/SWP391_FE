@@ -1,6 +1,28 @@
 import type { Ticket, IssueType } from '../types';
 
 /**
+ * Parse imageUrl string from backend into images array
+ * Backend returns: "url1,url2,url3" or single URL
+ * Frontend expects: string[]
+ * @param ticket - Ticket object (with imageUrl or images)
+ * @returns Array of image URLs
+ */
+export const parseTicketImages = (ticket: Ticket | { imageUrl?: string; images?: string[] }): string[] => {
+  // Check if images array already exists
+  if (ticket.images && Array.isArray(ticket.images) && ticket.images.length > 0) {
+    return ticket.images;
+  }
+  
+  // Parse from imageUrl string (backend format: "url1,url2,url3")
+  const imageUrl = (ticket as { imageUrl?: string }).imageUrl;
+  if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
+    return imageUrl.split(',').map(url => url.trim()).filter(url => url);
+  }
+  
+  return [];
+};
+
+/**
  * Kiểm tra xem ticket mới có trùng với ticket hiện có không
  * @param newTicket - Ticket mới đang được tạo
  * @param existingTickets - Danh sách tickets hiện có

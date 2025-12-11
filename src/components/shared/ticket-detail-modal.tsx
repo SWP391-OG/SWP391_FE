@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { mockSLAEvents, type SLAEvent } from '../../data/mockData';
+import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -21,6 +22,9 @@ const TicketDetailModal = ({
   onEdit,
   onUpdateFeedback
 }: TicketDetailModalProps) => {
+  // Parse images from ticket (handles both imageUrl string and images array)
+  const ticketImages = parseTicketImages(ticket);
+
   // State for feedback form
   const [ratingStars, setRatingStars] = useState<number>(ticket.ratingStars || 0);
   const [ratingComment, setRatingComment] = useState<string>(ticket.ratingComment || '');
@@ -312,15 +316,23 @@ const TicketDetailModal = ({
           </div>
 
           {/* Images */}
-          {ticket.images && ticket.images.length > 0 && (
+          {ticketImages.length > 0 && (
             <div className="mb-8">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 🖼️ Hình Ảnh
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
-                {ticket.images.map((image, index) => (
+                {ticketImages.map((image, index) => (
                   <div key={index} className="rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
-                    <img src={image} alt={`Ticket image ${index + 1}`} className="w-full h-full object-cover" />
+                    <img 
+                      src={image} 
+                      alt={`Ticket image ${index + 1}`} 
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(image, '_blank')}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
                   </div>
                 ))}
               </div>
