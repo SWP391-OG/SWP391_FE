@@ -217,6 +217,42 @@ const TicketReviewModal = ({
             </div>
           )}
 
+          {/* Rating Section - Hiển thị nếu có đánh giá */}
+          {(ticket.ratingStars || ticket.ratingComment) && (
+            <div className="mb-6">
+              <span className="text-sm text-gray-500 font-semibold block mb-3">
+                ⭐ Đánh giá của người dùng:
+              </span>
+              <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-lg p-4">
+                {ticket.ratingStars && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="text-sm font-semibold text-gray-800">Đánh giá:</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className="text-xl"
+                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                  </div>
+                )}
+                {ticket.ratingComment && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 mb-2">Nhận xét:</div>
+                    <div className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-200">
+                      {ticket.ratingComment}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Assign Section - Chỉ hiển thị nếu là ticket từ API và chưa được assign */}
           {isFromApi && !assignedToName && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">

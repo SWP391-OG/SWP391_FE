@@ -287,4 +287,25 @@ export const ticketService = {
     const tickets = this.getAll().filter(t => t.id !== id);
     saveTickets(tickets);
   },
+
+  // Cập nhật feedback cho ticket - PATCH method
+  async updateFeedback(
+    ticketCode: string,
+    ratingStars: number,
+    ratingComment: string
+  ): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/feedback`,
+        {
+          ratingStars,
+          ratingComment
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating feedback:', error);
+      throw error;
+    }
+  },
 };

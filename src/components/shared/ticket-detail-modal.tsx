@@ -25,9 +25,9 @@ const TicketDetailModal = ({
   // Parse images from ticket (handles both imageUrl string and images array)
   const ticketImages = parseTicketImages(ticket);
 
-  // State for feedback form
-  const [ratingStars, setRatingStars] = useState<number>(ticket.ratingStars || 0);
-  const [ratingComment, setRatingComment] = useState<string>(ticket.ratingComment || '');
+  // State for feedback form - initialize from ticket
+  const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
+  const [ratingComment, setRatingComment] = useState<string>(() => ticket.ratingComment || '');
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
 
   // Close on ESC key
@@ -38,12 +38,6 @@ const TicketDetailModal = ({
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
-
-  // Update local state when ticket changes
-  useEffect(() => {
-    setRatingStars(ticket.ratingStars || 0);
-    setRatingComment(ticket.ratingComment || '');
-  }, [ticket]);
 
   // Get SLA events for this ticket
   const slaEvents = mockSLAEvents[ticket.id] || [];
@@ -96,13 +90,19 @@ const TicketDetailModal = ({
   };
 
   // Status colors
-  const statusColors = {
+  const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
     acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
     cancelled: { bg: 'bg-red-100', text: 'text-red-800' },
+    NEW: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    ASSIGNED: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+    IN_PROGRESS: { bg: 'bg-amber-100', text: 'text-amber-800' },
+    RESOLVED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    CLOSED: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    CANCELLED: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Priority colors
@@ -184,11 +184,6 @@ const TicketDetailModal = ({
                 {ticket.priority === 'high' && '🟠 Cao'}
                 {ticket.priority === 'medium' && '🟡 Trung bình'}
                 {ticket.priority === 'low' && '🟢 Thấp'}
-              </span>
-            )}
-            {ticket.issueType && (
-              <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-                {ticket.issueType.icon} {ticket.issueType.name}
               </span>
             )}
           </div>
@@ -379,6 +374,42 @@ const TicketDetailModal = ({
             </div>
           )}
 
+          {/* Rating Display for Admin/Staff - Chỉ hiển thị khi có rating và KHÔNG phải student view */}
+          {!isStudentView && (ticket.ratingStars || ticket.ratingComment) && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ⭐ Đánh Giá Của Người Dùng
+              </h3>
+              <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                {ticket.ratingStars && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="text-lg font-semibold text-gray-800">Đánh giá:</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className="text-2xl"
+                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                  </div>
+                )}
+                {ticket.ratingComment && (
+                  <div>
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Nhận xét:</div>
+                    <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
+                      {ticket.ratingComment}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Feedback Section - Chỉ hiển thị khi ticket đã được xử lý (resolved/closed) và là student view */}
           {isStudentView && (ticket.status === 'resolved' || ticket.status === 'closed') && (
             <div className="mb-8">
@@ -452,7 +483,6 @@ const TicketDetailModal = ({
                         if (onUpdateFeedback && ratingStars > 0) {
                           onUpdateFeedback(ticket.id, ratingStars, ratingComment);
                           setIsEditingFeedback(false);
-                          alert('Phản hồi đã được cập nhật thành công!');
                         } else {
                           alert('Vui lòng chọn số sao đánh giá (từ 1-5)');
                         }
