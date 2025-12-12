@@ -82,6 +82,19 @@ export const ticketService = {
     }
   },
 
+  // Lấy ticket theo mã ticket code
+  async getTicketByCode(ticketCode: string): Promise<{ status: boolean; message: string; data: Ticket; errors: string[] }> {
+    try {
+      const response = await apiClient.get<{ status: boolean; message: string; data: Ticket; errors: string[] }>(
+        `/Ticket/${ticketCode}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching ticket by code:', error);
+      throw error;
+    }
+  },
+
   // Assign ticket tự động (cho Admin) - PATCH method
   async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
