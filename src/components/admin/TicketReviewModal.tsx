@@ -141,130 +141,147 @@ const TicketReviewModal = ({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+        className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800">
-            Duyệt Ticket
-          </h3>
+        {/* Header with Gradient */}
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between border-b border-blue-800">
+          <div>
+            <div className="text-sm font-semibold text-blue-100 mb-1">{ticketCode}</div>
+            <h3 className="text-2xl font-bold text-white">
+              {ticket.title}
+            </h3>
+          </div>
           <button
-            className="bg-none border-none text-2xl cursor-pointer text-gray-500 p-1 hover:text-gray-700 transition-colors"
+            className="bg-blue-500/30 hover:bg-blue-500/50 border-none rounded-full p-2 cursor-pointer text-blue-100 hover:text-white transition-colors"
             onClick={onClose}
           >
-            ✕
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          {/* Ticket Info */}
-          <div className="mb-6">
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Mã Ticket:</span>
-              <span className="ml-2 font-mono text-gray-800">{ticketCode}</span>
-            </div>
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Tiêu đề:</span>
-              <div className="mt-1 text-base text-gray-800 font-semibold">
-                {ticket.title}
-              </div>
-            </div>
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Mô tả:</span>
-              <div className="mt-1 text-sm text-gray-600 leading-relaxed">
-                {ticket.description}
-              </div>
-            </div>
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Vị trí:</span>
-              <span className="ml-2 text-gray-800">{ticketLocation}</span>
-            </div>
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Ngày tạo:</span>
-              <span className="ml-2 text-gray-800">{formatDate(ticket.createdAt)}</span>
-            </div>
-            <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Trạng thái:</span>
-              <span className="ml-2 inline-flex px-2 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">
-                {ticket.status === 'open' || ticket.status === 'NEW' ? 'Mới tạo' : ticket.status}
-              </span>
-            </div>
-             <div className="mb-3">
-              <span className="text-sm text-gray-500 font-semibold">Người gửi ticket</span>
-              <span className="ml-2 text-gray-800">{requesterName}</span>
-            </div>
-            {assignedToName && (
-              <div className="mb-3">
-                <span className="text-sm text-gray-500 font-semibold">Người được assign:</span>
-                <span className="ml-2 text-gray-800 font-medium">{assignedToName}</span>
-              </div>
-            )}
+        <div className="p-8 space-y-8">
+          {/* Status Badge */}
+          <div className="flex items-center gap-3">
+            <span className="px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 inline-flex items-center gap-2">
+              {ticket.status === 'open' || ticket.status === 'NEW' ? '🔵 Mới tạo' : ticket.status}
+            </span>
+          </div>
+
+          {/* Description Section */}
+          <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              📝 Mô Tả Chi Tiết
+            </h3>
+            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{ticket.description}</p>
           </div>
 
           {/* Images if any */}
           {ticketImages && ticketImages.length > 0 && (
-            <div className="mb-6">
-              <span className="text-sm text-gray-500 font-semibold block mb-2">
-                Hình ảnh:
-              </span>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-2">
+            <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                🖼️ Hình Ảnh
+              </h3>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
                 {ticketImages.map((img: string, idx: number) => (
                   <img
                     key={idx}
                     src={img}
                     alt={`Ticket image ${idx + 1}`}
-                    className="w-full h-24 object-cover rounded-md border border-gray-200"
+                    className="w-full h-32 object-cover rounded-lg border-2 border-gray-300 shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => window.open(img, '_blank')}
                   />
                 ))}
               </div>
             </div>
           )}
 
+          {/* Information Grid */}
+          <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              ℹ️ Thông Tin Chi Tiết
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {/* Người gửi ticket */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">👤 Người gửi</div>
+                <div className="text-base font-semibold text-gray-800">{requesterName}</div>
+              </div>
+
+              {/* Vị trí */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">📍 Vị trí</div>
+                <div className="text-base font-semibold text-gray-800">{ticketLocation}</div>
+              </div>
+
+              {/* Ngày tạo */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">📅 Ngày tạo</div>
+                <div className="text-base font-semibold text-gray-800">{formatDate(ticket.createdAt)}</div>
+              </div>
+
+              {/* Ngày xử lý */}
+              <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">🔧 Ngày xử lý</div>
+                <div className="text-base font-semibold text-gray-800">{ticket.resolvedAt ? formatDate(ticket.resolvedAt) : 'N/A'}</div>
+              </div>
+
+              {/* Người được assign */}
+              {assignedToName && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                  <div className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wide">✅ Người được assign</div>
+                  <div className="text-base font-semibold text-green-800">{assignedToName}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Rating Section - Hiển thị nếu có đánh giá */}
           {(ticket.ratingStars || ticket.ratingComment) && (
-            <div className="mb-6">
-              <span className="text-sm text-gray-500 font-semibold block mb-3">
-                ⭐ Đánh giá của người dùng:
-              </span>
-              <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-lg p-4">
-                {ticket.ratingStars && (
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="text-sm font-semibold text-gray-800">Đánh giá:</div>
-                    <div className="flex gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <span
-                          key={star}
-                          className="text-xl"
-                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
-                        >
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                    <div className="text-sm font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+            <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ⭐ Đánh Giá Của Người Dùng
+              </h3>
+              {ticket.ratingStars && (
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="text-sm font-semibold text-gray-800">Đánh giá:</div>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className="text-2xl"
+                        style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                      >
+                        ★
+                      </span>
+                    ))}
                   </div>
-                )}
-                {ticket.ratingComment && (
-                  <div>
-                    <div className="text-xs font-semibold text-gray-500 mb-2">Nhận xét:</div>
-                    <div className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-200">
-                      {ticket.ratingComment}
-                    </div>
+                  <div className="text-sm font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                </div>
+              )}
+              {ticket.ratingComment && (
+                <div>
+                  <div className="text-sm font-semibold text-gray-600 mb-2">Nhận xét:</div>
+                  <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-yellow-300">
+                    {ticket.ratingComment}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Assign Section - Chỉ hiển thị nếu là ticket từ API và chưa được assign */}
           {isFromApi && !assignedToName && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Assign Ticket</h4>
+            <div className="bg-gradient-to-br from-orange-50 to-white border-2 border-orange-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                🎯 Assign Ticket
+              </h3>
               
               {/* Radio Buttons */}
-              <div className="flex gap-6 mb-4">
+              <div className="flex gap-8 mb-6">
                 <label className="flex items-center cursor-pointer">
                   <input
                     type="radio"
@@ -277,7 +294,7 @@ const TicketReviewModal = ({
                     }}
                     className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Tự động</span>
+                  <span className="ml-3 text-base font-medium text-gray-700">Tự động</span>
                 </label>
                 <label className="flex items-center cursor-pointer">
                   <input
@@ -288,20 +305,20 @@ const TicketReviewModal = ({
                     onChange={() => setAssignMode('manual')}
                     className="w-4 h-4 text-orange-500 focus:ring-orange-500"
                   />
-                  <span className="ml-2 text-sm text-gray-700">Thủ công</span>
+                  <span className="ml-3 text-base font-medium text-gray-700">Thủ công</span>
                 </label>
               </div>
 
               {/* Staff Dropdown - Chỉ hiển thị khi chọn manual */}
               {assignMode === 'manual' && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="mb-6">
+                  <label className="block text-base font-semibold text-gray-700 mb-3">
                     Chọn Staff
                   </label>
                   <select
                     value={selectedStaffCode}
                     onChange={(e) => setSelectedStaffCode(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   >
                     <option value="">-- Chọn staff --</option>
                     {staffList.map((staff) => (
@@ -314,10 +331,10 @@ const TicketReviewModal = ({
               )}
 
               {/* Description */}
-              <p className="text-xs text-gray-500 mb-3">
+              <p className="text-sm text-gray-600 mb-6 bg-white p-4 rounded-lg border border-orange-200">
                 {assignMode === 'auto' 
-                  ? 'Hệ thống sẽ tự động chọn staff phù hợp nhất để xử lý ticket này'
-                  : 'Chọn staff cụ thể để assign ticket này'
+                  ? '🤖 Hệ thống sẽ tự động chọn staff phù hợp nhất để xử lý ticket này'
+                  : '👤 Chọn staff cụ thể để assign ticket này'
                 }
               </p>
 
@@ -326,19 +343,24 @@ const TicketReviewModal = ({
                 type="button"
                 onClick={handleAssign}
                 disabled={isAssigning || (assignMode === 'manual' && !selectedStaffCode)}
-                className={`w-full px-4 py-2 rounded-lg font-semibold text-white text-sm transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
+                className={`w-full px-6 py-3 rounded-lg font-semibold text-white text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 flex items-center justify-center gap-2 ${
                   isAssigning || (assignMode === 'manual' && !selectedStaffCode)
                     ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-orange-500 hover:bg-orange-600 cursor-pointer'
+                    : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 cursor-pointer shadow-lg hover:shadow-xl'
                 }`}
               >
                 {isAssigning ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                    Đang assign...
-                  </span>
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span>Đang assign...</span>
+                  </>
                 ) : (
-                  '🎯 Assign Staff'
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Assign Staff</span>
+                  </>
                 )}
               </button>
             </div>
@@ -346,37 +368,25 @@ const TicketReviewModal = ({
 
           {/* Hiển thị thông báo nếu đã được assign */}
           {assignedToName && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm text-green-800">
-                ✅ Ticket này đã được assign cho: <strong>{assignedToName}</strong>
-              </p>
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-6 flex items-center gap-4">
+              <div className="text-3xl">✅</div>
+              <div>
+                <div className="font-semibold text-green-800">Ticket đã được assign</div>
+                <div className="text-green-700 mt-1">Người được giao: <span className="font-bold">{assignedToName}</span></div>
+              </div>
             </div>
           )}
+        </div>
 
-          {/* Reject Reason Input - Ẩn đi vì không dùng approve/reject */}
-          {/* <div className="mb-6">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Lý do từ chối (nếu từ chối):
-            </label>
-            <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Nhập lý do từ chối ticket này..."
-              rows={3}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-sm resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-          </div> */}
-
-          {/* Actions */}
-          <div className="flex gap-4 justify-end mt-8">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 bg-gray-100 text-gray-600 border border-gray-300 rounded-lg font-semibold cursor-pointer hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            >
-              Đóng
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gradient-to-r from-gray-100 to-gray-50 border-t-2 border-gray-200 px-8 py-6 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold cursor-pointer hover:bg-gray-100 transition-all duration-200"
+          >
+            Đóng
+          </button>
         </div>
       </div>
     </div>

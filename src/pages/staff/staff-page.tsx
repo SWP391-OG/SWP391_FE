@@ -194,13 +194,16 @@ const StaffPage = () => {
       {/* Ticket Detail Modal */}
       {selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Chi tiết Ticket</h2>
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 flex items-center justify-between border-b border-blue-800">
+              <div>
+                <div className="text-sm font-semibold text-blue-100 mb-1">{selectedTicket.ticketCode}</div>
+                <h2 className="text-2xl font-bold text-white">{selectedTicket.title}</h2>
+              </div>
               <button
                 onClick={handleCloseDetail}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-blue-100 hover:text-white transition-colors bg-blue-500/30 hover:bg-blue-500/50 rounded-full p-2"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -209,116 +212,119 @@ const StaffPage = () => {
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              {/* Ticket Code & Status */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-mono text-lg font-bold text-blue-600">
-                  {selectedTicket.ticketCode}
-                </span>
-                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+            <div className="p-8 space-y-8">
+              {/* Status Badge */}
+              <div className="flex items-center gap-3">
+                <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${
                   selectedTicket.status === 'ASSIGNED' ? 'bg-purple-100 text-purple-800' :
                   selectedTicket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
                   selectedTicket.status === 'RESOLVED' ? 'bg-green-100 text-green-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
-                  {selectedTicket.status === 'ASSIGNED' ? '🔔 Được giao' :
-                   selectedTicket.status === 'IN_PROGRESS' ? '🔧 Đang sửa chữa' :
-                   selectedTicket.status === 'RESOLVED' ? '✅ Đã hoàn thành' :
-                   selectedTicket.status}
+                  {selectedTicket.status === 'ASSIGNED' && '🔔 Được giao'}
+                  {selectedTicket.status === 'IN_PROGRESS' && '🔧 Đang sửa chữa'}
+                  {selectedTicket.status === 'RESOLVED' && '✅ Đã hoàn thành'}
                 </span>
               </div>
 
-              {/* Title */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Tiêu đề</h3>
-                <p className="text-lg font-semibold text-gray-900">{selectedTicket.title}</p>
-              </div>
-
               {/* Description */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Mô tả</h3>
-                <p className="text-gray-700 whitespace-pre-wrap">{selectedTicket.description}</p>
+              <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                  📝 Mô Tả Chi Tiết
+                </h3>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedTicket.description}</p>
               </div>
 
               {/* Image */}
               {selectedTicket.imageUrl && (
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 mb-2">Hình ảnh</h3>
+                <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    🖼️ Hình Ảnh
+                  </h3>
                   <img 
                     src={selectedTicket.imageUrl} 
                     alt="Ticket" 
-                    className="rounded-lg border border-gray-200 max-w-full h-auto"
+                    className="rounded-lg border-2 border-gray-300 max-w-full h-auto shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => window.open(selectedTicket.imageUrl, '_blank')}
                   />
                 </div>
               )}
 
-              {/* Location */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Địa điểm</h3>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>{selectedTicket.locationName}</span>
+              {/* Information Grid */}
+              <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  ℹ️ Thông Tin Chi Tiết
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Loại sự cố */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">🔧 Loại sự cố</div>
+                    <div className="text-base font-semibold text-gray-800">{selectedTicket.categoryName}</div>
+                  </div>
+
+                  {/* Địa điểm */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">📍 Địa điểm</div>
+                    <div className="text-base font-semibold text-gray-800">{selectedTicket.locationName}</div>
+                  </div>
+
+                  {/* Người yêu cầu */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">👤 Người yêu cầu</div>
+                    <div className="text-base font-semibold text-gray-800">{selectedTicket.requesterName}</div>
+                    <div className="text-xs text-gray-500 mt-1">({selectedTicket.requesterCode})</div>
+                  </div>
+
+                  {/* Người quản lý */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">👨‍💼 Người quản lý</div>
+                    <div className="text-base font-semibold text-gray-800">{selectedTicket.managedByName}</div>
+                    <div className="text-xs text-gray-500 mt-1">({selectedTicket.managedByCode})</div>
+                  </div>
+
+                  {/* Ngày tạo */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">📅 Ngày tạo</div>
+                    <div className="text-base font-semibold text-gray-800">{new Date(selectedTicket.createdAt).toLocaleString('vi-VN')}</div>
+                  </div>
+
+                  {/* Hạn xử lý */}
+                  <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">⏰ Hạn xử lý</div>
+                    <div className="text-base font-semibold text-gray-800">{new Date(selectedTicket.resolveDeadline).toLocaleString('vi-VN')}</div>
+                  </div>
+
+                  {/* Ngày hoàn thành */}
+                  {selectedTicket.resolvedAt && (
+                    <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wide">✅ Ngày hoàn thành</div>
+                      <div className="text-base font-semibold text-green-800">{new Date(selectedTicket.resolvedAt).toLocaleString('vi-VN')}</div>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {/* Category */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Loại sự cố</h3>
-                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {selectedTicket.categoryName}
-                </span>
-              </div>
-
-              {/* Deadline */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Hạn xử lý</h3>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>{new Date(selectedTicket.resolveDeadline).toLocaleString('vi-VN')}</span>
-                </div>
-              </div>
-
-              {/* Requester Info */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Người yêu cầu</h3>
-                <p className="text-gray-700">{selectedTicket.requesterName} ({selectedTicket.requesterCode})</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Người quản lí</h3>
-                <p className="text-gray-700">{selectedTicket.managedByName} ({selectedTicket.managedByCode})</p>
-              </div>
-              {/* Created Date */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Ngày tạo</h3>
-                <p className="text-gray-700">{new Date(selectedTicket.createdAt).toLocaleString('vi-VN')}</p>
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex items-center justify-end gap-3">
+            <div className="sticky bottom-0 bg-gradient-to-r from-gray-100 to-gray-50 border-t-2 border-gray-200 px-8 py-6 flex items-center justify-end gap-4">
               <button
                 onClick={handleCloseDetail}
-                className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-all duration-200 font-semibold"
                 disabled={isUpdatingStatus}
               >
                 Đóng
               </button>
               
-              {/* Hiển thị nút tùy theo trạng thái */}
+              {/* Nút tùy theo trạng thái */}
               {selectedTicket.status === 'ASSIGNED' && (
                 <button
                   onClick={handleUpdateStatus}
                   disabled={isUpdatingStatus}
-                  className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isUpdatingStatus ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                       <span>Đang xử lý...</span>
                     </>
                   ) : (
@@ -337,11 +343,11 @@ const StaffPage = () => {
                 <button
                   onClick={handleUpdateStatus}
                   disabled={isUpdatingStatus}
-                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isUpdatingStatus ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                       <span>Đang xử lý...</span>
                     </>
                   ) : (
@@ -356,7 +362,7 @@ const StaffPage = () => {
               )}
               
               {selectedTicket.status === 'RESOLVED' && (
-                <div className="px-6 py-2.5 bg-green-100 text-green-800 rounded-lg font-medium flex items-center gap-2">
+                <div className="px-8 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-green-300">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
