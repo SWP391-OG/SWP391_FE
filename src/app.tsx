@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import type { UserRole, User, Ticket } from './types';
 import { 
-  loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
+  loadTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
 import { useTicketByCode } from './hooks/useTicketByCode';
+import { authService } from './services/authService';
 import { ticketService } from './services/ticketService';
 import StaffPage from './pages/staff/staff-page';
 import AdminPage from './pages/admin/admin-page';
@@ -20,11 +21,10 @@ function App() {
   // Auth state - Load from localStorage on mount
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const savedUser = loadCurrentUser();
-    // Verify user still exists in users list and is active
-    if (savedUser) {
-      const users = loadUsers();
-      const userExists = users.find((u: User) => u.id === savedUser.id && (u.status === 'active' || u.isActive));
-      return userExists || null;
+    // Directly load saved user from localStorage
+    // No need to verify against mock users since user data comes from backend API
+    if (savedUser && savedUser.status === 'active' && savedUser.isActive) {
+      return savedUser;
     }
     return null;
   });
@@ -42,46 +42,50 @@ function App() {
   // Derive currentRole from currentUser instead of using state
   const currentRole = currentUser?.role || 'admin';
   
-  // Initialize tickets state from localStorage
+  // Initialize tickets state from mock data (not persisted to localStorage)
   const [tickets, setTickets] = useState<Ticket[]>(() => loadTickets());
   
-  // Save tickets to localStorage whenever data changes
-  useEffect(() => {
-    saveTickets(tickets);
-  }, [tickets]);
+  // Note: Tickets are NOT saved to localStorage
+  // Data is managed server-side or loaded from mock data
 
-  // Sync tickets from localStorage when changed by other components (e.g., AdminPage)
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'tickets') {
-        const updatedTickets = loadTickets();
-        setTickets(updatedTickets);
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also check localStorage periodically (every 2 seconds) to catch changes from same tab
-    const interval = setInterval(() => {
-      const currentTickets = loadTickets();
-      // Only update if tickets actually changed (compare by length and IDs)
-      const currentIds = currentTickets.map(t => t.id).sort().join(',');
-      const stateIds = tickets.map(t => t.id).sort().join(',');
-      if (currentIds !== stateIds || currentTickets.length !== tickets.length) {
-        setTickets(currentTickets);
-      }
-    }, 2000);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, [tickets]);
+  // Sync tickets when component updates (no localStorage persistence)
 
   // Save currentUser to localStorage whenever it changes
   useEffect(() => {
     saveCurrentUser(currentUser);
   }, [currentUser]);
+
+  // Listen for storage changes from other tabs (cross-tab session sync)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // When fptech_current_user changes in another tab
+      if (e.key === 'fptech_current_user') {
+        // If the new value is null, user logged out from another tab
+        if (e.newValue === null) {
+          setCurrentUser(null);
+          console.log('🔓 User logged out from another tab');
+        } 
+        // If there's a new value, user logged in from another tab
+        else if (e.newValue) {
+          try {
+            const newUser = JSON.parse(e.newValue);
+            if (newUser && newUser.status === 'active' && newUser.isActive) {
+              setCurrentUser(newUser);
+              console.log('✅ Session synchronized from another tab:', newUser.fullName);
+            }
+          } catch (error) {
+            console.error('Error parsing user data from storage event:', error);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   // Login handlers
   const handleLogin = (user: User) => {
@@ -90,9 +94,11 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Clear all auth data (token + user)
+    authService.logout();
+    // Reset app state
     setCurrentUser(null);
     setAuthView('login'); // Return to login page
-    // currentRole and staffType will be reset by useEffect above
   };
 
   // Handle logo click - navigate to home based on role

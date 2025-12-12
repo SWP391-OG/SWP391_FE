@@ -67,11 +67,15 @@ export const saveLocations = (locations: Location[]): void => {
 };
 
 export const loadTickets = (): Ticket[] => {
-  return loadFromStorage(STORAGE_KEYS.TICKETS, mockTickets);
+  // Tickets are NOT persisted to localStorage
+  // Always return fresh mock data from backend/mock
+  return mockTickets;
 };
 
 export const saveTickets = (tickets: Ticket[]): void => {
-  saveToStorage(STORAGE_KEYS.TICKETS, tickets);
+  // Tickets are not saved to localStorage
+  // This function is kept for backward compatibility but does nothing
+  console.debug('Tickets are managed server-side, not persisted locally');
 };
 
 // Current user session persistence
