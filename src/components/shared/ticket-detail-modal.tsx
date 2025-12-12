@@ -122,12 +122,6 @@ const TicketDetailModal = ({
   const getSafeStatusColor = (status: string) => {
     const normalized = (status || 'open').toLowerCase().replace(/_/g, '-');
     return statusColors[normalized] || { bg: 'bg-gray-100', text: 'text-gray-800' };
-    NEW: { bg: 'bg-blue-100', text: 'text-blue-800' },
-    ASSIGNED: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
-    IN_PROGRESS: { bg: 'bg-amber-100', text: 'text-amber-800' },
-    RESOLVED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-    CLOSED: { bg: 'bg-gray-100', text: 'text-gray-700' },
-    CANCELLED: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Priority colors
@@ -341,6 +335,18 @@ const TicketDetailModal = ({
 
           {/* Images - only for student view */}
           {isStudentView && ticket.images && ticket.images.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                🖼️ Hình Ảnh
+              </h3>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                {ticket.images.map((image, index) => (
+                  <img key={index} src={image} alt={`Ticket image ${index + 1}`} className="rounded-lg w-full object-cover h-40" />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="mb-8">
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
