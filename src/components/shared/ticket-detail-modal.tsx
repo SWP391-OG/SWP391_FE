@@ -297,13 +297,6 @@ const TicketDetailModal = ({
                       </div>
                     </div>
                   )}
-
-                  <button
-                    onClick={() => setIsEditingFeedback(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
-                  >
-                    Chỉnh sửa phản hồi
-                  </button>
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
