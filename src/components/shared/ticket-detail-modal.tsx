@@ -29,6 +29,22 @@ const TicketDetailModal = ({
   const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
   const [ratingComment, setRatingComment] = useState<string>(() => ticket.ratingComment || '');
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  // State để lưu feedback đã submit để hiển thị ngay lập tức
+  const [submittedRating, setSubmittedRating] = useState<{stars: number; comment: string} | null>(
+    ticket.ratingStars ? { stars: ticket.ratingStars, comment: ticket.ratingComment || '' } : null
+  );
+
+  // Cập nhật submittedRating khi ticket thay đổi (khi load ticket có sẵn rating)
+  useEffect(() => {
+    if (ticket.ratingStars && !isEditingFeedback) {
+      setSubmittedRating({ 
+        stars: ticket.ratingStars, 
+        comment: ticket.ratingComment || '' 
+      });
+      setRatingStars(ticket.ratingStars);
+      setRatingComment(ticket.ratingComment || '');
+    }
+  }, [ticket.id, ticket.ratingStars, ticket.ratingComment, isEditingFeedback]);
 
   // Close on ESC key
   useEffect(() => {
@@ -301,6 +317,12 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">{ticket.assignedTo}</div>
                 </div>
               )}
+              {ticket.resolvedAt && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Ngày giải quyết</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.resolvedAt)}</div>
+                </div>
+              )}
               {ticket.updatedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔄 Cập nhật lần cuối</div>
@@ -416,7 +438,7 @@ const TicketDetailModal = ({
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 ⭐ Phản Hồi
               </h3>
-              {!isEditingFeedback && ticket.ratingStars ? (
+              {!isEditingFeedback && submittedRating ? (
                 <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="text-lg font-semibold text-gray-800">Đánh giá:</div>
@@ -425,22 +447,23 @@ const TicketDetailModal = ({
                         <span
                           key={star}
                           className="text-2xl"
-                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                          style={{ color: star <= submittedRating.stars ? '#fbbf24' : '#d1d5db' }}
                         >
                           ★
                         </span>
                       ))}
                     </div>
-                    <div className="text-lg font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                    <div className="text-lg font-semibold text-gray-800">({submittedRating.stars}/5)</div>
                   </div>
-                  {ticket.ratingComment && (
+                  {submittedRating.comment && (
                     <div className="mb-4">
                       <div className="text-sm font-semibold text-gray-500 mb-2">Mô tả:</div>
                       <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
-                        {ticket.ratingComment}
+                        {submittedRating.comment}
                       </div>
                     </div>
                   )}
+
                   <button
                     onClick={() => setIsEditingFeedback(true)}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
@@ -481,6 +504,8 @@ const TicketDetailModal = ({
                     <button
                       onClick={() => {
                         if (onUpdateFeedback && ratingStars > 0) {
+                          // Lưu feedback vào state để hiển thị ngay
+                          setSubmittedRating({ stars: ratingStars, comment: ratingComment });
                           onUpdateFeedback(ticket.id, ratingStars, ratingComment);
                           setIsEditingFeedback(false);
                         } else {
@@ -491,12 +516,12 @@ const TicketDetailModal = ({
                     >
                       Lưu phản hồi
                     </button>
-                    {ticket.ratingStars && (
+                    {submittedRating && (
                       <button
                         onClick={() => {
                           setIsEditingFeedback(false);
-                          setRatingStars(ticket.ratingStars || 0);
-                          setRatingComment(ticket.ratingComment || '');
+                          setRatingStars(submittedRating.stars);
+                          setRatingComment(submittedRating.comment);
                         }}
                         className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-all duration-200"
                       >
