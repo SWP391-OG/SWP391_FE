@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import type { Ticket } from '../../types';
 import { ticketService } from '../../services/ticketService';
+import { imageUploadService } from '../../services/imageUploadService';
 import { campusService, type Campus, type Location } from '../../services/campusService';
 import { parseTicketImages } from '../../utils/ticketUtils';
 
@@ -146,21 +147,25 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
       // Get ticketCode from ticket
       const ticketCode = ticket.id || '';
       
-      // Prepare imageUrl (combine existing images)
+      // Prepare imageUrl
       let finalImageUrl = formData.images.join(',');
       
-      // If there are new images, they need to be uploaded first
+      // If there are new images, upload them first
       if (newImageFiles.length > 0) {
-        // TODO: Implement image upload via backend API
-        // Backend cần có endpoint để upload images trước
-        // const uploadedUrls = await uploadService.uploadMultiple(newImageFiles);
-        // finalImageUrl = [...formData.images, ...uploadedUrls].join(',');
-        alert('⚠️ Tính năng upload ảnh mới cần backend API hỗ trợ. Hiện tại chỉ có thể xóa ảnh cũ.');
-        setIsSubmitting(false);
-        return;
+        try {
+          // Upload new images to Cloudinary
+          const uploadedImageUrl = await imageUploadService.uploadMultiple(newImageFiles);
+          // Combine with existing images
+          const allImages = [...formData.images, ...uploadedImageUrl.split(',')];
+          finalImageUrl = allImages.join(',');
+        } catch (uploadError) {
+          setSubmitError(uploadError instanceof Error ? uploadError.message : 'Lỗi khi upload ảnh. Vui lòng thử lại.');
+          setIsSubmitting(false);
+          return;
+        }
       }
       
-      // Call API to update ticket (với imageUrl nếu có thay đổi)
+      // Call API to update ticket with the new image URL
       const response = await ticketService.updateTicket(
         ticketCode, 
         formData.description,
@@ -362,6 +367,7 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
                 multiple
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={isSubmitting}
               />
             </label>
             <div className="text-[0.85rem] text-gray-500 mt-2">
