@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import type { User } from '../../types';
-import { registerUser } from '../../data/mockUsers';
+import { authService } from '../../services/authService';
 
 interface RegisterModalProps {
   onClose: () => void;
@@ -19,6 +18,7 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -74,22 +74,26 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
       return;
     }
 
-    const result = registerUser({
-      email: formData.email,
-      password: formData.password,
-      fullName: formData.fullName,
-      phoneNumber: formData.phoneNumber || undefined,
-      userCode: formData.studentCode || undefined, // Map studentCode to userCode
-      studentCode: formData.studentCode || undefined, // Backward compatibility
+    // Call API to register
+    setIsLoading(true);
+    authService.register(
+      formData.email,
+      formData.password,
+      formData.fullName,
+      formData.phoneNumber
+    ).then((result) => {
+      setIsLoading(false);
+      if (result.success) {
+        alert('Đăng ký thành công! Vui lòng đăng nhập.');
+        onRegisterSuccess();
+        onClose();
+      } else {
+        setError(result.message);
+      }
+    }).catch((err) => {
+      setIsLoading(false);
+      setError(err instanceof Error ? err.message : 'Đăng ký thất bại!');
     });
-
-    if (result.success) {
-      alert('Đăng ký thành công! Vui lòng đăng nhập.');
-      onRegisterSuccess();
-      onClose();
-    } else {
-      setError(result.message || 'Đăng ký thất bại!');
-    }
   };
 
   return (
@@ -137,20 +141,6 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 placeholder="Nhập họ và tên"
                 required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Mã người dùng
-              </label>
-              <input
-                type="text"
-                name="studentCode"
-                value={formData.studentCode}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-                placeholder="Mã số sinh viên"
               />
             </div>
 
@@ -239,9 +229,10 @@ const RegisterModal = ({ onClose, onRegisterSuccess }: RegisterModalProps) => {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-br from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
+              disabled={isLoading}
+              className="w-full bg-gradient-to-br from-orange-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Đăng ký
+              {isLoading ? 'Đang đăng ký...' : 'Đăng ký'}
             </button>
           </form>
 

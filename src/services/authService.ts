@@ -15,6 +15,16 @@ interface LoginApiResponse {
   errors: string[];
 }
 
+interface RegisterApiResponse {
+  status: boolean;
+  message: string;
+  data?: {
+    email: string;
+    fullName: string;
+  };
+  errors: string[];
+}
+
 // Helper để convert role từ backend sang frontend format
 const mapRoleFromBackend = (backendRole: string): UserRole => {
   const roleMap: Record<string, UserRole> = {
@@ -99,6 +109,68 @@ export const authService = {
         }
       }
       return null;
+    }
+  },
+
+  /**
+   * Register với backend API
+   * @param email - Email đăng ký
+   * @param password - Mật khẩu
+   * @param fullName - Họ và tên
+   * @param phoneNumber - Số điện thoại
+   * @returns success status và message
+   */
+  async register(
+    email: string,
+    password: string,
+    fullName: string,
+    phoneNumber: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('📝 Attempting register with email:', email);
+      
+      const response = await apiClient.post<RegisterApiResponse>('/auth/register', {
+        email,
+        password,
+        fullName,
+        phoneNumber,
+      });
+
+      // Kiểm tra response status
+      if (!response.status) {
+        console.error('❌ Register failed:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Đăng ký thất bại!',
+        };
+      }
+
+      console.log('✅ Register successful:', response.message);
+      return {
+        success: true,
+        message: response.message || 'Đăng ký thành công!',
+      };
+    } catch (error) {
+      console.error('❌ Register failed:', error);
+      let errorMessage = 'Đăng ký thất bại!';
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        errorMessage = error.message;
+        
+        // Kiểm tra nếu là lỗi connection
+        if (error.message.includes('Failed to fetch')) {
+          console.error('⚠️ Cannot connect to backend. Please check:');
+          console.error('1. Backend is running on', import.meta.env.VITE_API_BASE_URL);
+          console.error('2. CORS is configured properly');
+          errorMessage = 'Không thể kết nối tới server. Vui lòng thử lại sau.';
+        }
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
     }
   },
 

@@ -339,9 +339,11 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                   >
                     <option value="all">Tất cả</option>
                     <option value="open">Mới tạo</option>
+                    <option value="assigned">Đã được giao việc</option>
                     <option value="in-progress">Đang xử lý</option>
                     <option value="resolved">Đã giải quyết</option>
                     <option value="closed">Đã đóng</option>
+                    <option value="cancelled">Đã hủy</option>
                   </select>
                 </div>
               </div>

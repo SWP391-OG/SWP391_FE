@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ticketService } from '../../services/ticketService';
 import AssignedTicketsList from '../../components/staff/AssignedTicketsList';
 import type { TicketFromApi } from '../../types';
+import { parseTicketImages } from '../../utils/ticketUtils';
 const StaffPage = () => {
   const [tickets, setTickets] = useState<TicketFromApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -235,18 +236,27 @@ const StaffPage = () => {
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedTicket.description}</p>
               </div>
 
-              {/* Image */}
-              {selectedTicket.imageUrl && (
+              {/* Images */}
+              {parseTicketImages(selectedTicket).length > 0 && (
                 <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
                   <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
                     🖼️ Hình Ảnh
                   </h3>
-                  <img 
-                    src={selectedTicket.imageUrl} 
-                    alt="Ticket" 
-                    className="rounded-lg border-2 border-gray-300 max-w-full h-auto shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => window.open(selectedTicket.imageUrl, '_blank')}
-                  />
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                    {parseTicketImages(selectedTicket).map((image, index) => (
+                      <div key={index} className="rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
+                        <img 
+                          src={image} 
+                          alt={`Ticket image ${index + 1}`} 
+                          className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => window.open(image, '_blank')}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

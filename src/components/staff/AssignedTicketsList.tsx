@@ -29,7 +29,12 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
   };
 
   // Calculate remaining time
-  const getRemainingTime = (deadline: string) => {
+  const getRemainingTime = (deadline: string, status: string) => {
+    // Nếu ticket đã hoàn thành, không hiển thị deadline nữa
+    if (status === 'RESOLVED' || status === 'CLOSED' || status === 'CANCELLED') {
+      return { text: 'Hoàn thành', color: 'text-green-600', bg: 'bg-green-50' };
+    }
+    
     const now = new Date();
     const deadlineDate = new Date(deadline);
     const diff = deadlineDate.getTime() - now.getTime();
@@ -94,7 +99,7 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
           <div className="divide-y divide-gray-200">
             {filteredTickets.map((ticket) => {
               const statusInfo = getStatusColor(ticket.status);
-              const remainingTime = getRemainingTime(ticket.resolveDeadline);
+              const remainingTime = getRemainingTime(ticket.resolveDeadline, ticket.status);
               
               return (
                 <div
