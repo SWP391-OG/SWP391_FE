@@ -567,184 +567,376 @@ const generateSLATracking = (
   };
 };
 
-// Generate mock tickets
-const ticketData = [
+// Mock tickets data - loaded from backend or mock, NOT persisted to localStorage
+export const mockTickets: Ticket[] = [
   {
     id: 'TKT-001',
     title: 'Máy chiếu phòng 501 không hoạt động',
     description: 'Máy chiếu trong phòng 501 không bật được, đã thử nhiều lần nhưng vẫn không có tín hiệu. Ảnh hưởng đến việc học của lớp.',
-    issueType: issueTypes[2],
-    category: 'equipment' as const,
-    priority: 'high' as const,
-    status: 'in-progress' as const,
+    category: 'equipment',
+    priority: 'high',
+    status: 'in-progress',
     location: 'Tòa nhà Alpha',
     roomNumber: '501',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-001',
     createdByName: 'Nguyễn Văn A',
     assignedTo: 'staff-005',
     assignedToName: 'Trần Văn B',
-    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-11T20:46:01.175Z',
+    updatedAt: '2025-12-11T23:46:01.175Z',
+    ticketCode: 'TKT-001',
+    categoryId: 'cat-3',
+    locationId: 'loc-1',
+    requesterId: 'student-001',
+    assignedToId: 'staff-005',
+    deadlineAt: '2025-12-12T20:46:01.175Z',
+    slaDeadline: '2025-12-12T20:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-11T20:46:01.175Z',
+      acknowledgedAt: '2025-12-11T21:16:01.175Z',
+      startedAt: '2025-12-11T22:46:01.175Z',
+      deadline: '2025-12-12T20:46:01.175Z',
+      responseTime: 30,
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-001-1',
+          timestamp: '2025-12-11T20:46:01.174Z',
+          status: 'open',
+          actor: 'Nguyễn Văn A',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên tạo ticket báo cáo máy chiếu hỏng'
+        },
+        {
+          id: 'evt-001-2',
+          timestamp: '2025-12-11T21:16:01.175Z',
+          status: 'acknowledged',
+          actor: 'Hệ thống',
+          actorRole: 'system',
+          action: 'Ticket được phân công',
+          note: 'Hệ thống tự động phân công cho nhân viên kỹ thuật',
+          duration: 30
+        },
+        {
+          id: 'evt-001-3',
+          timestamp: '2025-12-11T22:46:01.175Z',
+          status: 'in-progress',
+          actor: 'Trần Văn B',
+          actorRole: 'staff',
+          action: 'Bắt đầu xử lý',
+          note: 'Nhân viên kỹ thuật đã đến hiện trường kiểm tra',
+          duration: 90
+        }
+      ]
+    }
   },
   {
     id: 'TKT-002',
     title: 'WiFi tầng 3 không kết nối được',
     description: 'Tất cả sinh viên ở tầng 3 đều không thể kết nối WiFi. Đã thử khởi động lại thiết bị nhưng vẫn không được.',
-    issueType: issueTypes[1],
-    category: 'wifi' as const,
-    priority: 'urgent' as const,
-    status: 'open' as const,
+    category: 'wifi',
+    priority: 'urgent',
+    status: 'open',
     location: 'Tòa nhà Beta',
     roomNumber: '',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-002',
     createdByName: 'Lê Thị C',
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-12T00:46:01.175Z',
+    updatedAt: '2025-12-12T00:46:01.175Z',
+    ticketCode: 'TKT-002',
+    categoryId: 'cat-2',
+    locationId: 'loc-2',
+    requesterId: 'student-002',
+    deadlineAt: '2025-12-12T04:46:01.175Z',
+    slaDeadline: '2025-12-12T04:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-12T00:46:01.175Z',
+      deadline: '2025-12-12T04:46:01.175Z',
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-002-1',
+          timestamp: '2025-12-12T00:46:01.175Z',
+          status: 'open',
+          actor: 'Lê Thị C',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo WiFi không hoạt động'
+        }
+      ]
+    }
   },
   {
     id: 'TKT-003',
     title: 'Điều hòa phòng 302 hỏng',
     description: 'Điều hòa trong phòng 302 không làm lạnh, phòng rất nóng khiến sinh viên khó tập trung học.',
-    issueType: issueTypes[0],
-    category: 'facility' as const,
-    priority: 'medium' as const,
-    status: 'resolved' as const,
+    category: 'facility',
+    priority: 'medium',
+    status: 'resolved',
     location: 'Tòa nhà Alpha',
     roomNumber: '302',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-003',
     createdByName: 'Phạm Văn D',
     assignedTo: 'staff-003',
     assignedToName: 'Hoàng Văn E',
-    createdAt: new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-09T01:46:01.175Z',
+    updatedAt: '2025-12-12T00:46:01.175Z',
+    ticketCode: 'TKT-003',
+    categoryId: 'cat-1',
+    locationId: 'loc-1',
+    requesterId: 'student-003',
+    assignedToId: 'staff-003',
+    deadlineAt: '2025-12-11T01:46:01.175Z',
+    slaDeadline: '2025-12-11T01:46:01.175Z',
+    resolvedAt: '2025-12-11T23:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-09T01:46:01.175Z',
+      acknowledgedAt: '2025-12-09T03:46:01.175Z',
+      startedAt: '2025-12-09T23:46:01.175Z',
+      resolvedAt: '2025-12-11T23:46:01.175Z',
+      deadline: '2025-12-11T01:46:01.175Z',
+      responseTime: 120,
+      resolutionTime: 4200,
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-003-1',
+          timestamp: '2025-12-09T01:46:01.175Z',
+          status: 'open',
+          actor: 'Phạm Văn D',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo điều hòa hỏng'
+        },
+        {
+          id: 'evt-003-2',
+          timestamp: '2025-12-09T03:46:01.175Z',
+          status: 'acknowledged',
+          actor: 'Hệ thống',
+          actorRole: 'system',
+          action: 'Ticket được phân công',
+          note: 'Phân công cho bộ phận bảo trì cơ sở vật chất',
+          duration: 120
+        }
+      ]
+    }
   },
   {
     id: 'TKT-004',
     title: 'Phòng 401 chưa được dọn dẹp',
     description: 'Phòng học 401 chưa được vệ sinh, bàn ghế bẩn và có nhiều rác.',
-    issueType: issueTypes[3],
-    category: 'classroom' as const,
-    priority: 'low' as const,
-    status: 'open' as const,
+    category: 'classroom',
+    priority: 'low',
+    status: 'open',
     location: 'Tòa nhà Alpha',
     roomNumber: '401',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-004',
     createdByName: 'Vũ Thị F',
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-11T23:46:01.175Z',
+    updatedAt: '2025-12-11T23:46:01.175Z',
+    ticketCode: 'TKT-004',
+    categoryId: 'cat-5',
+    locationId: 'loc-1',
+    requesterId: 'student-004',
+    deadlineAt: '2025-12-14T23:46:01.175Z',
+    slaDeadline: '2025-12-14T23:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-11T23:46:01.175Z',
+      deadline: '2025-12-14T23:46:01.175Z',
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-004-1',
+          timestamp: '2025-12-11T23:46:01.175Z',
+          status: 'open',
+          actor: 'Vũ Thị F',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo phòng học chưa được vệ sinh'
+        }
+      ]
+    }
   },
   {
     id: 'TKT-005',
     title: 'Thiếu bàn ghế phòng 205',
     description: 'Phòng 205 chỉ có 25 bàn ghế nhưng lớp có 35 sinh viên, cần bổ sung thêm 10 bộ bàn ghế.',
-    issueType: issueTypes[4],
-    category: 'facility' as const,
-    priority: 'medium' as const,
-    status: 'in-progress' as const,
+    category: 'facility',
+    priority: 'medium',
+    status: 'in-progress',
     location: 'Tòa nhà Beta',
     roomNumber: '205',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-005',
     createdByName: 'Đỗ Văn G',
     assignedTo: 'staff-002',
     assignedToName: 'Bùi Thị H',
-    createdAt: new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-10T19:46:01.175Z',
+    updatedAt: '2025-12-11T20:46:01.175Z',
+    ticketCode: 'TKT-005',
+    categoryId: 'cat-1',
+    locationId: 'loc-2',
+    requesterId: 'student-005',
+    assignedToId: 'staff-002',
+    deadlineAt: '2025-12-12T19:46:01.175Z',
+    slaDeadline: '2025-12-12T19:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-10T19:46:01.175Z',
+      acknowledgedAt: '2025-12-10T21:46:01.175Z',
+      startedAt: '2025-12-11T15:46:01.175Z',
+      deadline: '2025-12-12T19:46:01.175Z',
+      responseTime: 120,
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-005-1',
+          timestamp: '2025-12-10T19:46:01.175Z',
+          status: 'open',
+          actor: 'Đỗ Văn G',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo thiếu bàn ghế'
+        }
+      ]
+    }
   },
   {
     id: 'TKT-006',
     title: 'Mất điện phòng 101',
     description: 'Phòng 101 bị mất điện hoàn toàn, không thể sử dụng máy chiếu và đèn.',
-    issueType: issueTypes[5],
-    category: 'facility' as const,
-    priority: 'urgent' as const,
-    status: 'resolved' as const,
+    category: 'facility',
+    priority: 'urgent',
+    status: 'resolved',
     location: 'Tòa nhà Alpha',
     roomNumber: '101',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-006',
     createdByName: 'Đinh Văn I',
     assignedTo: 'staff-001',
     assignedToName: 'Lý Văn K',
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 46 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-10T01:46:01.175Z',
+    updatedAt: '2025-12-10T03:46:01.175Z',
+    ticketCode: 'TKT-006',
+    categoryId: 'cat-1',
+    locationId: 'loc-1',
+    requesterId: 'student-006',
+    assignedToId: 'staff-001',
+    deadlineAt: '2025-12-10T05:46:01.175Z',
+    slaDeadline: '2025-12-10T05:46:01.175Z',
+    resolvedAt: '2025-12-10T02:46:01.175Z',
+    closedAt: '2025-12-10T03:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-10T01:46:01.175Z',
+      acknowledgedAt: '2025-12-10T01:58:01.175Z',
+      startedAt: '2025-12-10T02:16:01.175Z',
+      resolvedAt: '2025-12-10T02:46:01.175Z',
+      closedAt: '2025-12-10T03:46:01.175Z',
+      deadline: '2025-12-10T05:46:01.175Z',
+      responseTime: 12,
+      resolutionTime: 60,
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-006-1',
+          timestamp: '2025-12-10T01:46:01.175Z',
+          status: 'open',
+          actor: 'Đinh Văn I',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo mất điện'
+        }
+      ]
+    }
   },
   {
     id: 'TKT-007',
     title: 'Vòi nước nhà vệ sinh tầng 2 hỏng',
     description: 'Vòi nước trong nhà vệ sinh nam tầng 2 bị hỏng, nước chảy liên tục không tắt được.',
-    issueType: issueTypes[6],
-    category: 'facility' as const,
-    priority: 'high' as const,
-    status: 'closed' as const,
+    category: 'facility',
+    priority: 'high',
+    status: 'closed',
     location: 'Tòa nhà Beta',
     roomNumber: '',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-007',
     createdByName: 'Mai Thị L',
     assignedTo: 'staff-004',
     assignedToName: 'Ngô Văn M',
-    createdAt: new Date(Date.now() - 96 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 90 * 60 * 60 * 1000).toISOString(),
+    createdAt: '2025-12-08T01:46:01.175Z',
+    updatedAt: '2025-12-08T07:46:01.175Z',
+    ticketCode: 'TKT-007',
+    categoryId: 'cat-1',
+    locationId: 'loc-2',
+    requesterId: 'student-007',
+    assignedToId: 'staff-004',
+    deadlineAt: '2025-12-09T01:46:01.175Z',
+    slaDeadline: '2025-12-09T01:46:01.175Z',
+    resolvedAt: '2025-12-08T04:46:01.175Z',
+    closedAt: '2025-12-08T07:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-08T01:46:01.175Z',
+      acknowledgedAt: '2025-12-08T02:46:01.175Z',
+      startedAt: '2025-12-08T03:46:01.175Z',
+      resolvedAt: '2025-12-08T04:46:01.175Z',
+      closedAt: '2025-12-08T07:46:01.175Z',
+      deadline: '2025-12-09T01:46:01.175Z',
+      responseTime: 60,
+      resolutionTime: 180,
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-007-1',
+          timestamp: '2025-12-08T01:46:01.175Z',
+          status: 'open',
+          actor: 'Mai Thị L',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo vòi nước hỏng'
+        }
+      ]
+    }
   },
   {
     id: 'TKT-008',
     title: 'Loa phòng 601 không có tiếng',
     description: 'Loa trong phòng 601 không phát ra tiếng, giáo viên phải nói rất to.',
-    issueType: issueTypes[2],
-    category: 'equipment' as const,
-    priority: 'medium' as const,
-    status: 'open' as const,
+    category: 'equipment',
+    priority: 'medium',
+    status: 'open',
     location: 'Tòa nhà Alpha',
     roomNumber: '601',
-    images: [] as string[],
+    images: [],
     createdBy: 'student-008',
     createdByName: 'Phan Văn N',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-  },
+    createdAt: '2025-12-11T13:46:01.175Z',
+    updatedAt: '2025-12-11T13:46:01.175Z',
+    ticketCode: 'TKT-008',
+    categoryId: 'cat-3',
+    locationId: 'loc-1',
+    requesterId: 'student-008',
+    deadlineAt: '2025-12-13T13:46:01.175Z',
+    slaDeadline: '2025-12-13T13:46:01.175Z',
+    slaTracking: {
+      createdAt: '2025-12-11T13:46:01.175Z',
+      deadline: '2025-12-13T13:46:01.175Z',
+      isOverdue: false,
+      timeline: [
+        {
+          id: 'evt-008-1',
+          timestamp: '2025-12-11T13:46:01.175Z',
+          status: 'open',
+          actor: 'Phan Văn N',
+          actorRole: 'student',
+          action: 'Ticket được tạo',
+          note: 'Sinh viên báo cáo loa không có tiếng'
+        }
+      ]
+    }
+  }
 ];
-
-// Generate complete tickets with SLA tracking
-export const mockTickets: Ticket[] = ticketData.map(ticket => {
-  const slaDeadline = calculateSLADeadline(ticket.createdAt, ticket.priority);
-  const events = mockSLAEvents[ticket.id] || [];
-  const slaTracking = generateSLATracking(ticket.id, ticket.createdAt, slaDeadline, events);
-  
-  // Map category to categoryId (simplified - in real DB, this would be a FK)
-  const categoryIdMap: Record<string, string> = {
-    'equipment': 'cat-3',
-    'wifi': 'cat-2',
-    'facility': 'cat-1',
-    'classroom': 'cat-5',
-  };
-  
-  // Map location name to locationId (simplified - in real DB, this would be a FK)
-  const locationIdMap: Record<string, string> = {
-    'Tòa nhà Alpha': 'loc-1',
-    'Tòa nhà Beta': 'loc-2',
-  };
-  
-  // Get resolvedAt and closedAt from SLA tracking
-  const resolvedAt = slaTracking.resolvedAt;
-  const closedAt = slaTracking.closedAt;
-  
-  return {
-    ...ticket,
-    ticketCode: ticket.id, // Use id as ticketCode for now
-    categoryId: categoryIdMap[ticket.category] || 'cat-1',
-    locationId: locationIdMap[ticket.location || ''] || 'loc-1',
-    requesterId: ticket.createdBy,
-    assignedToId: ticket.assignedTo,
-    deadlineAt: slaDeadline,
-    slaDeadline, // Keep for backward compatibility
-    resolvedAt,
-    closedAt,
-    slaTracking,
-  };
-});
 

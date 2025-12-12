@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { User } from '../../types';
 import { authService } from '../../services/authService';
+import { saveCurrentUser } from '../../utils/localStorage';
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -23,8 +24,8 @@ const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }
     try {
       const user = await authService.login(email, password);
       if (user) {
-        // Lưu user vào localStorage để persist session
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        // Lưu user vào localStorage với utility function (key: fptech_current_user)
+        saveCurrentUser(user);
         onLogin(user);
       } else {
         setError('Email hoặc mật khẩu không đúng!');
