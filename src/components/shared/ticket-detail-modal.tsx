@@ -65,12 +65,6 @@ const TicketDetailModal = ({
   };
 
   // Priority colors
-  const priorityColors = {
-    low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-    medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
-    high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-    urgent: { bg: 'bg-red-100', text: 'text-red-800' },
-  };
 
   // Format date
   const formatDateTime = (dateString: string) => {
@@ -106,19 +100,11 @@ const TicketDetailModal = ({
           
           <div className="flex gap-3 flex-wrap mb-4">
             <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${getSafeStatusColor(ticket.status).bg} ${getSafeStatusColor(ticket.status).text}`}>
-              {ticket.status === 'open' && '🔵 Mở'}
+              {ticket.status === 'open' && '🔵 Mới tạo'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
               {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
               {ticket.status === 'closed' && '⚫ Đã đóng'}
             </span>
-            {ticket.priority && (
-              <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
-                {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
-                {ticket.priority === 'high' && '🟠 Cao'}
-                {ticket.priority === 'medium' && '🟡 Trung bình'}
-                {ticket.priority === 'low' && '🟢 Thấp'}
-              </span>
-            )}
           </div>
         </div>
 
@@ -175,14 +161,8 @@ const TicketDetailModal = ({
               )}
               {ticket.resolvedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Ngày giải quyết</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Được giải quyết vào</div>
                   <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.resolvedAt)}</div>
-                </div>
-              )}
-              {ticket.updatedAt && (
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔄 Cập nhật lần cuối</div>
-                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.updatedAt)}</div>
                 </div>
               )}
             </div>

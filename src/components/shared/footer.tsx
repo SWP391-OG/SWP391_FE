@@ -12,7 +12,7 @@ interface ContactInfo {
 const contactData: ContactInfo = {
   departmentName: 'Phòng Quản lý Cơ sở Vật chất',
   address: 'Tòa nhà A, Lầu 3, Phòng 301, Trường Đại học FPT',
-  email: 'csvc@fpt.edu.vn', 
+  email: 'admin1@fpt.edu.vn', 
   workingHours: 'Thứ Hai - Thứ Sáu: 8:00 - 17:00 (Nghỉ trưa: 12:00 - 13:00)',
 };
 

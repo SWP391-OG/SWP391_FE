@@ -25,7 +25,6 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const [studentTab, setStudentTab] = useState<StudentTab>('pending');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [studentFilterStatus, setStudentFilterStatus] = useState<Ticket['status'] | 'all'>('all');
-  const [studentFilterPriority, setStudentFilterPriority] = useState<Ticket['priority'] | 'all'>('all');
   
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<Ticket[]>([]);
@@ -61,10 +60,13 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
           assignedToName: apiTicket.assignedToName || undefined,
           createdAt: apiTicket.createdAt,
           updatedAt: apiTicket.createdAt,
+          resolvedAt: apiTicket.resolvedAt || undefined,
           imageUrl: apiTicket.imageUrl,
           contactPhone: apiTicket.contactPhone,
           notes: apiTicket.note || undefined,
           slaDeadline: apiTicket.resolveDeadline,
+          ratingStars: apiTicket.ratingStars || undefined,
+          ratingComment: apiTicket.ratingComment || undefined,
           slaTracking: {
             createdAt: apiTicket.createdAt,
             deadline: apiTicket.resolveDeadline,
@@ -127,9 +129,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     const matchesSearch = ticket.title.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
                          ticket.description.toLowerCase().includes(studentSearchQuery.toLowerCase());
     const matchesStatus = studentFilterStatus === 'all' || ticket.status === studentFilterStatus;
-    const matchesPriority = studentFilterPriority === 'all' || ticket.priority === studentFilterPriority;
 
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus;
   });
 
   // Format date
@@ -158,30 +159,12 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
   };
 
-  // Priority colors (if needed in future)
-  // const priorityColors = {
-  //   low: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  //   medium: { bg: 'bg-amber-100', text: 'text-amber-800' },
-  //   high: { bg: 'bg-orange-100', text: 'text-orange-700' },
-  //   urgent: { bg: 'bg-red-100', text: 'text-red-800' },
-  // };
-
-  // Priority labels (if needed in future)
-  // const priorityLabels = {
-  //   low: 'Thấp',
-  //   medium: 'Trung bình',
-  //   high: 'Cao',
-  //   urgent: 'Khẩn cấp',
-  // };
-
   // Status labels
   const statusLabels: Record<string, string> = {
-    open: 'Mở',
-    acknowledged: 'Đã xác nhận',
+    open: 'Mới tạo',
     'in-progress': 'Đang xử lý',
     resolved: 'Đã giải quyết',
     closed: 'Đã đóng',
-    cancelled: 'Đã hủy',
   };
 
   // Handle create ticket
@@ -334,7 +317,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
 
             {/* Search and Filters */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-              <div className="grid grid-cols-[2fr_1fr_1fr] gap-4 items-end">
+              <div className="grid grid-cols-[2fr_1fr] gap-4 items-end">
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-semibold text-gray-700">Tìm kiếm</label>
                   <input
@@ -353,25 +336,10 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                     className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
                   >
                     <option value="all">Tất cả</option>
-                    <option value="open">Mở</option>
-                    <option value="acknowledged">Đã xác nhận</option>
+                    <option value="open">Mới tạo</option>
                     <option value="in-progress">Đang xử lý</option>
                     <option value="resolved">Đã giải quyết</option>
                     <option value="closed">Đã đóng</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700">Ưu tiên</label>
-                  <select
-                    value={studentFilterPriority}
-                    onChange={(e) => setStudentFilterPriority(e.target.value as Ticket['priority'] | 'all')}
-                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="urgent">Khẩn cấp</option>
-                    <option value="high">Cao</option>
-                    <option value="medium">Trung bình</option>
-                    <option value="low">Thấp</option>
                   </select>
                 </div>
               </div>
