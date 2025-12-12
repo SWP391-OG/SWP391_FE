@@ -75,6 +75,21 @@ export interface UserUpdateProfileDto {
   phoneNumber?: string;
 }
 
+// Profile API Response - Chỉ trả về 4 fields
+export interface UserProfileDto {
+  userCode: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string | null;
+}
+
+export interface UserProfileApiResponse {
+  status: boolean;
+  message: string;
+  data: UserProfileDto;
+  errors: string[];
+}
+
 // Role mapping constants (dựa vào database thực tế)
 export const ROLE_ID_MAP: Record<number, UserRole> = {
   1: 'admin',        // AD01 - Admin

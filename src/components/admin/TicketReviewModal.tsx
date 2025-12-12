@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Ticket, TicketFromApi } from '../../types';
 import { ticketService } from '../../services/ticketService';
+import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface Staff {
   id: string;
@@ -40,7 +41,14 @@ const TicketReviewModal = ({
   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
   const ticketLocation = isFromApi ? ticket.locationName : ticket.location || 'N/A';
   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
-  const ticketImages = 'images' in ticket ? ticket.images : undefined;
+  const ticketImages = parseTicketImages(ticket);
+  
+  // Debug staffList
+  console.log('📋 TicketReviewModal - Staff List:', {
+    count: staffList.length,
+    staffList,
+    ticket: ticketCode,
+  });
 
   const handleAutoAssign = async () => {
     if (!isFromApi) {
@@ -205,6 +213,42 @@ const TicketReviewModal = ({
                     className="w-full h-24 object-cover rounded-md border border-gray-200"
                   />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rating Section - Hiển thị nếu có đánh giá */}
+          {(ticket.ratingStars || ticket.ratingComment) && (
+            <div className="mb-6">
+              <span className="text-sm text-gray-500 font-semibold block mb-3">
+                ⭐ Đánh giá của người dùng:
+              </span>
+              <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-lg p-4">
+                {ticket.ratingStars && (
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="text-sm font-semibold text-gray-800">Đánh giá:</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className="text-xl"
+                          style={{ color: star <= (ticket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-sm font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
+                  </div>
+                )}
+                {ticket.ratingComment && (
+                  <div>
+                    <div className="text-xs font-semibold text-gray-500 mb-2">Nhận xét:</div>
+                    <div className="text-sm text-gray-700 bg-white p-3 rounded-md border border-gray-200">
+                      {ticket.ratingComment}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

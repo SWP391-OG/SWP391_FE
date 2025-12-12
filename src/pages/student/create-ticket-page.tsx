@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
-import type { Category, Ticket } from '../../types';
+import type { Category, Ticket, UserProfileDto } from '../../types';
 import { ticketService } from '../../services/ticketService';
 import { imageUploadService } from '../../services/imageUploadService';
 import { campusService, type Campus, type Location } from '../../services/campusService';
+import { userService } from '../../services/userService';
 
 interface CreateTicketPageProps {
   category?: Category; // Optional - will use default if not provided
@@ -32,6 +33,10 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
 
   const currentCategory = category || defaultCategory;
 
+  // User profile state
+  const [userProfile, setUserProfile] = useState<UserProfileDto | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
   // Campus and Location states
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
@@ -54,10 +59,21 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Load campuses on mount
+  // Load user profile and campuses on mount
   useEffect(() => {
+    loadUserProfile();
     loadCampuses();
   }, []);
+
+  // Auto-fill phone number when profile is loaded
+  useEffect(() => {
+    if (userProfile?.phoneNumber) {
+      setFormData(prev => ({
+        ...prev,
+        phoneNumber: userProfile.phoneNumber || '',
+      }));
+    }
+  }, [userProfile]);
 
   // Load locations when campus changes
   useEffect(() => {
@@ -68,6 +84,20 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
       setFormData(prev => ({ ...prev, locationCode: '' }));
     }
   }, [formData.campusCode]);
+
+  const loadUserProfile = async () => {
+    try {
+      setIsLoadingProfile(true);
+      const profile = await userService.getProfile();
+      if (profile) {
+        setUserProfile(profile);
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
 
   const loadCampuses = async () => {
     try {
@@ -344,14 +374,30 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
 
         <div className="mb-6">
           <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Số điện thoại</label>
-          <input
-            type="tel"
-            name="phoneNumber"
-            value={formData.phoneNumber}
-            onChange={handleInputChange}
-            placeholder="Ví dụ: 0912345678"
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-          />
+          {isLoadingProfile ? (
+            <div className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-500">
+              Đang tải thông tin...
+            </div>
+          ) : userProfile?.phoneNumber ? (
+            <>
+              <div className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium">
+                {userProfile.phoneNumber}
+              </div>
+              <div className="text-[0.85rem] text-gray-500 mt-2">
+                📱 Số điện thoại từ hồ sơ của bạn. Cập nhật trong phần Profile nếu cần thay đổi.
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-full py-3 px-3 text-base border-2 border-yellow-300 rounded-lg bg-yellow-50 text-yellow-700">
+                Chưa cập nhật số điện thoại
+              </div>
+              <div className="text-[0.85rem] text-yellow-600 mt-2 flex items-start gap-2">
+                <span>⚠️</span>
+                <span>Bạn chưa cập nhật số điện thoại trong hồ sơ. Vui lòng cập nhật trong phần <strong>Profile</strong> để chúng tôi có thể liên hệ với bạn khi cần thiết.</span>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="mb-6">

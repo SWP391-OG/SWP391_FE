@@ -11,7 +11,7 @@
  */
 
 // Đọc biến môi trường từ .env
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:7151/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://fptechnical-1071992103404.asia-southeast1.run.app/api';
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 5000;
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
 

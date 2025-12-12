@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { mockSLAEvents, type SLAEvent } from '../../data/mockData';
+import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -21,10 +22,29 @@ const TicketDetailModal = ({
   onEdit,
   onUpdateFeedback
 }: TicketDetailModalProps) => {
-  // State for feedback form
-  const [ratingStars, setRatingStars] = useState<number>(ticket.ratingStars || 0);
-  const [ratingComment, setRatingComment] = useState<string>(ticket.ratingComment || '');
+  // Parse images from ticket (handles both imageUrl string and images array)
+  const ticketImages = parseTicketImages(ticket);
+
+  // State for feedback form - initialize from ticket
+  const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
+  const [ratingComment, setRatingComment] = useState<string>(() => ticket.ratingComment || '');
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  // State để lưu feedback đã submit để hiển thị ngay lập tức
+  const [submittedRating, setSubmittedRating] = useState<{stars: number; comment: string} | null>(
+    ticket.ratingStars ? { stars: ticket.ratingStars, comment: ticket.ratingComment || '' } : null
+  );
+
+  // Cập nhật submittedRating khi ticket thay đổi (khi load ticket có sẵn rating)
+  useEffect(() => {
+    if (ticket.ratingStars && !isEditingFeedback) {
+      setSubmittedRating({ 
+        stars: ticket.ratingStars, 
+        comment: ticket.ratingComment || '' 
+      });
+      setRatingStars(ticket.ratingStars);
+      setRatingComment(ticket.ratingComment || '');
+    }
+  }, [ticket.id, ticket.ratingStars, ticket.ratingComment, isEditingFeedback]);
 
   // Close on ESC key
   useEffect(() => {
@@ -34,12 +54,6 @@ const TicketDetailModal = ({
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
-
-  // Update local state when ticket changes
-  useEffect(() => {
-    setRatingStars(ticket.ratingStars || 0);
-    setRatingComment(ticket.ratingComment || '');
-  }, [ticket]);
 
   // Get SLA events for this ticket
   const slaEvents = mockSLAEvents[ticket.id] || [];
@@ -108,6 +122,12 @@ const TicketDetailModal = ({
   const getSafeStatusColor = (status: string) => {
     const normalized = (status || 'open').toLowerCase().replace(/_/g, '-');
     return statusColors[normalized] || { bg: 'bg-gray-100', text: 'text-gray-800' };
+    NEW: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    ASSIGNED: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+    IN_PROGRESS: { bg: 'bg-amber-100', text: 'text-amber-800' },
+    RESOLVED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+    CLOSED: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    CANCELLED: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Priority colors
@@ -199,6 +219,22 @@ const TicketDetailModal = ({
               )}
             </div>
           )}
+          <div className="flex gap-3 flex-wrap mb-4">
+            <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${statusColors[ticket.status].bg} ${statusColors[ticket.status].text}`}>
+              {ticket.status === 'open' && '🔵 Mở'}
+              {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
+              {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
+              {ticket.status === 'closed' && '⚫ Đã đóng'}
+            </span>
+            {ticket.priority && (
+              <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${priorityColors[ticket.priority].bg} ${priorityColors[ticket.priority].text}`}>
+                {ticket.priority === 'urgent' && '🔴 Khẩn cấp'}
+                {ticket.priority === 'high' && '🟠 Cao'}
+                {ticket.priority === 'medium' && '🟡 Trung bình'}
+                {ticket.priority === 'low' && '🟢 Thấp'}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="p-8">
@@ -305,14 +341,89 @@ const TicketDetailModal = ({
 
           {/* Images - only for student view */}
           {isStudentView && ticket.images && ticket.images.length > 0 && (
+          {/* Description */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              📝 Mô Tả Chi Tiết
+            </h3>
+            <div className="text-base text-gray-600 leading-[1.8]">{ticket.description}</div>
+          </div>
+
+          {/* Information */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              ℹ️ Thông Tin
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              {ticket.campusName && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🏫 Campus</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.campusName}</div>
+                </div>
+              )}
+              {(ticket.location || ticket.locationName) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📍 Địa điểm</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.locationName || ticket.location}</div>
+                </div>
+              )}
+              {ticket.roomNumber && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">Số phòng</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.roomNumber}</div>
+                </div>
+              )}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📅 Ngày tạo</div>
+                <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.createdAt)}</div>
+              </div>
+              {(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">⏰ Deadline</div>
+                  <div className="text-base text-gray-800 font-medium">
+                    {formatDateTime(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '')}
+                  </div>
+                </div>
+              )}
+              {ticket.assignedTo && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👤 Người xử lý</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.assignedTo}</div>
+                </div>
+              )}
+              {ticket.resolvedAt && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Ngày giải quyết</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.resolvedAt)}</div>
+                </div>
+              )}
+              {ticket.updatedAt && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔄 Cập nhật lần cuối</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.updatedAt)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Images */}
+          {ticketImages.length > 0 && (
             <div className="mb-8">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
                 🖼️ Hình Ảnh
               </h3>
               <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
-                {ticket.images.map((image, index) => (
+                {ticketImages.map((image, index) => (
                   <div key={index} className="rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
-                    <img src={image} alt={`Ticket image ${index + 1}`} className="w-full h-full object-cover" />
+                    <img 
+                      src={image} 
+                      alt={`Ticket image ${index + 1}`} 
+                      className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => window.open(image, '_blank')}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23ddd" width="200" height="200"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -359,14 +470,14 @@ const TicketDetailModal = ({
             </div>
           )}
 
-          {/* Feedback Section - Chỉ hiển thị khi ticket đã được xử lý (resolved/closed) và là student view */}
-          {isStudentView && (ticket.status === 'resolved' || ticket.status === 'closed') && (
+          {/* Rating Display for Admin/Staff - Chỉ hiển thị khi có rating và KHÔNG phải student view */}
+          {!isStudentView && (ticket.ratingStars || ticket.ratingComment) && (
             <div className="mb-8">
               <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                ⭐ Phản Hồi
+                ⭐ Đánh Giá Của Người Dùng
               </h3>
-              {!isEditingFeedback && ticket.ratingStars ? (
-                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+              <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                {ticket.ratingStars && (
                   <div className="flex items-center gap-2 mb-4">
                     <div className="text-lg font-semibold text-gray-800">Đánh giá:</div>
                     <div className="flex gap-1">
@@ -382,14 +493,51 @@ const TicketDetailModal = ({
                     </div>
                     <div className="text-lg font-semibold text-gray-800">({ticket.ratingStars}/5)</div>
                   </div>
-                  {ticket.ratingComment && (
+                )}
+                {ticket.ratingComment && (
+                  <div>
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Nhận xét:</div>
+                    <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
+                      {ticket.ratingComment}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Feedback Section - Chỉ hiển thị khi ticket đã được xử lý (resolved/closed) và là student view */}
+          {isStudentView && (ticket.status === 'resolved' || ticket.status === 'closed') && (
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                ⭐ Phản Hồi
+              </h3>
+              {!isEditingFeedback && submittedRating ? (
+                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="text-lg font-semibold text-gray-800">Đánh giá:</div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <span
+                          key={star}
+                          className="text-2xl"
+                          style={{ color: star <= submittedRating.stars ? '#fbbf24' : '#d1d5db' }}
+                        >
+                          ★
+                        </span>
+                      ))}
+                    </div>
+                    <div className="text-lg font-semibold text-gray-800">({submittedRating.stars}/5)</div>
+                  </div>
+                  {submittedRating.comment && (
                     <div className="mb-4">
                       <div className="text-sm font-semibold text-gray-500 mb-2">Mô tả:</div>
                       <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-gray-200">
-                        {ticket.ratingComment}
+                        {submittedRating.comment}
                       </div>
                     </div>
                   )}
+
                   <button
                     onClick={() => setIsEditingFeedback(true)}
                     className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
@@ -430,9 +578,10 @@ const TicketDetailModal = ({
                     <button
                       onClick={() => {
                         if (onUpdateFeedback && ratingStars > 0) {
+                          // Lưu feedback vào state để hiển thị ngay
+                          setSubmittedRating({ stars: ratingStars, comment: ratingComment });
                           onUpdateFeedback(ticket.id, ratingStars, ratingComment);
                           setIsEditingFeedback(false);
-                          alert('Phản hồi đã được cập nhật thành công!');
                         } else {
                           alert('Vui lòng chọn số sao đánh giá (từ 1-5)');
                         }
@@ -441,12 +590,12 @@ const TicketDetailModal = ({
                     >
                       Lưu phản hồi
                     </button>
-                    {ticket.ratingStars && (
+                    {submittedRating && (
                       <button
                         onClick={() => {
                           setIsEditingFeedback(false);
-                          setRatingStars(ticket.ratingStars || 0);
-                          setRatingComment(ticket.ratingComment || '');
+                          setRatingStars(submittedRating.stars);
+                          setRatingComment(submittedRating.comment);
                         }}
                         className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-all duration-200"
                       >

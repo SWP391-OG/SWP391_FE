@@ -4,6 +4,7 @@ import {
   loadTickets, saveTickets, loadCurrentUser, saveCurrentUser, loadUsers
 } from './utils/localStorage';
 import { useTicketByCode } from './hooks/useTicketByCode';
+import { ticketService } from './services/ticketService';
 import StaffPage from './pages/staff/staff-page';
 import AdminPage from './pages/admin/admin-page';
 import StudentHomePage from './pages/student/student-home-page';
@@ -197,12 +198,12 @@ function App() {
           />
 
           {/* Profile Modal */}
-          {showProfileModal && currentUser && (
+          {showProfileModal && (
             <ProfileModal
-              user={currentUser}
               onClose={() => setShowProfileModal(false)}
-              onUpdate={(updatedUser: User) => {
-                setCurrentUser(updatedUser);
+              onUpdate={() => {
+                // Profile đã được cập nhật, có thể refresh data nếu cần
+                console.log('✅ Profile updated successfully');
               }}
             />
           )}
@@ -231,18 +232,32 @@ function App() {
             onTicketUpdated={(updatedTicket) => {
               setTickets(prev => prev.map(t => t.id === updatedTicket.id ? updatedTicket : t));
             }}
-            onFeedbackUpdated={(ticketId, ratingStars, ratingComment) => {
-              setTickets(prev => prev.map(t => {
-                if (t.id === ticketId) {
-                  return {
-                    ...t,
-                    ratingStars,
-                    ratingComment,
-                    closedAt: t.closedAt || new Date().toISOString(),
-                  };
+            onFeedbackUpdated={async (ticketId, ratingStars, ratingComment) => {
+              try {
+                // Call API to update feedback
+                const response = await ticketService.updateFeedback(ticketId, ratingStars, ratingComment);
+                
+                if (response.status) {
+                  // Update local state after successful API call
+                  setTickets(prev => prev.map(t => {
+                    if (t.id === ticketId) {
+                      return {
+                        ...t,
+                        ratingStars,
+                        ratingComment,
+                        closedAt: t.closedAt || new Date().toISOString(),
+                      };
+                    }
+                    return t;
+                  }));
+                  alert('Phản hồi đã được cập nhật thành công!');
+                } else {
+                  alert('Không thể cập nhật phản hồi: ' + response.message);
                 }
-                return t;
-              }));
+              } catch (error) {
+                console.error('Error updating feedback:', error);
+                alert('Lỗi khi cập nhật phản hồi. Vui lòng thử lại.');
+              }
             }}
           />
         )}

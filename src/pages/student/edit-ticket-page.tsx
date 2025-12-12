@@ -3,6 +3,7 @@ import type { ChangeEvent, FormEvent } from 'react';
 import type { Ticket } from '../../types';
 import { ticketService } from '../../services/ticketService';
 import { campusService, type Campus, type Location } from '../../services/campusService';
+import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface EditTicketPageProps {
   ticket: Ticket;
@@ -12,18 +13,25 @@ interface EditTicketPageProps {
 
 interface FormData {
   description: string;
+  images: string[]; // Array of image URLs
 }
 
 const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
-  // Only description is editable
+  // Parse existing images
+  const existingImages = parseTicketImages(ticket);
+  
+  // Description and images are editable
   const [formData, setFormData] = useState<FormData>(() => ({
     description: ticket?.description || '',
+    images: existingImages,
   }));
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
 
   // Load campus and location data for display
   useEffect(() => {
@@ -71,9 +79,62 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
 
   const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const { value } = e.target;
-    setFormData({
+    setFormData(prev => ({
+      ...prev,
       description: value,
+    }));
+  };
+
+  // Handle new image upload
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const fileArray = Array.from(files);
+    const validFiles: File[] = [];
+    const previews: string[] = [];
+
+    fileArray.forEach(file => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert(`File "${file.name}" không phải là hình ảnh!`);
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File "${file.name}" quá lớn! Kích thước tối đa là 5MB.`);
+        return;
+      }
+
+      validFiles.push(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        previews.push(reader.result as string);
+        if (previews.length === validFiles.length) {
+          setNewImageFiles(prev => [...prev, ...validFiles]);
+          setNewImagePreviews(prev => [...prev, ...previews]);
+        }
+      };
+      reader.readAsDataURL(file);
     });
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  // Remove existing image
+  const handleRemoveExistingImage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
+  };
+
+  // Remove new image preview
+  const handleRemoveNewImage = (index: number) => {
+    setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setNewImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -85,13 +146,32 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
       // Get ticketCode from ticket
       const ticketCode = ticket.id || '';
       
-      // Call API to update ticket
-      const response = await ticketService.updateTicket(ticketCode, formData.description);
+      // Prepare imageUrl (combine existing images)
+      let finalImageUrl = formData.images.join(',');
+      
+      // If there are new images, they need to be uploaded first
+      if (newImageFiles.length > 0) {
+        // TODO: Implement image upload via backend API
+        // Backend cần có endpoint để upload images trước
+        // const uploadedUrls = await uploadService.uploadMultiple(newImageFiles);
+        // finalImageUrl = [...formData.images, ...uploadedUrls].join(',');
+        alert('⚠️ Tính năng upload ảnh mới cần backend API hỗ trợ. Hiện tại chỉ có thể xóa ảnh cũ.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Call API to update ticket (với imageUrl nếu có thay đổi)
+      const response = await ticketService.updateTicket(
+        ticketCode, 
+        formData.description,
+        finalImageUrl !== existingImages.join(',') ? finalImageUrl : undefined
+      );
 
       if (response.status) {
         const updatedTicket: Ticket = {
           ...ticket,
           description: formData.description,
+          images: formData.images, // Update with edited images
           updatedAt: new Date().toISOString(),
         };
 
@@ -209,22 +289,86 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
           </div>
         )}
 
-        {/* Images - Read Only Display */}
-        {ticket.images && ticket.images.length > 0 && (
-          <div className="mb-6">
-            <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh</label>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-              {ticket.images.map((image, index) => (
-                <div key={index} className="relative rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
-                  <img src={image} alt={`Image ${index + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
+        {/* Images - Editable */}
+        <div className="mb-6">
+          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh</label>
+          
+          {/* Existing Images */}
+          {formData.images.length > 0 && (
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 mb-2">Hình ảnh hiện tại:</div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+                {formData.images.map((image, index) => (
+                  <div key={`existing-${index}`} className="relative rounded-lg overflow-hidden border-2 border-gray-200 aspect-square group">
+                    <img 
+                      src={image} 
+                      alt={`Existing ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="150" height="150"%3E%3Crect fill="%23ddd" width="150" height="150"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E';
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveExistingImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="Xóa ảnh"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* New Image Previews */}
+          {newImagePreviews.length > 0 && (
+            <div className="mb-4">
+              <div className="text-sm text-gray-600 mb-2">Ảnh mới thêm:</div>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+                {newImagePreviews.map((preview, index) => (
+                  <div key={`new-${index}`} className="relative rounded-lg overflow-hidden border-2 border-green-300 aspect-square group">
+                    <img 
+                      src={preview} 
+                      alt={`New ${index + 1}`} 
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveNewImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                      title="Xóa ảnh"
+                    >
+                      ✕
+                    </button>
+                    <div className="absolute bottom-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
+                      Mới
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upload Button */}
+          <div className="mt-4">
+            <label className="inline-flex items-center gap-2 py-2 px-4 bg-blue-50 text-blue-600 border-2 border-blue-200 rounded-lg cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-blue-100 hover:border-blue-300">
+              <span>📷</span>
+              <span>Thêm hình ảnh</span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </label>
             <div className="text-[0.85rem] text-gray-500 mt-2">
-              Hình ảnh không thể chỉnh sửa
+              Bạn có thể xóa ảnh cũ bằng cách click vào nút ✕ trên ảnh. Thêm ảnh mới bằng nút "Thêm hình ảnh" (tối đa 5MB/ảnh).
             </div>
           </div>
-        )}
+        </div>
 
         {/* Error message */}
         {submitError && (

@@ -224,11 +224,20 @@ export const ticketService = {
   },
 
   // Cập nhật ticket qua API (PUT method)
-  async updateTicket(ticketCode: string, description: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+  async updateTicket(
+    ticketCode: string, 
+    description: string, 
+    imageUrl?: string
+  ): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
+      const body: { description: string; imageUrl?: string } = { description };
+      if (imageUrl !== undefined) {
+        body.imageUrl = imageUrl;
+      }
+      
       const response = await apiClient.put<{ status: boolean; message: string; data: unknown; errors: string[] }>(
         `/Ticket/${ticketCode}`,
-        { description }
+        body
       );
       return response;
     } catch (error) {
@@ -290,5 +299,26 @@ export const ticketService = {
   delete(id: string): void {
     const tickets = this.getAll().filter(t => t.id !== id);
     saveTickets(tickets);
+  },
+
+  // Cập nhật feedback cho ticket - PATCH method
+  async updateFeedback(
+    ticketCode: string,
+    ratingStars: number,
+    ratingComment: string
+  ): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/feedback`,
+        {
+          ratingStars,
+          ratingComment
+        }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error updating feedback:', error);
+      throw error;
+    }
   },
 };
