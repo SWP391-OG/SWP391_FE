@@ -41,6 +41,7 @@ const TicketReviewModal = ({
   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
   const ticketLocation = isFromApi ? ticket.locationName : ticket.location || 'N/A';
   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
+  const requesterName = isFromApi ? ticket.requesterName : ticket.requesterName || '';
   const ticketImages = parseTicketImages(ticket);
   
   // Debug staffList
@@ -189,6 +190,10 @@ const TicketReviewModal = ({
               <span className="ml-2 inline-flex px-2 py-1 rounded-md text-xs font-semibold bg-blue-100 text-blue-800">
                 {ticket.status === 'open' || ticket.status === 'NEW' ? 'Mới tạo' : ticket.status}
               </span>
+            </div>
+             <div className="mb-3">
+              <span className="text-sm text-gray-500 font-semibold">Người gửi ticket</span>
+              <span className="ml-2 text-gray-800">{requesterName}</span>
             </div>
             {assignedToName && (
               <div className="mb-3">

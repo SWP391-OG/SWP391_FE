@@ -49,7 +49,7 @@ const TicketDetailModal = ({
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
     acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
-    assigned: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+    assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     'in_progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -101,9 +101,11 @@ const TicketDetailModal = ({
           <div className="flex gap-3 flex-wrap mb-4">
             <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${getSafeStatusColor(ticket.status).bg} ${getSafeStatusColor(ticket.status).text}`}>
               {ticket.status === 'open' && '🔵 Mới tạo'}
+              {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
               {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
               {ticket.status === 'closed' && '⚫ Đã đóng'}
+              {ticket.status === 'cancelled' && '🔴 Đã hủy'}
             </span>
           </div>
         </div>
@@ -153,16 +155,52 @@ const TicketDetailModal = ({
                   </div>
                 </div>
               )}
-              {ticket.assignedTo && (
+              {(ticket.assignedTo || ticket.assignedToName) && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👤 Người xử lý</div>
-                  <div className="text-base text-gray-800 font-medium">{ticket.assignedTo}</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.assignedToName || ticket.assignedTo}</div>
+                </div>
+              )}
+              {ticket.managedByName && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👨‍💼 Người quản lý</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.managedByName}</div>
+                </div>
+              )}
+              {ticket.createdByName && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👨‍💼 Người tạo</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.createdByName}</div>
+                </div>
+              )}
+              {ticket.categoryId && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔧 Loại sự cố</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.categoryId}</div>
+                </div>
+              )}
+              {ticket.contactPhone && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📱 Số điện thoại</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
+                </div>
+              )}
+              {ticket.notes && (
+                <div className="bg-gray-50 p-4 rounded-lg col-span-2">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📝 Ghi chú</div>
+                  <div className="text-base text-gray-800 font-medium">{ticket.notes}</div>
                 </div>
               )}
               {ticket.resolvedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Được giải quyết vào</div>
                   <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.resolvedAt)}</div>
+                </div>
+              )}
+              {ticket.closedAt && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">🔒 Đóng vào</div>
+                  <div className="text-base text-gray-800 font-medium">{formatDateTime(ticket.closedAt)}</div>
                 </div>
               )}
             </div>

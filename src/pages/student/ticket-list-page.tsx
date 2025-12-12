@@ -28,18 +28,25 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
           status: mapApiStatus(apiTicket.status),
           priority: 'medium' as const, // API doesn't have priority, default to medium
           categoryId: apiTicket.categoryCode,
+          categoryName: apiTicket.categoryName || undefined,
           location: apiTicket.locationName,
+          locationName: apiTicket.locationName || undefined,
           roomNumber: '',
           createdBy: apiTicket.requesterCode,
-          createdByName: apiTicket.requesterName,
+          createdByName: apiTicket.requesterName || undefined,
           assignedTo: apiTicket.assignedToCode || undefined,
           assignedToName: apiTicket.assignedToName || undefined,
+          managedByCode: apiTicket.managedByCode || undefined,
+          managedByName: apiTicket.managedByName || undefined,
           createdAt: apiTicket.createdAt,
           updatedAt: apiTicket.createdAt,
           resolvedAt: apiTicket.resolvedAt || undefined,
-          imageUrl: apiTicket.imageUrl,
-          contactPhone: apiTicket.contactPhone,
+          closedAt: apiTicket.closedAt || undefined,
+          imageUrl: apiTicket.imageUrl || undefined,
+          contactPhone: apiTicket.contactPhone || undefined,
+          note: apiTicket.note || undefined,
           notes: apiTicket.note || undefined,
+          resolveDeadline: apiTicket.resolveDeadline || undefined,
           slaDeadline: apiTicket.resolveDeadline,
           ratingStars: apiTicket.ratingStars || undefined,
           ratingComment: apiTicket.ratingComment || undefined,
@@ -66,7 +73,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const mapApiStatus = (apiStatus: string): Ticket['status'] => {
     const statusMap: Record<string, Ticket['status']> = {
       'OPEN': 'open',
-      'ASSIGNED': 'acknowledged',
+      'ASSIGNED': 'assigned',
       'IN_PROGRESS': 'in-progress',
       'RESOLVED': 'resolved',
       'CLOSED': 'closed',
@@ -85,9 +92,10 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
       return matchesSearch && matchesStatus;
     });
 
-    // Sort by status: open (NEW) → in-progress (IN_PROGRESS) → resolved (RESOLVED) → closed (CLOSED)
+    // Sort by status: open (NEW) → assigned (ASSIGNED) → in-progress (IN_PROGRESS) → resolved (RESOLVED) → closed (CLOSED)
     const statusOrder: Record<string, number> = {
       'open': 1,
+      'assigned': 2,
       'acknowledged': 2,
       'in-progress': 3,
       'resolved': 4,
@@ -106,6 +114,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   // Status colors
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
     acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -116,6 +125,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   // Status labels
   const statusLabels: Record<string, string> = {
     open: 'Mới tạo',
+    assigned: 'Đã được giao việc',
     acknowledged: 'Mới tạo',
     created: 'Mới tạo',
     'in-progress': 'Đang xử lý',
@@ -128,7 +138,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const stats = {
     total: tickets.length,
     open: tickets.filter(t => t.status === 'open').length,
-    inProgress: tickets.filter(t => t.status === 'in-progress').length,
+    inProgress: tickets.filter(t => t.status === 'in-progress' || t.status === 'assigned').length,
     resolved: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
   };
 
@@ -211,9 +221,11 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
               >
                 <option value="all">Tất cả</option>
                 <option value="open">Mới tạo</option>
+                <option value="assigned">Đã được giao việc</option>
                 <option value="in-progress">Đang xử lý</option>
                 <option value="resolved">Đã giải quyết</option>
                 <option value="closed">Đã đóng</option>
+                <option value="cancelled">Đã hủy</option>
               </select>
             </div>
           </div>

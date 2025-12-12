@@ -223,7 +223,7 @@ export interface SLATracking {
 }
 
 // Ticket types
-export type TicketStatus = 'open' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export type TicketStatus = 'open' | 'assigned' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
 
 // API Response Types for Tickets
 export interface TicketFromApi {
@@ -285,10 +285,17 @@ export interface Ticket {
   images?: string[]; // Frontend only - không có trong DB (thường lưu trong bảng riêng)
   createdBy?: string; // Deprecated - dùng requesterId thay thế
   requesterId?: string; // DB: requester_id (FK) - Người báo cáo
+  requesterName?: string; // From API: requesterName - Tên người báo cáo
   createdByName?: string; // Frontend only - không có trong DB
   assignedTo?: string; // Deprecated - dùng assignedToId thay thế
   assignedToId?: string; // DB: assigned_to_id (FK) - Nhân viên kỹ thuật được giao việc (NULL khi mới tạo)
-  assignedToName?: string; // Frontend only - không có trong DB
+  assignedToName?: string; // From API: assignedToName - Tên người được giao
+  managedByCode?: string; // From API: managedByCode - Mã người quản lý
+  managedByName?: string; // From API: managedByName - Tên người quản lý
+  categoryName?: string; // From API: categoryName - Tên loại sự cố
+  contactPhone?: string; // From API: contactPhone - Số điện thoại liên hệ
+  note?: string; // From API: note - Ghi chú từ staff/admin
+  imageUrl?: string; // From API: imageUrl - URL ảnh từ backend
   createdAt: string; // DB: created_at - Thời gian tạo Ticket
   updatedAt?: string; // Frontend only - không có trong DB
   deadlineAt?: string; // DB: deadline_at - Hạn chót xử lý (Tính từ created_at + sla_resolve_hours)

@@ -93,7 +93,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const mapApiStatus = (apiStatus: string): Ticket['status'] => {
     const statusMap: Record<string, Ticket['status']> = {
       'OPEN': 'open',
-      'ASSIGNED': 'acknowledged',
+      'ASSIGNED': 'assigned',
       'IN_PROGRESS': 'in-progress',
       'RESOLVED': 'resolved',
       'CLOSED': 'closed',
@@ -108,7 +108,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   // Filter tickets by tab
   const pendingTickets = studentTickets.filter(t => t.status === 'open');
   const processingTickets = studentTickets.filter(t => 
-    t.status === 'acknowledged' || t.status === 'in-progress'
+    t.status === 'assigned' || t.status === 'acknowledged' || t.status === 'in-progress'
   );
   const completedTickets = studentTickets.filter(t => 
     t.status === 'resolved' || t.status === 'closed'
@@ -152,6 +152,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   // Status colors
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
     acknowledged: { bg: 'bg-blue-100', text: 'text-blue-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -162,6 +163,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   // Status labels
   const statusLabels: Record<string, string> = {
     open: 'Mới tạo',
+    assigned: 'Đã được giao việc',
     'in-progress': 'Đang xử lý',
     resolved: 'Đã giải quyết',
     closed: 'Đã đóng',

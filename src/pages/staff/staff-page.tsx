@@ -288,7 +288,10 @@ const StaffPage = () => {
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Người yêu cầu</h3>
                 <p className="text-gray-700">{selectedTicket.requesterName} ({selectedTicket.requesterCode})</p>
               </div>
-
+              <div>
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Người quản lí</h3>
+                <p className="text-gray-700">{selectedTicket.managedByName} ({selectedTicket.managedByCode})</p>
+              </div>
               {/* Created Date */}
               <div>
                 <h3 className="text-sm font-medium text-gray-500 mb-2">Ngày tạo</h3>
