@@ -6,7 +6,7 @@ import { imageUploadService } from '../../services/imageUploadService';
 import { campusService, type Campus, type Location } from '../../services/campusService';
 
 interface CreateTicketPageProps {
-  category?: Category; // Optional - will use default if not provided
+  category?: Category;
   onBack: () => void;
   onSubmit: (ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'>) => void;
 }
@@ -21,7 +21,6 @@ interface FormData {
 }
 
 const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps) => {
-  // Fallback if category is not provided
   const defaultCategory: Category = {
     categoryCode: 'default',
     categoryName: 'Vấn đề chung',
@@ -32,14 +31,13 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
 
   const currentCategory = category || defaultCategory;
 
-  // Campus and Location states
   const [campuses, setCampuses] = useState<Campus[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoadingCampuses, setIsLoadingCampuses] = useState(false);
   const [isLoadingLocations, setIsLoadingLocations] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
-    title: currentCategory?.categoryName || 'Vấn đề chung', // Auto-populate with category name
+    title: currentCategory?.categoryName || 'Vấn đề chung',
     description: '',
     campusCode: '',
     locationCode: '',
@@ -54,12 +52,10 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Load campuses on mount
   useEffect(() => {
     loadCampuses();
   }, []);
 
-  // Load locations when campus changes
   useEffect(() => {
     if (formData.campusCode) {
       loadLocations(formData.campusCode);
@@ -142,26 +138,6 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
-    
-    // Kiểm tra duplicate ticket (optional - có thể comment nếu không dùng)
-    // const duplicate = checkDuplicateTicket(
-    //   {
-    //     title: formData.title,
-    //     description: formData.description,
-    //     location: formData.locationCode,
-    //     roomNumber: '',
-    //     issueType: currentCategory,
-    //   },
-    //   existingTickets
-    // );
-
-    // if (duplicate) {
-    //   setDuplicateTicket(duplicate);
-    //   setShowDuplicateModal(true);
-    //   return;
-    // }
-
-    // Nếu không có duplicate, tiếp tục submit
     proceedWithSubmit();
   };
 
@@ -170,7 +146,6 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
     setSubmitError(null);
 
     try {
-      // 1. Upload images to Cloudinary if any
       let imageUrl = '';
       if (formData.imageFiles.length > 0) {
         try {
@@ -183,32 +158,28 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
         }
       }
 
-      // 2. Get location code from selected location
       const locationCode = formData.locationCode || '';
 
-      // 3. Create ticket via API
       const response = await ticketService.createTicket({
         title: formData.title,
         description: formData.description,
         imageUrl: imageUrl,
         locationCode: locationCode,
-        categoryCode: currentCategory.categoryCode, // Use category code
+        categoryCode: currentCategory.categoryCode,
       });
 
       if (response.status) {
         setSubmitSuccess(true);
         
-        // Extract campus name from selected campus
         const selectedCampus = campuses.find(c => c.campusCode === formData.campusCode);
         const campusName = selectedCampus?.campusName || '';
         
-        // Create a ticket object for the onSubmit callback
         const ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaDeadline'> = {
           title: response.data.title,
           description: response.data.description,
           status: 'open',
           locationName: response.data.locationName,
-          location: response.data.locationName, // For backward compatibility
+          location: response.data.locationName,
           campusName: campusName,
           resolveDeadline: response.data.resolveDeadline,
           images: response.data.imageUrl ? response.data.imageUrl.split(',') : undefined,
@@ -246,8 +217,6 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
     proceedWithSubmit();
   };
 
-
-
   const isFormValid = 
     (formData.title?.trim() ?? '') !== '' &&
     (formData.description?.trim() ?? '') !== '' &&
@@ -255,294 +224,230 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
     (formData.locationCode?.trim() ?? '') !== '';
 
   return (
-    <div className="max-w-[900px] mx-auto p-8">
-      <button 
-        className="py-3 px-6 bg-gray-200 text-gray-700 border-none rounded-lg cursor-pointer text-[0.95rem] font-medium mb-6 transition-all duration-200 hover:bg-gray-300"
-        onClick={onBack}
-      >
-        ← Quay lại chọn loại vấn đề
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8">
+      <div className="max-w-[900px] mx-auto px-8">
+        <button 
+          className="py-3 px-6 bg-white text-orange-600 border-2 border-orange-200 rounded-xl cursor-pointer text-[0.95rem] font-semibold mb-6 transition-all duration-200 hover:bg-orange-50 hover:border-orange-300 shadow-sm hover:shadow-md"
+          onClick={onBack}
+        >
+          ← Quay lại chọn loại vấn đề
+        </button>
 
-      <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4">
-        <div className="text-5xl">📝</div>
-        <div className="flex-1">
-          <h2 className="text-2xl font-semibold my-0 mb-2">{currentCategory.categoryName}</h2>
-        </div>
-      </div>
-
-      <form className="bg-white rounded-xl p-8 shadow-sm border border-gray-200" onSubmit={handleSubmit}>
-
-
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
-            Mô tả chi tiết <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleInputChange}
-            placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-            className="w-full py-3 px-3 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 min-h-[120px] resize-y font-[inherit] box-border focus:outline-none focus:border-blue-500"
-            required
-          />
-          <div className="text-[0.85rem] text-gray-500 mt-2">
-            Vui lòng mô tả chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn
+        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 mb-8 flex items-center gap-4 shadow-lg">
+          <div className="text-5xl">📝</div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold my-0 mb-1">{currentCategory.categoryName}</h2>
+            <p className="text-orange-100 text-sm m-0">Thời gian xử lý: {currentCategory.slaResolveHours}h</p>
           </div>
         </div>
 
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
-            Campus <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="campusCode"
-            value={formData.campusCode}
-            onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            required
-            disabled={isLoadingCampuses}
-          >
-            <option value="">-- Chọn campus --</option>
-            {campuses.map((campus) => (
-              <option key={campus.campusCode} value={campus.campusCode}>
-                {campus.campusName}
-              </option>
-            ))}
-          </select>
-          <div className="text-[0.85rem] text-gray-500 mt-2">
-            {isLoadingCampuses ? 'Đang tải...' : 'Chọn campus nơi xảy ra sự cố'}
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">
-            Địa điểm <span className="text-red-500">*</span>
-          </label>
-          <select
-            name="locationCode"
-            value={formData.locationCode}
-            onChange={handleInputChange}
-            className="w-full py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-            required
-            disabled={!formData.campusCode || isLoadingLocations}
-          >
-            <option value="">-- Chọn địa điểm --</option>
-            {locations.map((location) => (
-              <option key={location.locationCode} value={location.locationCode}>
-                {location.locationName}
-              </option>
-            ))}
-          </select>
-          <div className="text-[0.85rem] text-gray-500 mt-2">
-            {!formData.campusCode 
-              ? 'Vui lòng chọn campus trước' 
-              : isLoadingLocations 
-              ? 'Đang tải địa điểm...' 
-              : 'Chọn địa điểm cụ thể xảy ra sự cố'}
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <label className="block text-[0.95rem] font-semibold text-gray-700 mb-2">Hình ảnh (Tùy chọn)</label>
-          <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-all duration-200 bg-gray-50 hover:border-blue-500 hover:bg-blue-50"
-            onClick={() => document.getElementById('imageUpload')?.click()}
-          >
-            <div className="text-5xl mb-4">📸</div>
-            <div className="text-gray-500 text-[0.95rem] mb-2">Nhấp để tải lên hình ảnh</div>
-            <div className="text-gray-400 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
-            <input
-              id="imageUpload"
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-              className="hidden"
+        <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-orange-100">
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
+              Mô tả chi tiết <span className="text-orange-500">*</span>
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
+              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl transition-all duration-200 min-h-[120px] resize-y font-[inherit] box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              required
             />
+            <div className="text-[0.85rem] text-orange-600 mt-2 flex items-center gap-1">
+              <span>💡</span>
+              <span>Vui lòng mô tả chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn</span>
+            </div>
           </div>
 
-          {imagePreview.length > 0 && (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mt-4">
-              {imagePreview.map((preview, index) => (
-                <div key={index} className="relative rounded-lg overflow-hidden border-2 border-gray-200 aspect-square">
-                  <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    className="absolute top-2 right-2 bg-red-500/90 text-white border-none rounded-full w-7 h-7 cursor-pointer text-base flex items-center justify-center font-bold transition-all duration-200 hover:bg-red-600 hover:scale-110"
-                    onClick={() => removeImage(index)}
-                  >
-                    ×
-                  </button>
-                </div>
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
+              Campus <span className="text-orange-500">*</span>
+            </label>
+            <select
+              name="campusCode"
+              value={formData.campusCode}
+              onChange={handleInputChange}
+              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              required
+              disabled={isLoadingCampuses}
+            >
+              <option value="">-- Chọn campus --</option>
+              {campuses.map((campus) => (
+                <option key={campus.campusCode} value={campus.campusCode}>
+                  {campus.campusName}
+                </option>
               ))}
+            </select>
+            <div className="text-[0.85rem] text-orange-600 mt-2">
+              {isLoadingCampuses ? '⏳ Đang tải...' : '📍 Chọn campus nơi xảy ra sự cố'}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
+              Địa điểm <span className="text-orange-500">*</span>
+            </label>
+            <select
+              name="locationCode"
+              value={formData.locationCode}
+              onChange={handleInputChange}
+              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              required
+              disabled={!formData.campusCode || isLoadingLocations}
+            >
+              <option value="">-- Chọn địa điểm --</option>
+              {locations.map((location) => (
+                <option key={location.locationCode} value={location.locationCode}>
+                  {location.locationName}
+                </option>
+              ))}
+            </select>
+            <div className="text-[0.85rem] text-orange-600 mt-2">
+              {!formData.campusCode 
+                ? '⚠️ Vui lòng chọn campus trước' 
+                : isLoadingLocations 
+                ? '⏳ Đang tải địa điểm...' 
+                : '🏢 Chọn địa điểm cụ thể xảy ra sự cố'}
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
+              Hình ảnh <span className="text-gray-400 font-normal">(Tùy chọn)</span>
+            </label>
+            <div
+              className="border-2 border-dashed border-orange-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 bg-orange-50/50 hover:border-orange-500 hover:bg-orange-100/50"
+              onClick={() => document.getElementById('imageUpload')?.click()}
+            >
+              <div className="text-5xl mb-4">📸</div>
+              <div className="text-orange-700 text-[0.95rem] mb-2 font-semibold">Nhấp để tải lên hình ảnh</div>
+              <div className="text-orange-600 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            </div>
+
+            {imagePreview.length > 0 && (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mt-4">
+                {imagePreview.map((preview, index) => (
+                  <div key={index} className="relative rounded-xl overflow-hidden border-2 border-orange-200 aspect-square shadow-md hover:shadow-lg transition-shadow">
+                    <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      className="absolute top-2 right-2 bg-orange-500 text-white border-none rounded-full w-8 h-8 cursor-pointer text-lg flex items-center justify-center font-bold transition-all duration-200 hover:bg-orange-600 hover:scale-110 shadow-lg"
+                      onClick={() => removeImage(index)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {submitError && (
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-xl shadow-sm">
+              <div className="text-red-700 font-bold mb-1">❌ Lỗi</div>
+              <div className="text-red-600 text-sm">{submitError}</div>
             </div>
           )}
+
+          {submitSuccess && (
+            <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-xl shadow-sm">
+              <div className="text-green-700 font-bold mb-1">✅ Thành công</div>
+              <div className="text-green-600 text-sm">Ticket đã được tạo thành công!</div>
+            </div>
+          )}
+
+          <div className="flex gap-4 mt-8">
+            <button
+              type="button"
+              className="py-4 px-8 bg-gray-100 text-gray-700 border-2 border-gray-200 rounded-xl cursor-pointer text-base font-bold transition-all duration-200 hover:bg-gray-200 hover:border-gray-300"
+              onClick={onBack}
+              disabled={isSubmitting}
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className={`flex-1 py-4 px-8 text-white border-none rounded-xl cursor-pointer text-base font-bold transition-all duration-200 shadow-lg ${
+                !isFormValid || isSubmitting
+                  ? 'opacity-60 cursor-not-allowed bg-orange-300'
+                  : 'bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-1'
+              }`}
+              disabled={!isFormValid || isSubmitting}
+            >
+              {isSubmitting ? '⏳ Đang gửi...' : '📨 Gửi Ticket'}
+            </button>
+          </div>
         </div>
 
-        {/* Error message */}
-        {submitError && (
-          <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
-            <div className="text-red-700 font-semibold mb-1">❌ Lỗi</div>
-            <div className="text-red-600 text-sm">{submitError}</div>
-          </div>
-        )}
-
-        {/* Success message */}
-        {submitSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg">
-            <div className="text-green-700 font-semibold mb-1">✅ Thành công</div>
-            <div className="text-green-600 text-sm">Ticket đã được tạo thành công!</div>
-          </div>
-        )}
-
-        <div className="flex gap-4 mt-8">
-          <button
-            type="button"
-            className="py-4 px-8 bg-gray-100 text-gray-700 border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 hover:bg-gray-200"
-            onClick={onBack}
-            disabled={isSubmitting}
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            className={`flex-1 py-4 px-8 text-white border-none rounded-lg cursor-pointer text-base font-semibold transition-all duration-200 shadow-[0_2px_4px_rgba(59,130,246,0.3)] ${
-              !isFormValid || isSubmitting
-                ? 'opacity-60 cursor-not-allowed bg-blue-400'
-                : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:translate-y-[-2px] hover:shadow-[0_4px_8px_rgba(59,130,246,0.4)]'
-            }`}
-            disabled={!isFormValid || isSubmitting}
-          >
-            {isSubmitting ? '⏳ Đang gửi...' : '📨 Gửi Ticket'}
-          </button>
-        </div>
-      </form>
-
-      {/* Duplicate Ticket Warning Modal */}
-      {showDuplicateModal && duplicateTicket && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-            padding: '1rem',
-          }}
-          onClick={() => setShowDuplicateModal(false)}
-        >
+        {showDuplicateModal && duplicateTicket && (
           <div
-            style={{
-              background: 'white',
-              borderRadius: '12px',
-              width: '100%',
-              maxWidth: '600px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
+            onClick={() => setShowDuplicateModal(false)}
           >
-            <div style={{
-              padding: '1.5rem',
-              borderBottom: '1px solid #e5e7eb',
-            }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#1f2937', fontWeight: 600 }}>
-                ⚠️ Phát hiện Ticket tương tự
-              </h3>
-            </div>
-            <div style={{ padding: '1.5rem' }}>
-              <p style={{ marginBottom: '1rem', color: '#4b5563' }}>
-                Chúng tôi phát hiện một ticket tương tự đã được tạo trước đó. Bạn có muốn xem ticket đó không?
-              </p>
-              <div style={{
-                background: '#f9fafb',
-                padding: '1rem',
-                borderRadius: '8px',
-                marginBottom: '1rem',
-                border: '1px solid #e5e7eb',
-              }}>
-                <div style={{ fontWeight: 600, color: '#1f2937', marginBottom: '0.5rem' }}>
-                  {duplicateTicket.title}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                  Trạng thái: <span style={{ fontWeight: 600 }}>
-                    {duplicateTicket.status === 'open' ? 'Mở' :
-                     duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
-                     duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
-                     duplicateTicket.status === 'resolved' ? 'Đã giải quyết' :
-                     duplicateTicket.status === 'closed' ? 'Đã đóng' : duplicateTicket.status}
-                  </span>
-                </div>
-                {duplicateTicket.location && (
-                  <div style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.25rem' }}>
-                    Địa điểm: {duplicateTicket.location}
-                  </div>
-                )}
+            <div
+              className="bg-white rounded-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b-2 border-orange-100">
+                <h3 className="m-0 text-xl text-gray-900 font-bold">⚠️ Phát hiện Ticket tương tự</h3>
               </div>
-              <div style={{
-                display: 'flex',
-                gap: '1rem',
-                justifyContent: 'flex-end',
-              }}>
-                <button
-                  type="button"
-                  onClick={() => setShowDuplicateModal(false)}
-                  style={{
-                    background: '#f3f4f6',
-                    color: '#4b5563',
-                    border: '1px solid #d1d5db',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowDuplicateModal(false);
-                    // TODO: Navigate to ticket detail or open modal
-                  }}
-                  style={{
-                    background: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Xem Ticket
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateAnyway}
-                  style={{
-                    background: 'linear-gradient(135deg, #f97316, #ea580c)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '8px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Vẫn tạo mới
-                </button>
+              <div className="p-6">
+                <p className="mb-4 text-gray-700">
+                  Chúng tôi phát hiện một ticket tương tự đã được tạo trước đó. Bạn có muốn xem ticket đó không?
+                </p>
+                <div className="bg-orange-50 p-4 rounded-xl mb-4 border-2 border-orange-200">
+                  <div className="font-bold text-gray-900 mb-2">{duplicateTicket.title}</div>
+                  <div className="text-sm text-gray-700">
+                    Trạng thái: <span className="font-bold text-orange-600">
+                      {duplicateTicket.status === 'open' ? 'Mở' :
+                       duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
+                       duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
+                       duplicateTicket.status === 'resolved' ? 'Đã giải quyết' :
+                       duplicateTicket.status === 'closed' ? 'Đã đóng' : duplicateTicket.status}
+                    </span>
+                  </div>
+                  {duplicateTicket.location && (
+                    <div className="text-sm text-gray-700 mt-1">Địa điểm: {duplicateTicket.location}</div>
+                  )}
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowDuplicateModal(false)}
+                    className="bg-gray-100 text-gray-700 border-2 border-gray-200 py-3 px-6 rounded-xl font-bold cursor-pointer hover:bg-gray-200"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDuplicateModal(false)}
+                    className="bg-orange-500 text-white border-none py-3 px-6 rounded-xl font-bold cursor-pointer hover:bg-orange-600"
+                  >
+                    Xem Ticket
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateAnyway}
+                    className="bg-gradient-to-br from-orange-600 to-orange-700 text-white border-none py-3 px-6 rounded-xl font-bold cursor-pointer hover:from-orange-700 hover:to-orange-800"
+                  >
+                    Vẫn tạo mới
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

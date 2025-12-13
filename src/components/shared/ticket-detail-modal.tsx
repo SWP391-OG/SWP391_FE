@@ -181,7 +181,7 @@ const TicketDetailModal = ({
               )}
               {ticket.contactPhone && (
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📱 Số điện thoại</div>
+                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📱 Thông tin liên lạc</div>
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
                 </div>
               )}
