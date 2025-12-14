@@ -33,10 +33,10 @@ interface AdminPageProps {
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
   const { tickets, assignTicket, updateTicketPriority, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
-  const { categories, createCategory, updateCategory, deleteCategory, loadCategories } = useCategories();
+  const { categories, createCategory, updateCategory, updateCategoryStatus, deleteCategory, loadCategories } = useCategories();
   const { departments, createDepartment, updateDepartment, updateDepartmentStatus, deleteDepartment, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation, loadLocations } = useLocations();
-  const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
+  const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, deleteUser, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
   const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
@@ -148,6 +148,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   }, []);
 
   const [staffFormData, setStaffFormData] = useState({
+    userCode: '',
     username: '',
     password: '',
     fullName: '',
@@ -697,6 +698,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               onAddClick={() => {
                 setEditingStaff(null);
                 setStaffFormData({
+                  userCode: '',
                   username: '',
                   password: '',
                   fullName: '',
@@ -716,7 +718,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 );
                 setEditingStaff(staff);
                 setStaffFormData({
-                  username: staff.username || staff.userCode || '',
+                  userCode: staff.userCode || '',
+                  username: staff.username || staff.email || '',
                   password: '', // Không load password (không thể edit)
                   fullName: staff.fullName,
                   email: staff.email,
@@ -788,22 +791,76 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           onSubmit={async () => {
             try {
               if (editingCategory) {
-                // Update: chỉ gửi các field có thể update (không gửi categoryCode vì không thể thay đổi)
-                await updateCategory(editingCategory.categoryCode, {
-                  categoryName: categoryFormData.categoryName,
-                  departmentId: categoryFormData.departmentId,
-                  slaResolveHours: categoryFormData.slaResolveHours,
-                  status: categoryFormData.status,
-                });
-              } else {
-                // Create: gửi đầy đủ categoryCode, categoryName, departmentId, slaResolveHours, status
-                await createCategory({
+                // Update: lấy categoryId từ editingCategory
+                // categoryId có thể là number hoặc string (backward compatibility)
+                let categoryId: number;
+                if (typeof editingCategory.id === 'number') {
+                  categoryId = editingCategory.id;
+                } else if (typeof editingCategory.id === 'string') {
+                  const parsed = parseInt(editingCategory.id, 10);
+                  if (isNaN(parsed) || parsed <= 0) {
+                    // Fallback: tìm categoryId từ list bằng categoryCode
+                    const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
+                    if (found && typeof found.id === 'number') {
+                      categoryId = found.id;
+                    } else {
+                      throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
+                    }
+                  } else {
+                    categoryId = parsed;
+                  }
+                } else {
+                  // Fallback: tìm categoryId từ list bằng categoryCode
+                  const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
+                  if (found && typeof found.id === 'number') {
+                    categoryId = found.id;
+                  } else {
+                    throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
+                  }
+                }
+
+                console.log('📋 Updating category:', { categoryId, editingCategory, categoryFormData });
+
+                // Update: có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
+                await updateCategory(categoryId, {
                   categoryCode: categoryFormData.categoryCode,
                   categoryName: categoryFormData.categoryName,
                   departmentId: categoryFormData.departmentId,
                   slaResolveHours: categoryFormData.slaResolveHours,
-                  status: categoryFormData.status,
+                  // status không gửi trong update, dùng updateStatus riêng
                 });
+
+                // Update status riêng nếu có thay đổi
+                const oldStatus = editingCategory.status;
+                const newStatus = categoryFormData.status;
+                if (oldStatus !== newStatus) {
+                  console.log('📋 Updating category status:', { categoryId, oldStatus, newStatus });
+                  await updateCategoryStatus(categoryId, newStatus);
+                }
+              } else {
+                // Create: chỉ gửi categoryCode, categoryName, departmentId, slaResolveHours (không gửi status)
+                const createdCategory = await createCategory({
+                  categoryCode: categoryFormData.categoryCode,
+                  categoryName: categoryFormData.categoryName,
+                  departmentId: categoryFormData.departmentId,
+                  slaResolveHours: categoryFormData.slaResolveHours,
+                  // status không gửi khi create (theo Swagger)
+                });
+
+                // Nếu status không phải ACTIVE, cần update status sau khi create
+                if (categoryFormData.status !== 'ACTIVE') {
+                  // Lấy categoryId từ response
+                  if (createdCategory && typeof createdCategory.id === 'number') {
+                    await updateCategoryStatus(createdCategory.id, categoryFormData.status);
+                  } else {
+                    // Fallback: load categories và tìm lại
+                    await loadCategories();
+                    const found = categories.find(c => c.categoryCode === categoryFormData.categoryCode);
+                    if (found && typeof found.id === 'number') {
+                      await updateCategoryStatus(found.id, categoryFormData.status);
+                    }
+                  }
+                }
               }
               // Reload categories sau khi tạo/cập nhật
               await loadCategories();
@@ -819,7 +876,35 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           }}
           onDelete={editingCategory ? async () => {
             try {
-              await deleteCategory(editingCategory.categoryCode);
+              // Lấy categoryId từ editingCategory
+              let categoryId: number;
+              if (typeof editingCategory.id === 'number') {
+                categoryId = editingCategory.id;
+              } else if (typeof editingCategory.id === 'string') {
+                const parsed = parseInt(editingCategory.id, 10);
+                if (isNaN(parsed) || parsed <= 0) {
+                  // Fallback: tìm categoryId từ list bằng categoryCode
+                  const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
+                  if (found && typeof found.id === 'number') {
+                    categoryId = found.id;
+                  } else {
+                    throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
+                  }
+                } else {
+                  categoryId = parsed;
+                }
+              } else {
+                // Fallback: tìm categoryId từ list bằng categoryCode
+                const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
+                if (found && typeof found.id === 'number') {
+                  categoryId = found.id;
+                } else {
+                  throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
+                }
+              }
+
+              console.log('📋 Deleting category:', { categoryId, editingCategory });
+              await deleteCategory(categoryId);
               await loadCategories();
             } catch (error) {
               console.error('Error deleting category:', error);
@@ -1183,8 +1268,33 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           } : undefined}
           onToggleStatus={editingStaff ? async () => {
             try {
+              // Lấy userId từ editingStaff
+              let userId: number;
+              if (typeof editingStaff.id === 'number') {
+                userId = editingStaff.id;
+              } else if (typeof editingStaff.id === 'string') {
+                const parsed = parseInt(editingStaff.id, 10);
+                if (isNaN(parsed) || parsed <= 0) {
+                  const found = users.find(u => u.userCode === editingStaff.userCode);
+                  if (found && typeof found.id === 'number') {
+                    userId = found.id;
+                  } else {
+                    throw new Error('Không tìm thấy userId. Vui lòng reload trang và thử lại.');
+                  }
+                } else {
+                  userId = parsed;
+                }
+              } else {
+                const found = users.find(u => u.userCode === editingStaff.userCode);
+                if (found && typeof found.id === 'number') {
+                  userId = found.id;
+                } else {
+                  throw new Error('Không tìm thấy userId. Vui lòng reload trang và thử lại.');
+                }
+              }
+
               const newStatus = editingStaff.status === 'active' ? 'inactive' : 'active';
-              await updateUser(editingStaff.userCode || editingStaff.id, { status: newStatus });
+              await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
             } catch (error) {
               console.error('Error toggling staff status:', error);
@@ -1237,8 +1347,33 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           }}
           onToggleBan={editingUser ? async () => {
             try {
+              // Lấy userId từ editingUser
+              let userId: number;
+              if (typeof editingUser.id === 'number') {
+                userId = editingUser.id;
+              } else if (typeof editingUser.id === 'string') {
+                const parsed = parseInt(editingUser.id, 10);
+                if (isNaN(parsed) || parsed <= 0) {
+                  const found = users.find(u => u.userCode === editingUser.userCode);
+                  if (found && typeof found.id === 'number') {
+                    userId = found.id;
+                  } else {
+                    throw new Error('Không tìm thấy userId. Vui lòng reload trang và thử lại.');
+                  }
+                } else {
+                  userId = parsed;
+                }
+              } else {
+                const found = users.find(u => u.userCode === editingUser.userCode);
+                if (found && typeof found.id === 'number') {
+                  userId = found.id;
+                } else {
+                  throw new Error('Không tìm thấy userId. Vui lòng reload trang và thử lại.');
+                }
+              }
+
               const newStatus = editingUser.status === 'active' ? 'banned' : 'active';
-              await updateUser(editingUser.userCode || editingUser.id, { status: newStatus });
+              await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
             } catch (error) {
               console.error('Error toggling user ban status:', error);

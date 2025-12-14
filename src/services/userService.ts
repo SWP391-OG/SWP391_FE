@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, UserProfileApiResponse, UserUpdateProfileDto, ROLE_ID_MAP, ROLE_TO_ID_MAP } from '../types';
+import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, UserStatusUpdateDto, UserProfileApiResponse, UserUpdateProfileDto, ROLE_ID_MAP, ROLE_TO_ID_MAP } from '../types';
 
 // Import role mappings (dựa vào database thực tế)
 const ROLE_ID_MAP: Record<number, UserRole> = {
@@ -158,27 +158,30 @@ export const userService = {
 
   /**
    * Cập nhật user
-   * PUT /api/User/{userCode}
+   * PUT /api/User/{userId} - có thể sửa userCode, fullName, email, phoneNumber, departmentId, roleId
    */
-  async update(userCode: string, updates: {
+  async update(userId: number, updates: {
+    userCode?: string;
     fullName?: string;
+    email?: string;
     phoneNumber?: string;
     role?: UserRole;
     departmentId?: number;
-    status?: 'active' | 'inactive' | 'banned';
   }): Promise<User> {
     try {
-      console.log(`👥 Updating user ${userCode}...`, updates);
+      console.log(`👥 Updating user ${userId}...`, updates);
       
       const requestData: UserUpdateDto = {
+        userCode: updates.userCode,
         fullName: updates.fullName,
+        email: updates.email,
         phoneNumber: updates.phoneNumber,
         roleId: updates.role ? ROLE_TO_ID_MAP[updates.role] : undefined,
         departmentId: updates.departmentId,
-        status: updates.status ? updates.status.toUpperCase() : undefined,
+        // status KHÔNG gửi trong update (dùng updateStatus riêng)
       };
       
-      const response = await apiClient.put<UserSingleApiResponse>(`/User/${encodeURIComponent(userCode)}`, requestData);
+      const response = await apiClient.put<UserSingleApiResponse>(`/User/${userId}`, requestData);
       
       if (!response.status) {
         console.error('❌ Failed to update user:', response);
@@ -190,6 +193,40 @@ export const userService = {
       return this.mapDtoToUser(response.data);
     } catch (error) {
       console.error('❌ Error updating user:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cập nhật trạng thái user (khóa/mở khóa)
+   * PATCH /api/User - chỉ cập nhật status
+   */
+  async updateStatus(userId: number, status: 'active' | 'inactive' | 'banned'): Promise<void> {
+    try {
+      console.log(`👥 Updating user status ${userId}...`, status);
+      
+      const requestData: UserStatusUpdateDto = {
+        userId: userId,
+        status: status.toUpperCase() as 'ACTIVE' | 'INACTIVE' | 'BANNED',
+      };
+      
+      interface UserStatusUpdateResponse {
+        status: boolean;
+        message: string;
+        data: null;
+        errors: string[];
+      }
+      
+      const response = await apiClient.patch<UserStatusUpdateResponse>('/User', requestData);
+      
+      if (!response.status) {
+        console.error('❌ Failed to update user status:', response);
+        throw new Error(response.message || 'Failed to update user status');
+      }
+
+      console.log('✅ User status updated successfully');
+    } catch (error) {
+      console.error('❌ Error updating user status:', error);
       throw error;
     }
   },
@@ -221,7 +258,7 @@ export const userService = {
    */
   mapDtoToUser(dto: UserDto): User {
     return {
-      id: dto.userCode,
+      id: dto.id, // Use id (int32) from API
       userCode: dto.userCode,
       username: dto.email, // Use email as username
       password: '', // Don't expose password

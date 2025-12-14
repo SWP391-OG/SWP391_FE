@@ -77,14 +77,8 @@ const CategoryForm = ({
               value={categoryFormData.categoryCode}
               onChange={(e) => onFormDataChange({ ...categoryFormData, categoryCode: e.target.value.toUpperCase() })}
               placeholder="VD: CAT001, CAT002"
-              disabled={!!editingCategory}
-              className={`w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                editingCategory ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
-            {editingCategory && (
-              <p className="mt-1 text-xs text-gray-500">Mã category không thể thay đổi khi chỉnh sửa</p>
-            )}
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">

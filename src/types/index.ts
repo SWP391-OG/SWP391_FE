@@ -5,7 +5,7 @@ export type UserRole = 'student' | 'teacher' | 'it-staff' | 'facility-staff' | '
 export type UserStatus = 'active' | 'inactive' | 'banned';
 
 export interface User {
-  id: string;
+  id: number | string;           // ID định danh (int32) từ API hoặc userCode (backward compatibility)
   username: string; // Frontend only - không có trong DB
   password: string; // Frontend only - không có trong DB
   fullName: string; // DB: full_name
@@ -25,6 +25,7 @@ export interface User {
 
 // User API types
 export interface UserDto {
+  id: number;                    // ID định danh (int32) - REQUIRED từ Swagger
   userCode: string;
   fullName: string;
   passwordHash: string;
@@ -62,11 +63,18 @@ export interface UserRequestDto {
 }
 
 export interface UserUpdateDto {
+  userCode?: string;             // Mã người dùng (có thể sửa theo Swagger)
   fullName?: string;
+  email?: string;                 // Email (có thể sửa theo Swagger)
   phoneNumber?: string;
   roleId?: number;
   departmentId?: number;
-  status?: string;
+  // status KHÔNG gửi trong update (dùng updateStatus riêng)
+}
+
+export interface UserStatusUpdateDto {
+  userId: number;                 // ID định danh (int32) - REQUIRED
+  status: 'ACTIVE' | 'INACTIVE' | 'BANNED' | 'Active' | 'Inactive' | 'Banned';
 }
 
 export interface UserUpdateProfileDto {
@@ -203,6 +211,7 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueCategory = 'facility' | 'wifi' | 'equipment' | 'other';
 
 export interface Category {
+  id: number | string;           // ID định danh (int32) từ API hoặc categoryCode (backward compatibility)
   categoryCode: string;
   categoryName: string;
   departmentId: number;
@@ -210,10 +219,19 @@ export interface Category {
   status: 'ACTIVE' | 'INACTIVE';
 }
 
+export interface CategoryDto {
+  id: number;                    // ID định danh (int32) - REQUIRED từ Swagger
+  categoryCode: string;
+  categoryName: string;
+  departmentId: number;
+  slaResolveHours: number;
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
+}
+
 export interface CategoryApiResponse {
   status: boolean;
   message: string;
-  data: Category[];
+  data: CategoryDto[];            // Backend trả về array của CategoryDto
   errors: string[];
 }
 
@@ -222,14 +240,20 @@ export interface CategoryRequestDto {
   categoryName: string;         // Tên category (REQUIRED)
   departmentId: number;          // Bộ phận ID (REQUIRED) - SỐ NGUYÊN
   slaResolveHours: number;      // SLA (REQUIRED)
-  status: 'ACTIVE' | 'INACTIVE'; // Trạng thái (REQUIRED)
+  // status KHÔNG gửi khi create (theo Swagger POST /api/Category)
 }
 
 export interface CategoryUpdateDto {
+  categoryCode?: string;         // Mã category (optional) - có thể sửa theo Swagger
   categoryName?: string;         // Tên category (optional)
   departmentId?: number;          // Bộ phận ID (optional)
   slaResolveHours?: number;      // SLA (optional)
-  status?: 'ACTIVE' | 'INACTIVE'; // Trạng thái (optional)
+  // status KHÔNG gửi khi update (dùng updateStatus riêng)
+}
+
+export interface CategoryStatusUpdateDto {
+  id: number;                    // ID định danh (int32) - REQUIRED
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
 // Issue types (Frontend only - for UI flow)

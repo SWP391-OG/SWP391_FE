@@ -1,7 +1,21 @@
 import { apiClient, API_CONFIG } from './api';
-import type { Category, CategoryApiResponse, CategoryRequestDto, CategoryUpdateDto } from '../types/index';
+import type { Category, CategoryDto, CategoryApiResponse, CategoryRequestDto, CategoryUpdateDto, CategoryStatusUpdateDto } from '../types/index';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
+
+/**
+ * Map CategoryDto từ API sang Category interface cho frontend
+ */
+const mapDtoToCategory = (dto: CategoryDto): Category => {
+  return {
+    id: dto.id,
+    categoryCode: dto.categoryCode,
+    categoryName: dto.categoryName,
+    departmentId: dto.departmentId,
+    slaResolveHours: dto.slaResolveHours,
+    status: dto.status.toUpperCase() === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
+  };
+};
 
 export const categoryService = {
   /**
@@ -19,7 +33,8 @@ export const categoryService = {
       }
 
       console.log('✅ Categories fetched:', response.data.length);
-      return response.data;
+      // Map CategoryDto[] sang Category[]
+      return response.data.map(mapDtoToCategory);
     } catch (error) {
       console.error('❌ Error fetching categories:', error);
       return [];
@@ -67,20 +82,30 @@ export const categoryService = {
 
   /**
    * Tạo category mới
+   * POST /api/Category - chỉ gửi categoryCode, categoryName, departmentId, slaResolveHours (không gửi status)
    */
   async create(category: CategoryRequestDto): Promise<Category> {
     try {
       console.log('📋 Creating category:', category);
       console.log('📋 Request URL:', `${API_BASE_URL}/Category`);
       
+      // Tạo request data theo Swagger: chỉ gửi categoryCode, categoryName, departmentId, slaResolveHours
+      const requestData: CategoryRequestDto = {
+        categoryCode: category.categoryCode.trim(),
+        categoryName: category.categoryName.trim(),
+        departmentId: category.departmentId,
+        slaResolveHours: category.slaResolveHours,
+        // status KHÔNG gửi khi create (theo Swagger)
+      };
+      
       interface CategoryCreateResponse {
         status: boolean;
         message: string;
-        data: Category;
+        data: CategoryDto;
         errors: string[];
       }
       
-      const response = await apiClient.post<CategoryCreateResponse>('/Category', category);
+      const response = await apiClient.post<CategoryCreateResponse>('/Category', requestData);
       
       console.log('📋 API Response:', response);
       
@@ -92,7 +117,7 @@ export const categoryService = {
       }
 
       console.log('✅ Category created:', response.data);
-      return response.data;
+      return mapDtoToCategory(response.data);
     } catch (error) {
       console.error('❌ Error creating category:', error);
       
@@ -127,22 +152,32 @@ export const categoryService = {
 
   /**
    * Cập nhật category
+   * PUT /api/Category/{categoryId} - có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
    */
-  async update(categoryCode: string, updates: CategoryUpdateDto): Promise<Category> {
+  async update(categoryId: number, updates: CategoryUpdateDto): Promise<Category> {
     try {
-      console.log('📋 Updating category:', categoryCode, updates);
-      console.log('📋 Request URL:', `${API_BASE_URL}/Category/${encodeURIComponent(categoryCode)}`);
+      console.log('📋 Updating category:', categoryId, updates);
+      console.log('📋 Request URL:', `${API_BASE_URL}/Category/${categoryId}`);
+      
+      // Tạo request data: có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
+      const requestData: CategoryUpdateDto = {
+        categoryCode: updates.categoryCode?.trim(),
+        categoryName: updates.categoryName?.trim(),
+        departmentId: updates.departmentId,
+        slaResolveHours: updates.slaResolveHours,
+        // status KHÔNG gửi khi update (dùng updateStatus riêng)
+      };
       
       interface CategoryUpdateResponse {
         status: boolean;
         message: string;
-        data: Category;
+        data: CategoryDto;
         errors: string[];
       }
       
       const response = await apiClient.put<CategoryUpdateResponse>(
-        `/Category/${encodeURIComponent(categoryCode)}`,
-        updates
+        `/Category/${categoryId}`,
+        requestData
       );
       
       console.log('📋 API Response:', response);
@@ -155,7 +190,7 @@ export const categoryService = {
       }
 
       console.log('✅ Category updated:', response.data);
-      return response.data;
+      return mapDtoToCategory(response.data);
     } catch (error) {
       console.error('❌ Error updating category:', error);
       
@@ -167,10 +202,10 @@ export const categoryService = {
           throw new Error('Request timeout. Vui lòng thử lại sau.');
         }
         if (error.message.includes('404')) {
-          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ PUT /api/Category/{categoryCode}.\n\nVui lòng yêu cầu backend implement endpoint này.');
+          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ PUT /api/Category/{categoryId}.\n\nVui lòng yêu cầu backend implement endpoint này.');
         }
         if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
-          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ PUT /api/Category/{categoryCode}.\nVui lòng yêu cầu backend implement endpoint này.');
+          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ PUT /api/Category/{categoryId}.\nVui lòng yêu cầu backend implement endpoint này.');
         }
         if (error.message.includes('401') || error.message.includes('403')) {
           throw new Error('Không có quyền truy cập. Vui lòng đăng nhập lại.');
@@ -188,12 +223,80 @@ export const categoryService = {
   },
 
   /**
-   * Xóa category
+   * Cập nhật trạng thái category
+   * PATCH /api/Category/status - chỉ cập nhật status
    */
-  async delete(categoryCode: string): Promise<void> {
+  async updateStatus(categoryId: number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> {
     try {
-      console.log('📋 Deleting category:', categoryCode);
-      console.log('📋 Request URL:', `${API_BASE_URL}/Category/${encodeURIComponent(categoryCode)}`);
+      console.log('📋 Updating category status:', categoryId, status);
+      console.log('📋 Request URL:', `${API_BASE_URL}/Category/status`);
+      
+      const requestData: CategoryStatusUpdateDto = {
+        id: categoryId,
+        status: status,
+      };
+      
+      interface CategoryStatusUpdateResponse {
+        status: boolean;
+        message: string;
+        data: null;
+        errors: string[];
+      }
+      
+      const response = await apiClient.patch<CategoryStatusUpdateResponse>(
+        '/Category/status',
+        requestData
+      );
+      
+      console.log('📋 API Response:', response);
+      
+      if (!response.status) {
+        const errorMsg = response.message || 'Failed to update category status';
+        const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
+        console.error('❌ Failed to update category status:', { response, errorMsg, errorDetails });
+        throw new Error(`${errorMsg}${errorDetails}`);
+      }
+
+      console.log('✅ Category status updated:', categoryId, status);
+    } catch (error) {
+      console.error('❌ Error updating category status:', error);
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc backend API có đang chạy không.');
+        }
+        if (error.message.includes('timeout')) {
+          throw new Error('Request timeout. Vui lòng thử lại sau.');
+        }
+        if (error.message.includes('404')) {
+          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ PATCH /api/Category/status.\n\nVui lòng yêu cầu backend implement endpoint này.');
+        }
+        if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
+          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ PATCH /api/Category/status.\nVui lòng yêu cầu backend implement endpoint này.');
+        }
+        if (error.message.includes('401') || error.message.includes('403')) {
+          throw new Error('Không có quyền truy cập. Vui lòng đăng nhập lại.');
+        }
+        if (error.message.includes('400')) {
+          throw new Error('Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin nhập vào.');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Lỗi server. Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
+        }
+        throw error;
+      }
+      throw new Error('Có lỗi xảy ra khi cập nhật trạng thái category. Vui lòng thử lại.');
+    }
+  },
+
+  /**
+   * Xóa category
+   * DELETE /api/Category/{categoryId} - dùng categoryId (int32)
+   */
+  async delete(categoryId: number): Promise<void> {
+    try {
+      console.log('📋 Deleting category:', categoryId);
+      console.log('📋 Request URL:', `${API_BASE_URL}/Category/${categoryId}`);
       
       interface CategoryDeleteResponse {
         status: boolean;
@@ -203,7 +306,7 @@ export const categoryService = {
       }
       
       const response = await apiClient.delete<CategoryDeleteResponse>(
-        `/Category/${encodeURIComponent(categoryCode)}`
+        `/Category/${categoryId}`
       );
       
       console.log('📋 API Response:', response);
@@ -215,7 +318,7 @@ export const categoryService = {
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      console.log('✅ Category deleted:', categoryCode);
+      console.log('✅ Category deleted:', categoryId);
     } catch (error) {
       console.error('❌ Error deleting category:', error);
       
@@ -227,10 +330,10 @@ export const categoryService = {
           throw new Error('Request timeout. Vui lòng thử lại sau.');
         }
         if (error.message.includes('404')) {
-          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ DELETE /api/Category/{categoryCode}.\n\nVui lòng yêu cầu backend implement endpoint này.');
+          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ DELETE /api/Category/{categoryId}.\n\nVui lòng yêu cầu backend implement endpoint này.');
         }
         if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
-          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ DELETE /api/Category/{categoryCode}.\nVui lòng yêu cầu backend implement endpoint này.');
+          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ DELETE /api/Category/{categoryId}.\nVui lòng yêu cầu backend implement endpoint này.');
         }
         if (error.message.includes('401') || error.message.includes('403')) {
           throw new Error('Không có quyền truy cập. Vui lòng đăng nhập lại.');

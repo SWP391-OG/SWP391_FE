@@ -3,6 +3,7 @@ import type { User, UserRole, Department } from '../../types';
 interface StaffFormProps {
   editingStaff: User | null;
   staffFormData: {
+    userCode: string;
     username: string;
     password: string;
     fullName: string;
@@ -49,14 +50,27 @@ const StaffForm = ({
         >
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Tên đăng nhập *
+              Mã nhân viên *
             </label>
             <input
               type="text"
               required
+              value={staffFormData.userCode}
+              onChange={(e) => onFormDataChange({ ...staffFormData, userCode: e.target.value.toUpperCase() })}
+              placeholder="VD: ST001, ST002"
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
+              Tên đăng nhập (Email) *
+            </label>
+            <input
+              type="email"
+              required
               value={staffFormData.username}
               onChange={(e) => onFormDataChange({ ...staffFormData, username: e.target.value })}
-              placeholder="VD: itstaff01"
+              placeholder="VD: staff@fpt.edu.vn"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
@@ -83,19 +97,6 @@ const StaffForm = ({
               value={staffFormData.fullName}
               onChange={(e) => onFormDataChange({ ...staffFormData, fullName: e.target.value })}
               placeholder="VD: Nguyễn Văn A"
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Email *
-            </label>
-            <input
-              type="email"
-              required
-              value={staffFormData.email}
-              onChange={(e) => onFormDataChange({ ...staffFormData, email: e.target.value })}
-              placeholder="VD: staff@fpt.edu.vn"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>

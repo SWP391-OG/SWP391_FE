@@ -38,10 +38,15 @@ export const useCategories = () => {
   };
 
   // Cập nhật category
-  const updateCategory = async (categoryCode: string, updates: CategoryUpdateDto) => {
+  const updateCategory = async (categoryId: number, updates: CategoryUpdateDto) => {
     try {
-      const updated = await categoryService.update(categoryCode, updates);
-      setCategories(categories.map(c => c.categoryCode === categoryCode ? updated : c));
+      const updated = await categoryService.update(categoryId, updates);
+      setCategories(categories.map(c => {
+        // Match by id (number) or categoryCode (backward compatibility)
+        const idMatch = typeof c.id === 'number' && c.id === categoryId;
+        const codeMatch = typeof c.id === 'string' && c.id === categoryId.toString();
+        return (idMatch || codeMatch) ? updated : c;
+      }));
       return updated;
     } catch (error) {
       console.error('Error updating category:', error);
@@ -49,11 +54,35 @@ export const useCategories = () => {
     }
   };
 
-  // Xóa category
-  const deleteCategory = async (categoryCode: string) => {
+  // Cập nhật trạng thái category
+  const updateCategoryStatus = async (categoryId: number, status: 'ACTIVE' | 'INACTIVE') => {
     try {
-      await categoryService.delete(categoryCode);
-      setCategories(categories.filter(c => c.categoryCode !== categoryCode));
+      await categoryService.updateStatus(categoryId, status);
+      setCategories(categories.map(c => {
+        // Match by id (number) or categoryCode (backward compatibility)
+        const idMatch = typeof c.id === 'number' && c.id === categoryId;
+        const codeMatch = typeof c.id === 'string' && c.id === categoryId.toString();
+        if (idMatch || codeMatch) {
+          return { ...c, status };
+        }
+        return c;
+      }));
+    } catch (error) {
+      console.error('Error updating category status:', error);
+      throw error;
+    }
+  };
+
+  // Xóa category
+  const deleteCategory = async (categoryId: number) => {
+    try {
+      await categoryService.delete(categoryId);
+      setCategories(categories.filter(c => {
+        // Match by id (number) or categoryCode (backward compatibility)
+        const idMatch = typeof c.id === 'number' && c.id === categoryId;
+        const codeMatch = typeof c.id === 'string' && c.id === categoryId.toString();
+        return !(idMatch || codeMatch);
+      }));
     } catch (error) {
       console.error('Error deleting category:', error);
       throw error;
@@ -70,6 +99,7 @@ export const useCategories = () => {
     loading,
     createCategory,
     updateCategory,
+    updateCategoryStatus,
     deleteCategory,
     getCategoriesByDepartment,
     loadCategories,

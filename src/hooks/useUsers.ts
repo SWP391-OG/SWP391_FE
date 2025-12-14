@@ -59,22 +59,41 @@ export const useUsers = () => {
   /**
    * Cập nhật user
    */
-  const updateUser = async (userCode: string, updates: {
+  const updateUser = async (userId: number, updates: {
+    userCode?: string;
     fullName?: string;
+    email?: string;
     phoneNumber?: string;
     role?: UserRole;
     departmentId?: number;
-    status?: 'active' | 'inactive' | 'banned';
   }) => {
     setLoading(true);
     setError(null);
     try {
-      const updated = await userService.update(userCode, updates);
+      const updated = await userService.update(userId, updates);
       await loadUsers(); // Reload list
       return updated;
     } catch (err) {
       console.error('Error updating user:', err);
       setError(err instanceof Error ? err.message : 'Failed to update user');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Cập nhật trạng thái user (khóa/mở khóa)
+   */
+  const updateUserStatus = async (userId: number, status: 'active' | 'inactive' | 'banned') => {
+    setLoading(true);
+    setError(null);
+    try {
+      await userService.updateStatus(userId, status);
+      await loadUsers(); // Reload list
+    } catch (err) {
+      console.error('Error updating user status:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update user status');
       throw err;
     } finally {
       setLoading(false);
@@ -129,6 +148,7 @@ export const useUsers = () => {
     error,
     createUser,
     updateUser,
+    updateUserStatus,
     deleteUser,
     getUsersByRole,
     getStaffUsers,
