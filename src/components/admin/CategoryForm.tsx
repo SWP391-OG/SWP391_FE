@@ -3,14 +3,15 @@ import type { Category, Priority, Department } from '../../types';
 interface CategoryFormProps {
   editingCategory: Category | null;
   categoryFormData: {
-    code: string;
-    name: string;
-    icon: string;
-    color: string;
+    categoryCode: string;
+    categoryName: string;
+    departmentId: number;
     slaResolveHours: number;
-    defaultPriority: Priority;
-    departmentId: string;
-    status: 'active' | 'inactive';
+    status: 'ACTIVE' | 'INACTIVE';
+    // Frontend-only fields (not sent to API)
+    icon?: string;
+    color?: string;
+    defaultPriority?: Priority;
   };
   adminDepartments: Department[];
   onFormDataChange: (data: CategoryFormProps['categoryFormData']) => void;
@@ -28,6 +29,17 @@ const CategoryForm = ({
   onDelete,
   onClose,
 }: CategoryFormProps) => {
+  // Debug: Log departments để kiểm tra
+  console.log('📋 CategoryForm - adminDepartments:', {
+    count: adminDepartments?.length || 0,
+    departments: adminDepartments?.map(d => ({
+      deptCode: d.deptCode,
+      deptName: d.deptName,
+      id: d.id,
+      name: d.name
+    }))
+  });
+
   return (
     <div
       className="fixed inset-0 bg-black/50 flex justify-center items-center z-[1000] p-4"
@@ -62,11 +74,17 @@ const CategoryForm = ({
             <input
               type="text"
               required
-              value={categoryFormData.code}
-              onChange={(e) => onFormDataChange({ ...categoryFormData, code: e.target.value })}
+              value={categoryFormData.categoryCode}
+              onChange={(e) => onFormDataChange({ ...categoryFormData, categoryCode: e.target.value.toUpperCase() })}
               placeholder="VD: CAT001, CAT002"
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              disabled={!!editingCategory}
+              className={`w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                editingCategory ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
             />
+            {editingCategory && (
+              <p className="mt-1 text-xs text-gray-500">Mã category không thể thay đổi khi chỉnh sửa</p>
+            )}
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
@@ -75,43 +93,25 @@ const CategoryForm = ({
             <input
               type="text"
               required
-              value={categoryFormData.name}
-              onChange={(e) => onFormDataChange({ ...categoryFormData, name: e.target.value })}
+              value={categoryFormData.categoryName}
+              onChange={(e) => onFormDataChange({ ...categoryFormData, categoryName: e.target.value })}
               placeholder="VD: Cơ sở vật chất"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                SLA (giờ) *
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                value={categoryFormData.slaResolveHours}
-                onChange={(e) => onFormDataChange({ ...categoryFormData, slaResolveHours: parseInt(e.target.value) })}
-                placeholder="24"
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-              />
-            </div>
-            <div>
-              <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                Priority mặc định *
-              </label>
-              <select
-                required
-                value={categoryFormData.defaultPriority}
-                onChange={(e) => onFormDataChange({ ...categoryFormData, defaultPriority: e.target.value as Priority })}
-                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-              >
-                <option value="low">Thấp</option>
-                <option value="medium">Trung bình</option>
-                <option value="high">Cao</option>
-                <option value="urgent">Khẩn cấp</option>
-              </select>
-            </div>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
+              SLA (giờ) *
+            </label>
+            <input
+              type="number"
+              required
+              min="1"
+              value={categoryFormData.slaResolveHours}
+              onChange={(e) => onFormDataChange({ ...categoryFormData, slaResolveHours: parseInt(e.target.value) || 24 })}
+              placeholder="24"
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
@@ -119,17 +119,65 @@ const CategoryForm = ({
             </label>
             <select
               required
-              value={categoryFormData.departmentId}
-              onChange={(e) => onFormDataChange({ ...categoryFormData, departmentId: e.target.value })}
+              value={categoryFormData.departmentId || ''}
+              onChange={(e) => {
+                const selectedId = parseInt(e.target.value);
+                if (!isNaN(selectedId)) {
+                  onFormDataChange({ ...categoryFormData, departmentId: selectedId });
+                }
+              }}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="">Chọn bộ phận</option>
-              {adminDepartments.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
+              {adminDepartments && adminDepartments.length > 0 ? (
+                adminDepartments.map((dept, index) => {
+                  // CategoryList so sánh: cat.departmentId?.toString() === d.id
+                  // Vậy Department.id là string representation của departmentId (number)
+                  // Cần parse Department.id (string) sang number để dùng làm Category.departmentId
+                  let deptId = 0;
+                  
+                  // Thử parse từ id (string) sang number
+                  if (dept.id) {
+                    const parsed = parseInt(dept.id, 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                      deptId = parsed;
+                    }
+                  }
+                  
+                  // Nếu không parse được từ id, thử parse từ deptCode nếu có pattern số
+                  if (deptId === 0 && dept.deptCode) {
+                    // Thử extract số từ deptCode (ví dụ: "IT" -> không có số, "DEPT1" -> 1)
+                    const match = dept.deptCode.match(/\d+/);
+                    if (match) {
+                      const parsed = parseInt(match[0], 10);
+                      if (!isNaN(parsed) && parsed > 0) {
+                        deptId = parsed;
+                      }
+                    }
+                  }
+                  
+                  // Nếu vẫn không parse được, dùng index + 1 (tạm thời - không lý tưởng)
+                  if (deptId === 0) {
+                    deptId = index + 1;
+                    console.warn(`⚠️ Cannot parse departmentId for ${dept.deptCode || dept.id}, using index ${deptId}`);
+                  }
+                  
+                  const deptName = dept.deptName || dept.name || `Department ${index + 1}`;
+                  const deptKey = dept.deptCode || dept.id || `dept-${index}`;
+                  
+                  return (
+                    <option key={deptKey} value={deptId}>
+                      {deptName}
+                    </option>
+                  );
+                })
+              ) : (
+                <option value="" disabled>Không có bộ phận nào</option>
+              )}
             </select>
+            {adminDepartments && adminDepartments.length === 0 && (
+              <p className="mt-1 text-xs text-yellow-600">⚠️ Chưa có bộ phận nào. Vui lòng tạo bộ phận trước.</p>
+            )}
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
@@ -138,11 +186,11 @@ const CategoryForm = ({
             <select
               required
               value={categoryFormData.status}
-              onChange={(e) => onFormDataChange({ ...categoryFormData, status: e.target.value as 'active' | 'inactive' })}
+              onChange={(e) => onFormDataChange({ ...categoryFormData, status: e.target.value as 'ACTIVE' | 'INACTIVE' })}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Không hoạt động</option>
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Không hoạt động</option>
             </select>
           </div>
           <div className="flex gap-4 justify-end mt-8">

@@ -83,6 +83,23 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
     }));
     const errorMessage = errorData.message || `HTTP error! status: ${response.status}`;
     console.error(`❌ API Error [${response.status}]:`, errorMessage);
+    console.error('❌ Error details:', errorData);
+    
+    // Xử lý các status code cụ thể
+    if (response.status === 405) {
+      throw new Error(`Method Not Allowed (405): Backend không hỗ trợ phương thức này. ${errorMessage}`);
+    }
+    if (response.status === 404) {
+      throw new Error(`Not Found (404): ${errorMessage}`);
+    }
+    if (response.status === 400) {
+      throw new Error(`Bad Request (400): ${errorMessage}`);
+    }
+    
+    // Include error details if available
+    if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+      throw new Error(`${errorMessage}: ${errorData.errors.join(', ')}`);
+    }
     throw new Error(errorMessage);
   }
 

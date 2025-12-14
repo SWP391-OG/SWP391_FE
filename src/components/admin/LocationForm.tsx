@@ -1,12 +1,17 @@
 import type { Location } from '../../types';
 
+import type { Campus } from '../../services/campusService';
+
 interface LocationFormProps {
   editingLocation: Location | null;
   locationFormData: {
     code: string;
     name: string;
     status: 'active' | 'inactive';
+    campusCode?: string; // Store campusCode for selection
+    campusId?: number; // Store campusId (number) for API request
   };
+  campuses?: Campus[];
   onFormDataChange: (data: LocationFormProps['locationFormData']) => void;
   onSubmit: () => void;
   onDelete?: () => void;
@@ -16,6 +21,7 @@ interface LocationFormProps {
 const LocationForm = ({
   editingLocation,
   locationFormData,
+  campuses = [],
   onFormDataChange,
   onSubmit,
   onDelete,
@@ -61,6 +67,34 @@ const LocationForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {campuses.length > 0 && (
+            <div className="mb-6">
+              <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                Campus *
+              </label>
+              <select
+                required
+                value={locationFormData.campusCode || ''}
+                onChange={(e) => {
+                  const selectedCampusCode = e.target.value;
+                  const selectedCampus = campuses.find(c => c.campusCode === selectedCampusCode);
+                  onFormDataChange({ 
+                    ...locationFormData, 
+                    campusCode: selectedCampusCode,
+                    campusId: selectedCampus?.campusId
+                  });
+                }}
+                className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+              >
+                <option value="">-- Chọn Campus --</option>
+                {campuses.map((campus) => (
+                  <option key={campus.campusCode} value={campus.campusCode}>
+                    {campus.campusName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Tên địa điểm *
@@ -99,10 +133,15 @@ const LocationForm = ({
             {editingLocation && onDelete && (
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   if (confirm('Bạn có chắc chắn muốn xóa địa điểm này?')) {
-                    onDelete();
-                    onClose();
+                    try {
+                      await onDelete();
+                      onClose();
+                    } catch (error) {
+                      console.error('Error deleting location:', error);
+                      // Don't close if error
+                    }
                   }
                 }}
                 className="px-6 py-3 bg-white text-red-600 border border-red-600 rounded-lg font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"

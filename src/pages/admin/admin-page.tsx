@@ -7,6 +7,7 @@ import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
 import { useOverdueTickets } from '../../hooks/useOverdueTickets';
 import { ticketService } from '../../services/ticketService';
+import { campusService, type Campus } from '../../services/campusService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import TicketReviewModal from '../../components/admin/TicketReviewModal';
 import CategoryForm from '../../components/admin/CategoryForm';
@@ -32,10 +33,10 @@ interface AdminPageProps {
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
   const { tickets, assignTicket, updateTicketPriority, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
-  const { categories, createCategory, updateCategory, deleteCategory } = useCategories();
-  const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
-  const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation } = useLocations();
-  const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers } = useUsers();
+  const { categories, createCategory, updateCategory, deleteCategory, loadCategories } = useCategories();
+  const { departments, createDepartment, updateDepartment, updateDepartmentStatus, deleteDepartment, loadDepartments } = useDepartments();
+  const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation, loadLocations } = useLocations();
+  const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
   const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
@@ -102,35 +103,56 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Form data
   const [categoryFormData, setCategoryFormData] = useState({
-    code: '',
-    name: '',
+    categoryCode: '',
+    categoryName: '',
+    departmentId: 0,
+    slaResolveHours: 24,
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+    // Frontend-only fields (not sent to API)
     icon: '📋',
     color: '#3b82f6',
-    slaResolveHours: 24,
     defaultPriority: 'medium' as Priority,
-    departmentId: '',
-    status: 'active' as 'active' | 'inactive',
   });
 
   const [deptFormData, setDeptFormData] = useState({
-    name: '',
-    description: '',
-    location: '',
-    adminId: currentAdminId,
-    staffIds: [] as string[],
+    deptCode: '',
+    deptName: '',
+    status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
   });
 
   const [locationFormData, setLocationFormData] = useState({
     code: '',
     name: '',
     status: 'active' as 'active' | 'inactive',
+    campusCode: '',
+    campusId: undefined as number | undefined,
   });
+  
+  // Load campuses
+  const [campuses, setCampuses] = useState<Campus[]>([]);
+  useEffect(() => {
+    const loadCampuses = async () => {
+      try {
+        const data = await campusService.getAllCampuses();
+        console.log('📍 Loaded campuses:', data);
+        // Check if campuses have campusId
+        if (data.length > 0 && !data[0].campusId) {
+          console.warn('⚠️ Campuses from API do not have campusId. Backend may need to return campusId field.');
+        }
+        setCampuses(data);
+      } catch (error) {
+        console.error('Error loading campuses:', error);
+      }
+    };
+    loadCampuses();
+  }, []);
 
   const [staffFormData, setStaffFormData] = useState({
     username: '',
     password: '',
     fullName: '',
     email: '',
+    phoneNumber: '',
     role: 'it-staff' as UserRole,
     departmentId: '',
   });
@@ -570,28 +592,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               onAddClick={() => {
                 setEditingCategory(null);
                 setCategoryFormData({
-                  code: '',
-                  name: '',
+                  categoryCode: '',
+                  categoryName: '',
+                  departmentId: 0,
+                  slaResolveHours: 24,
+                  status: 'ACTIVE',
                   icon: '📋',
                   color: '#3b82f6',
-                  slaResolveHours: 24,
                   defaultPriority: 'medium',
-                  departmentId: '',
-                  status: 'active',
                 });
                 setIsFormOpen(true);
               }}
               onEditClick={(cat) => {
                 setEditingCategory(cat);
                 setCategoryFormData({
-                  code: cat.code || '',
-                  name: cat.name,
-                  icon: cat.icon,
-                  color: cat.color,
-                  slaResolveHours: cat.slaResolveHours,
-                  defaultPriority: cat.defaultPriority,
+                  categoryCode: cat.categoryCode,
+                  categoryName: cat.categoryName,
                   departmentId: cat.departmentId,
+                  slaResolveHours: cat.slaResolveHours,
                   status: cat.status,
+                  icon: '📋', // Frontend-only
+                  color: '#3b82f6', // Frontend-only
+                  defaultPriority: 'medium', // Frontend-only
                 });
                 setIsFormOpen(true);
               }}
@@ -605,17 +627,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               onSearchChange={setDepartmentSearchQuery}
               onAddClick={() => {
                 setEditingDept(null);
-                setDeptFormData({ name: '', description: '', location: '', adminId: currentAdminId, staffIds: [] });
+                setDeptFormData({ deptCode: '', deptName: '', status: 'ACTIVE' });
                 setIsFormOpen(true);
               }}
               onEditClick={(dept) => {
                 setEditingDept(dept);
                 setDeptFormData({
-                  name: dept.name,
-                  description: dept.description,
-                  location: dept.location,
-                  adminId: dept.adminId || currentAdminId,
-                  staffIds: dept.staffIds || [],
+                  deptCode: dept.deptCode,
+                  deptName: dept.deptName,
+                  status: dept.status,
                 });
                 setIsFormOpen(true);
               }}
@@ -629,6 +649,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               loading={locationsLoading}
               searchQuery={locationSearchQuery}
               filterStatus={locationFilterStatus}
+              campuses={campuses}
               onSearchChange={setLocationSearchQuery}
               onFilterStatusChange={setLocationFilterStatus}
               onAddClick={() => {
@@ -637,27 +658,26 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   code: '',
                   name: '',
                   status: 'active',
+                  campusCode: '',
+                  campusId: undefined,
                 });
                 setIsFormOpen(true);
               }}
               onEditClick={(location) => {
                 setEditingLocation(location);
+                // Find campus from location's campusId or campusCode
+                const locationCampus = campuses.find(c => 
+                  c.campusId === location.campusId || 
+                  c.campusCode === location.campusCode
+                );
                 setLocationFormData({
                   code: location.code || '',
                   name: location.name,
                   status: location.status || 'active',
+                  campusCode: locationCampus?.campusCode || location.campusCode || '',
+                  campusId: locationCampus?.campusId || location.campusId,
                 });
                 setIsFormOpen(true);
-              }}
-              onToggleStatus={(locationCode, currentStatus) => {
-                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                const message = newStatus === 'inactive' 
-                  ? 'Bạn có chắc chắn muốn vô hiệu hóa địa điểm này?'
-                  : 'Bạn có chắc chắn muốn kích hoạt lại địa điểm này?';
-                
-                if (confirm(message)) {
-                  updateLocationStatus(locationCode, newStatus);
-                }
               }}
             />
           )}
@@ -681,45 +701,30 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   password: '',
                   fullName: '',
                   email: '',
+                  phoneNumber: '',
                   role: 'it-staff',
                   departmentId: adminDepartments[0]?.id || '',
                 });
                 setIsFormOpen(true);
               }}
               onEditClick={(staff) => {
-                // Tìm department của staff dựa vào staff.departmentId
-                const dept = adminDepartments.find(d => d.id === staff.departmentId);
+                // Tìm department của staff dựa vào staff.departmentId (number từ API)
+                // Department.id là string, cần convert để so sánh
+                const dept = adminDepartments.find(d => 
+                  d.id === staff.departmentId?.toString() || 
+                  d.deptCode === staff.departmentId?.toString()
+                );
                 setEditingStaff(staff);
                 setStaffFormData({
-                  username: staff.username,
-                  password: staff.password,
+                  username: staff.username || staff.userCode || '',
+                  password: '', // Không load password (không thể edit)
                   fullName: staff.fullName,
                   email: staff.email,
+                  phoneNumber: staff.phoneNumber || '',
                   role: staff.role,
-                  departmentId: dept?.id || staff.departmentId || '',
+                  departmentId: dept?.id || staff.departmentId?.toString() || '',
                 });
                 setIsFormOpen(true);
-              }}
-              onResetPassword={(staffId) => {
-                const newPassword = prompt('Nhập mật khẩu mới:');
-                if (newPassword && newPassword.trim()) {
-                  // Note: Reset password cần endpoint riêng (chưa có trong API spec)
-                  alert('Tính năng reset password đang được phát triển');
-                }
-              }}
-              onToggleStatus={async (userCode, currentStatus) => {
-                const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-                const message = newStatus === 'inactive' 
-                  ? 'Bạn có chắc chắn muốn vô hiệu hóa staff này? Staff sẽ không thể đăng nhập nữa.'
-                  : 'Bạn có chắc chắn muốn kích hoạt lại staff này?';
-                
-                if (confirm(message)) {
-                  try {
-                    await updateUser(userCode, { status: newStatus });
-                  } catch (error) {
-                    alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
-                  }
-                }
               }}
             />
           )}
@@ -744,29 +749,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: user.email,
                 });
                 setIsFormOpen(true);
-              }}
-              onToggleStatus={async (userCode, currentStatus) => {
-                let newStatus: 'active' | 'inactive' | 'banned';
-                let message: string;
-                
-                if (currentStatus === 'banned') {
-                  newStatus = 'active';
-                  message = 'Bạn có chắc chắn muốn mở khóa người dùng này?';
-                } else if (currentStatus === 'active') {
-                  newStatus = 'banned';
-                  message = 'Bạn có chắc chắn muốn khóa người dùng này? Người dùng sẽ không thể đăng nhập nữa.';
-                } else {
-                  newStatus = 'active';
-                  message = 'Bạn có chắc chắn muốn kích hoạt lại người dùng này?';
-                }
-                
-                if (confirm(message)) {
-                  try {
-                    await updateUser(userCode, { status: newStatus });
-                  } catch (error) {
-                    alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
-                  }
-                }
               }}
             />
           )}
@@ -803,17 +785,49 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           categoryFormData={categoryFormData}
           adminDepartments={adminDepartments}
           onFormDataChange={setCategoryFormData}
-          onSubmit={() => {
-            if (editingCategory) {
-              updateCategory(editingCategory.id, categoryFormData);
-            } else {
-              createCategory(categoryFormData);
+          onSubmit={async () => {
+            try {
+              if (editingCategory) {
+                // Update: chỉ gửi các field có thể update (không gửi categoryCode vì không thể thay đổi)
+                await updateCategory(editingCategory.categoryCode, {
+                  categoryName: categoryFormData.categoryName,
+                  departmentId: categoryFormData.departmentId,
+                  slaResolveHours: categoryFormData.slaResolveHours,
+                  status: categoryFormData.status,
+                });
+              } else {
+                // Create: gửi đầy đủ categoryCode, categoryName, departmentId, slaResolveHours, status
+                await createCategory({
+                  categoryCode: categoryFormData.categoryCode,
+                  categoryName: categoryFormData.categoryName,
+                  departmentId: categoryFormData.departmentId,
+                  slaResolveHours: categoryFormData.slaResolveHours,
+                  status: categoryFormData.status,
+                });
+              }
+              // Reload categories sau khi tạo/cập nhật
+              await loadCategories();
+              setIsFormOpen(false);
+              setEditingCategory(null);
+            } catch (error) {
+              console.error('Error saving category:', error);
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi lưu category';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
-            setIsFormOpen(false);
-            setEditingCategory(null);
           }}
-          onDelete={editingCategory ? () => {
-            deleteCategory(editingCategory.id);
+          onDelete={editingCategory ? async () => {
+            try {
+              await deleteCategory(editingCategory.categoryCode);
+              await loadCategories();
+            } catch (error) {
+              console.error('Error deleting category:', error);
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi xóa category';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
+            }
           } : undefined}
           onClose={() => {
             setIsFormOpen(false);
@@ -828,17 +842,84 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingDept={editingDept}
           deptFormData={deptFormData}
           onFormDataChange={setDeptFormData}
-          onSubmit={() => {
-            if (editingDept) {
-              updateDepartment(editingDept.id, deptFormData);
-            } else {
-              createDepartment(deptFormData);
+          onSubmit={async () => {
+            try {
+              if (editingDept) {
+                // Update: lấy departmentId (int32) từ editingDept
+                const departmentId = typeof editingDept.id === 'number' 
+                  ? editingDept.id 
+                  : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
+                
+                if (!departmentId || isNaN(departmentId)) {
+                  alert('Không thể xác định ID bộ phận. Vui lòng thử lại.');
+                  return;
+                }
+                
+                // Theo Swagger: PUT /api/Department/{departmentId} có thể sửa cả deptCode và deptName
+                await updateDepartment(departmentId, {
+                  deptCode: deptFormData.deptCode, // Có thể sửa deptCode
+                  deptName: deptFormData.deptName,
+                });
+                
+                // Nếu status thay đổi, update riêng qua PATCH /api/Department/status
+                if (deptFormData.status !== editingDept.status) {
+                  await updateDepartmentStatus(departmentId, deptFormData.status);
+                }
+              } else {
+                // Create: theo Swagger chỉ cần deptCode và deptName (không có status)
+                await createDepartment({
+                  deptCode: deptFormData.deptCode,
+                  deptName: deptFormData.deptName,
+                });
+                
+                // Nếu status không phải ACTIVE, update sau khi tạo
+                if (deptFormData.status !== 'ACTIVE') {
+                  // Reload để lấy id mới
+                  await loadDepartments();
+                  const newDept = departments.find(d => d.deptCode === deptFormData.deptCode);
+                  if (newDept) {
+                    const newDeptId = typeof newDept.id === 'number' 
+                      ? newDept.id 
+                      : (typeof newDept.id === 'string' ? parseInt(newDept.id, 10) : null);
+                    if (newDeptId && !isNaN(newDeptId)) {
+                      await updateDepartmentStatus(newDeptId, deptFormData.status);
+                    }
+                  }
+                }
+              }
+              // Reload departments sau khi tạo/cập nhật
+              await loadDepartments();
+              setIsFormOpen(false);
+              setEditingDept(null);
+            } catch (error) {
+              console.error('❌ Error saving department:', error);
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi lưu bộ phận';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
-            setIsFormOpen(false);
-            setEditingDept(null);
           }}
-          onDelete={editingDept ? () => {
-            deleteDepartment(editingDept.id);
+          onDelete={editingDept ? async () => {
+            try {
+              // Lấy departmentId (int32) từ editingDept
+              const departmentId = typeof editingDept.id === 'number' 
+                ? editingDept.id 
+                : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
+              
+              if (!departmentId || isNaN(departmentId)) {
+                alert('Không thể xác định ID bộ phận cần xóa. Vui lòng thử lại.');
+                return;
+              }
+              
+              await deleteDepartment(departmentId);
+              await loadDepartments();
+            } catch (error) {
+              console.error('❌ Error deleting department:', error);
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi xóa bộ phận';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
+            }
           } : undefined}
           onClose={() => {
             setIsFormOpen(false);
@@ -852,31 +933,131 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <LocationForm
           editingLocation={editingLocation}
           locationFormData={locationFormData}
+          campuses={campuses}
           onFormDataChange={setLocationFormData}
           onSubmit={async () => {
             try {
               if (editingLocation) {
                 // Update existing location
-                await updateLocation(
-                  editingLocation.code || editingLocation.id, 
-                  { name: locationFormData.name }
-                );
+                // Lấy locationId (int32) từ editingLocation
+                const locationId = typeof editingLocation.id === 'number' 
+                  ? editingLocation.id 
+                  : (typeof editingLocation.id === 'string' ? parseInt(editingLocation.id, 10) : null);
                 
-                // Update status if changed
-                if (locationFormData.status !== editingLocation.status) {
-                  await updateLocationStatus(
-                    editingLocation.code || editingLocation.id,
-                    locationFormData.status
-                  );
+                if (!locationId || isNaN(locationId)) {
+                  alert('Không thể xác định ID địa điểm. Vui lòng thử lại.');
+                  return;
                 }
+                
+                const newCode = locationFormData.code.trim();
+                const oldCode = editingLocation.code || '';
+                
+                // Get campusId from selected campus
+                let campusId: number | undefined;
+                if (locationFormData.campusCode) {
+                  const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
+                  if (selectedCampus && selectedCampus.campusId) {
+                    // Đảm bảo campusId là number
+                    campusId = typeof selectedCampus.campusId === 'string' 
+                      ? parseInt(selectedCampus.campusId, 10) 
+                      : selectedCampus.campusId;
+                  } else if (!selectedCampus) {
+                    // Try to get from detail API
+                    try {
+                      const campusDetail = await campusService.getCampusByCode(locationFormData.campusCode);
+                      if (campusDetail && campusDetail.campusId) {
+                        campusId = typeof campusDetail.campusId === 'string' 
+                          ? parseInt(campusDetail.campusId, 10) 
+                          : campusDetail.campusId;
+                      }
+                    } catch (error) {
+                      console.error('Error getting campus detail:', error);
+                    }
+                  }
+                }
+                
+                if (!campusId) {
+                  alert('Không thể lấy Campus ID. Vui lòng thử lại.');
+                  return;
+                }
+                
+                // Theo Swagger: PUT /api/Location/{locationId} có thể sửa cả locationCode
+                // Không cần xóa và tạo mới, chỉ cần update
+                await updateLocation(
+                  locationId,
+                  {
+                    code: newCode, // Có thể sửa locationCode
+                    name: locationFormData.name.trim(),
+                    status: locationFormData.status,
+                    campusId: campusId,
+                  }
+                );
               } else {
                 // Create new location
+                if (!locationFormData.campusCode) {
+                  alert('Vui lòng chọn Campus');
+                  return;
+                }
+                
+                // Get campusId from selected campusCode
+                const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
+                if (!selectedCampus) {
+                  alert('Không tìm thấy Campus đã chọn. Vui lòng thử lại.');
+                  console.error('⚠️ Selected campus not found:', locationFormData.campusCode);
+                  return;
+                }
+                
+                // Validate campusId from API response
+                if (!selectedCampus.campusId) {
+                  // Try to get from detail API as fallback
+                  try {
+                    const campusDetail = await campusService.getCampusByCode(locationFormData.campusCode);
+                    if (campusDetail && campusDetail.campusId) {
+                      selectedCampus.campusId = campusDetail.campusId;
+                    }
+                  } catch (error) {
+                    console.error('Error getting campus detail:', error);
+                  }
+                  
+                  // If still no campusId, show clear error
+                  if (!selectedCampus.campusId) {
+                    alert(
+                      `❌ Không thể lấy Campus ID.\n\n` +
+                      `Backend API /Campus cần trả về field "campusId" (số nguyên) trong response.\n\n` +
+                      `Vui lòng yêu cầu backend cập nhật API theo tài liệu trong file:\n` +
+                      `docs/BACKEND_API_REQUIREMENTS.md`
+                    );
+                    console.error('❌ Campus missing campusId:', selectedCampus);
+                    console.error('❌ API /Campus response should include campusId field');
+                    return;
+                  }
+                }
+                
+                // Đảm bảo campusId là number
+                const campusId = typeof selectedCampus.campusId === 'string' 
+                  ? parseInt(selectedCampus.campusId, 10) 
+                  : selectedCampus.campusId;
+                
+                if (!campusId || isNaN(campusId)) {
+                  alert('Không thể lấy Campus ID hợp lệ. Vui lòng thử lại.');
+                  return;
+                }
+                
+                console.log('📍 Form data before create:', locationFormData);
+                console.log('📍 Selected campus:', selectedCampus);
+                console.log('📍 Using campusId (type):', campusId, typeof campusId);
+                
+                // Create location với status từ form
                 await createLocation({
-                  code: locationFormData.code,
-                  name: locationFormData.name,
+                  code: locationFormData.code.trim(),
+                  name: locationFormData.name.trim(),
+                  campusId: campusId, // Đảm bảo là number
+                  status: locationFormData.status, // Gửi status khi tạo
                 });
               }
               
+              // Reload locations sau khi tạo/cập nhật
+              await loadLocations();
               setIsFormOpen(false);
               setEditingLocation(null);
             } catch (error) {
@@ -886,12 +1067,62 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           }}
           onDelete={editingLocation ? async () => {
             try {
-              await deleteLocation(editingLocation.code || editingLocation.id);
+              // Debug: Log để kiểm tra
+              console.log('📍 [DELETE] editingLocation:', editingLocation);
+              console.log('📍 [DELETE] editingLocation.id:', editingLocation.id, 'type:', typeof editingLocation.id);
+              
+              // Lấy locationId (int32) từ editingLocation
+              let locationId: number | null = null;
+              
+              if (typeof editingLocation.id === 'number') {
+                locationId = editingLocation.id;
+              } else if (typeof editingLocation.id === 'string') {
+                // Nếu là string, thử parse
+                const parsed = parseInt(editingLocation.id, 10);
+                if (!isNaN(parsed)) {
+                  locationId = parsed;
+                } else {
+                  // Nếu không parse được, có thể id là locationCode
+                  // Thử tìm location từ list để lấy id thực
+                  const foundLocation = locations.find(l => 
+                    l.code === editingLocation.code || 
+                    l.id === editingLocation.id
+                  );
+                  if (foundLocation && typeof foundLocation.id === 'number') {
+                    locationId = foundLocation.id;
+                    console.log('📍 [DELETE] Found location from list, using id:', locationId);
+                  }
+                }
+              }
+              
+              console.log('📍 [DELETE] Final locationId:', locationId, 'isNaN:', isNaN(locationId || 0));
+              
+              if (!locationId || isNaN(locationId)) {
+                console.error('❌ [DELETE] Invalid location ID:', {
+                  id: editingLocation.id,
+                  type: typeof editingLocation.id,
+                  code: editingLocation.code,
+                  location: editingLocation
+                });
+                alert(
+                  `❌ Không thể xác định ID địa điểm cần xóa.\n\n` +
+                  `ID hiện tại: ${editingLocation.id}\n` +
+                  `Loại: ${typeof editingLocation.id}\n` +
+                  `Mã địa điểm: ${editingLocation.code}\n\n` +
+                  `Vui lòng kiểm tra console (F12) để xem chi tiết.`
+                );
+                return;
+              }
+              
+              console.log('📍 [DELETE] Deleting location with ID:', locationId);
+              await deleteLocation(locationId);
+              await loadLocations(); // Reload list sau khi xóa
               setIsFormOpen(false);
               setEditingLocation(null);
             } catch (error) {
               console.error('Error deleting location:', error);
               alert('Có lỗi xảy ra khi xóa: ' + (error instanceof Error ? error.message : 'Unknown error'));
+              // Don't close form if error
             }
           } : undefined}
           onClose={() => {
@@ -914,9 +1145,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 // Update existing staff
                 await updateUser(editingStaff.userCode || editingStaff.id, {
                   fullName: staffFormData.fullName,
-                  phoneNumber: staffFormData.email, // Temp - cần phoneNumber field
+                  phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
-                  departmentId: parseInt(staffFormData.departmentId),
+                  departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
               } else {
                 // Create new staff
@@ -925,32 +1156,39 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   fullName: staffFormData.fullName,
                   password: staffFormData.password,
                   email: staffFormData.email,
-                  phoneNumber: '', // Optional
+                  phoneNumber: staffFormData.phoneNumber || undefined, // Optional
                   role: staffFormData.role,
-                  departmentId: parseInt(staffFormData.departmentId),
+                  departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
                 
                 setStaffPage(1);
               }
               
+              // Reload users sau khi tạo/cập nhật
+              await loadUsers();
               setIsFormOpen(false);
               setEditingStaff(null);
             } catch (error) {
               console.error('Error saving staff:', error);
-              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi lưu staff';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không`);
             }
           }}
           onResetPassword={editingStaff ? () => {
-            const newPassword = prompt('Nhập mật khẩu mới:');
-            if (newPassword && newPassword.trim()) {
-              updateUser(editingStaff.id, { password: newPassword.trim() });
-            }
+            // TODO: API không hỗ trợ update password qua PUT
+            // Cần endpoint riêng để reset password
+            alert('Tính năng reset password đang được phát triển.\nAPI hiện tại không hỗ trợ update password qua PUT /User/{userCode}');
           } : undefined}
-          onToggleStatus={editingStaff ? () => {
-            if (editingStaff.status === 'active') {
-              updateUser(editingStaff.id, { status: 'inactive' });
-            } else {
-              updateUser(editingStaff.id, { status: 'active' });
+          onToggleStatus={editingStaff ? async () => {
+            try {
+              const newStatus = editingStaff.status === 'active' ? 'inactive' : 'active';
+              await updateUser(editingStaff.userCode || editingStaff.id, { status: newStatus });
+              await loadUsers(); // Reload sau khi update
+            } catch (error) {
+              console.error('Error toggling staff status:', error);
+              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           } : undefined}
           onClose={() => {
@@ -985,18 +1223,25 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 });
               }
               
+              // Reload users sau khi tạo/cập nhật
+              await loadUsers();
               setIsFormOpen(false);
               setEditingUser(null);
             } catch (error) {
               console.error('Error saving user:', error);
-              alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Có lỗi xảy ra khi lưu user';
+              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không`);
             }
           }}
           onToggleBan={editingUser ? async () => {
             try {
               const newStatus = editingUser.status === 'active' ? 'banned' : 'active';
               await updateUser(editingUser.userCode || editingUser.id, { status: newStatus });
+              await loadUsers(); // Reload sau khi update
             } catch (error) {
+              console.error('Error toggling user ban status:', error);
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           } : undefined}

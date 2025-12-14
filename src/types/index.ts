@@ -109,45 +109,75 @@ export const ROLE_TO_ID_MAP: Record<UserRole, number> = {
 
 // Department types
 export interface Department {
-  deptCode: string;          // Mã bộ phẫn (IT, MAINTAIN...)
+  id: number | string;       // ID định danh (int32) từ API hoặc deptCode (backward compatibility)
+  deptCode: string;          // Mã bộ phận (IT, MAINTAIN...)
   deptName: string;          // Tên bộ phận
   status: 'ACTIVE' | 'INACTIVE'; // Trạng thái
   createdAt?: string;        // Thời gian tạo
   // Legacy fields for backward compatibility
-  id?: string;               // Map từ deptCode
   name?: string;             // Map từ deptName
-  description?: string;      // Frontend only
-  location?: string;         // Frontend only
+  description?: string;       // Frontend only
+  location?: string;          // Frontend only
   adminId?: string;          // Frontend only
   staffIds?: string[];       // Frontend only
   isActive?: boolean;        // Map từ status === 'ACTIVE'
 }
 
+export interface DepartmentDto {
+  id: number;                // ID định danh (int32) - REQUIRED từ Swagger
+  deptCode: string;          // Mã bộ phận
+  deptName: string;          // Tên bộ phận
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive'; // Trạng thái
+  createdAt?: string;        // Thời gian tạo
+}
+
 export interface DepartmentApiResponse {
   status: boolean;
   message: string;
-  data: Department[];
+  data: DepartmentDto[];     // Backend trả về array của DepartmentDto
   errors: string[];
+}
+
+export interface DepartmentRequestDto {
+  deptCode: string;          // Mã bộ phận (REQUIRED) - theo Swagger chỉ cần 2 fields này khi create
+  deptName: string;          // Tên bộ phận (REQUIRED)
+}
+
+export interface DepartmentUpdateDto {
+  deptCode?: string;         // Mã bộ phận (optional) - có thể sửa theo Swagger
+  deptName?: string;         // Tên bộ phận (optional)
+}
+
+export interface DepartmentStatusUpdateDto {
+  id: number;                // ID định danh (int32) - REQUIRED
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
 // Location types (thay thế Room)
 export interface Location {
-  id: string;
-  code?: string; // Frontend only - không có trong DB
-  name: string; // DB: name - Tên phòng/khu vực cụ thể
+  id: string | number; // ID từ API (int32) hoặc locationCode (string) cho backward compatibility
+  code?: string; // locationCode từ API
+  name: string; // locationName từ API
   description?: string; // Frontend only - không có trong DB
   type?: 'classroom' | 'wc' | 'hall' | 'corridor' | 'other'; // Frontend only - không có trong DB
   floor?: string; // DB: floor - Tầng (Tầng Trệt, Tầng 1, Tầng 2...)
   status?: 'active' | 'inactive'; // Frontend only - dùng isActive thay thế
   isActive?: boolean; // DB: is_active (Soft Delete) - Cờ đánh dấu địa điểm còn sử dụng
   createdAt?: string; // Frontend only - không có trong DB
+  campusId?: number; // Campus ID (int32)
+  campusCode?: string; // Campus Code (for display)
+  campusName?: string; // Campus Name (for display)
 }
 
 // Location API types
 export interface LocationDto {
-  locationCode: string;
-  locationName: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  id: number; // ID định danh (int32) - REQUIRED từ Swagger
+  locationCode: string; // Mã địa điểm
+  locationName: string; // Tên địa điểm
+  campusName?: string; // Tên campus (từ Swagger)
+  campusCode?: string; // Mã campus (từ Swagger)
+  campusId?: number; // Campus ID (int32)
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive'; // Trạng thái
 }
 
 export interface LocationApiResponse {
@@ -160,11 +190,12 @@ export interface LocationApiResponse {
 export interface LocationRequestDto {
   locationCode: string;
   locationName: string;
+  campusId: number; // Campus ID (integer) - required by backend
 }
 
 export interface LocationStatusUpdateDto {
-  locationCode: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  id: number; // ID định danh (int32) - REQUIRED từ Swagger
+  status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
 // Category types
@@ -184,6 +215,21 @@ export interface CategoryApiResponse {
   message: string;
   data: Category[];
   errors: string[];
+}
+
+export interface CategoryRequestDto {
+  categoryCode: string;          // Mã category (REQUIRED)
+  categoryName: string;         // Tên category (REQUIRED)
+  departmentId: number;          // Bộ phận ID (REQUIRED) - SỐ NGUYÊN
+  slaResolveHours: number;      // SLA (REQUIRED)
+  status: 'ACTIVE' | 'INACTIVE'; // Trạng thái (REQUIRED)
+}
+
+export interface CategoryUpdateDto {
+  categoryName?: string;         // Tên category (optional)
+  departmentId?: number;          // Bộ phận ID (optional)
+  slaResolveHours?: number;      // SLA (optional)
+  status?: 'ACTIVE' | 'INACTIVE'; // Trạng thái (optional)
 }
 
 // Issue types (Frontend only - for UI flow)

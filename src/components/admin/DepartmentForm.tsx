@@ -3,11 +3,9 @@ import type { Department } from '../../types';
 interface DepartmentFormProps {
   editingDept: Department | null;
   deptFormData: {
-    name: string;
-    description: string;
-    location: string;
-    adminId: string;
-    staffIds: string[];
+    deptCode: string;
+    deptName: string;
+    status: 'ACTIVE' | 'INACTIVE';
   };
   onFormDataChange: (data: DepartmentFormProps['deptFormData']) => void;
   onSubmit: () => void;
@@ -52,42 +50,49 @@ const DepartmentForm = ({
         >
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
+              Mã bộ phận *
+            </label>
+            <input
+              type="text"
+              required
+              value={deptFormData.deptCode}
+              onChange={(e) => onFormDataChange({ ...deptFormData, deptCode: e.target.value.toUpperCase() })}
+              placeholder="VD: IT, MAINTAIN, FACILITY"
+              disabled={!!editingDept}
+              className={`w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
+                editingDept ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
+            />
+            {editingDept && (
+              <p className="mt-1 text-xs text-gray-500">Mã bộ phận không thể thay đổi khi chỉnh sửa</p>
+            )}
+          </div>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Tên bộ phận *
             </label>
             <input
               type="text"
               required
-              value={deptFormData.name}
-              onChange={(e) => onFormDataChange({ ...deptFormData, name: e.target.value })}
-              placeholder="VD: IT Department"
+              value={deptFormData.deptName}
+              onChange={(e) => onFormDataChange({ ...deptFormData, deptName: e.target.value })}
+              placeholder="VD: IT Department, Facilities Management"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Mô tả *
+              Trạng thái *
             </label>
-            <textarea
+            <select
               required
-              value={deptFormData.description}
-              onChange={(e) => onFormDataChange({ ...deptFormData, description: e.target.value })}
-              placeholder="Mô tả về bộ phận"
-              rows={3}
-              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base resize-y font-sans focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Vị trí *
-            </label>
-            <input
-              type="text"
-              required
-              value={deptFormData.location}
-              onChange={(e) => onFormDataChange({ ...deptFormData, location: e.target.value })}
-              placeholder="VD: Tầng 5, Tòa nhà Alpha"
+              value={deptFormData.status}
+              onChange={(e) => onFormDataChange({ ...deptFormData, status: e.target.value as 'ACTIVE' | 'INACTIVE' })}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
-            />
+            >
+              <option value="ACTIVE">Hoạt động</option>
+              <option value="INACTIVE">Không hoạt động</option>
+            </select>
           </div>
           <div className="flex gap-4 justify-end mt-8">
             <button

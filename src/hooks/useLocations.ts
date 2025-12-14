@@ -32,7 +32,7 @@ export const useLocations = () => {
   /**
    * Tạo location mới
    */
-  const createLocation = async (location: { code: string; name: string }) => {
+  const createLocation = async (location: { code: string; name: string; campusId?: number; status?: 'active' | 'inactive' }) => {
     setLoading(true);
     setError(null);
     try {
@@ -50,12 +50,14 @@ export const useLocations = () => {
 
   /**
    * Cập nhật location
+   * @param locationId - ID của location (int32)
+   * @param updates - Các thay đổi: code, name, campusId, status
    */
-  const updateLocation = async (locationCode: string, updates: { name?: string }) => {
+  const updateLocation = async (locationId: number, updates: { code?: string; name?: string; status?: 'active' | 'inactive'; campusId?: number }) => {
     setLoading(true);
     setError(null);
     try {
-      const updated = await locationService.update(locationCode, updates);
+      const updated = await locationService.update(locationId, updates);
       await loadLocations(); // Reload list
       return updated;
     } catch (err) {
@@ -69,12 +71,13 @@ export const useLocations = () => {
 
   /**
    * Cập nhật status
+   * @param locationId - ID của location (int32)
    */
-  const updateLocationStatus = async (locationCode: string, status: 'active' | 'inactive') => {
+  const updateLocationStatus = async (locationId: number, status: 'active' | 'inactive') => {
     setLoading(true);
     setError(null);
     try {
-      await locationService.updateStatus(locationCode, status);
+      await locationService.updateStatus(locationId, status);
       await loadLocations(); // Reload list
     } catch (err) {
       console.error('Error updating status:', err);
@@ -87,12 +90,13 @@ export const useLocations = () => {
 
   /**
    * Xóa location
+   * @param locationId - ID của location (int32)
    */
-  const deleteLocation = async (locationCode: string) => {
+  const deleteLocation = async (locationId: number) => {
     setLoading(true);
     setError(null);
     try {
-      await locationService.delete(locationCode);
+      await locationService.delete(locationId);
       await loadLocations(); // Reload list
     } catch (err) {
       console.error('Error deleting location:', err);

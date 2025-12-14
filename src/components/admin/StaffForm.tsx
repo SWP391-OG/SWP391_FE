@@ -7,6 +7,7 @@ interface StaffFormProps {
     password: string;
     fullName: string;
     email: string;
+    phoneNumber?: string;
     role: UserRole;
     departmentId: string;
   };
@@ -100,6 +101,18 @@ const StaffForm = ({
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
+              Số điện thoại
+            </label>
+            <input
+              type="tel"
+              value={staffFormData.phoneNumber || ''}
+              onChange={(e) => onFormDataChange({ ...staffFormData, phoneNumber: e.target.value })}
+              placeholder="VD: 0912345678"
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
+          </div>
+          <div className="mb-6">
+            <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Vai trò *
             </label>
             <select
@@ -123,11 +136,21 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
               <option value="">Chọn bộ phận</option>
-              {adminDepartments.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
+              {adminDepartments && adminDepartments.length > 0 ? (
+                adminDepartments.map((dept) => {
+                  // Department có id là string, cần parse sang number để map với departmentId
+                  // Hoặc dùng deptCode nếu có
+                  const deptValue = dept.id || dept.deptCode || '';
+                  const deptName = dept.deptName || dept.name || '';
+                  return (
+                    <option key={dept.deptCode || dept.id} value={deptValue}>
+                      {deptName}
+                    </option>
+                  );
+                })
+              ) : (
+                <option value="" disabled>Không có bộ phận nào</option>
+              )}
             </select>
           </div>
           {editingStaff && onResetPassword && onToggleStatus && (

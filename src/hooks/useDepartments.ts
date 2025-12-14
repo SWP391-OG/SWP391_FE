@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Department } from '../types';
+import type { Department, DepartmentRequestDto, DepartmentUpdateDto } from '../types';
 import { departmentService } from '../services/departmentService';
 
 export const useDepartments = () => {
@@ -26,7 +26,7 @@ export const useDepartments = () => {
   };
 
   // Tạo department mới
-  const createDepartment = async (department: Omit<Department, 'id' | 'createdAt'>) => {
+  const createDepartment = async (department: DepartmentRequestDto) => {
     try {
       const newDepartment = await departmentService.create(department);
       setDepartments([...departments, newDepartment]);
@@ -38,10 +38,15 @@ export const useDepartments = () => {
   };
 
   // Cập nhật department
-  const updateDepartment = async (id: string, updates: Partial<Department>) => {
+  const updateDepartment = async (departmentId: number, updates: DepartmentUpdateDto) => {
     try {
-      const updated = await departmentService.update(id, updates);
-      setDepartments(departments.map(d => d.id === id ? updated : d));
+      const updated = await departmentService.update(departmentId, updates);
+      setDepartments(departments.map(d => 
+        (typeof d.id === 'number' && d.id === departmentId) || 
+        (typeof d.id === 'string' && parseInt(d.id, 10) === departmentId)
+          ? updated 
+          : d
+      ));
       return updated;
     } catch (error) {
       console.error('Error updating department:', error);
@@ -49,11 +54,32 @@ export const useDepartments = () => {
     }
   };
 
-  // Xóa department
-  const deleteDepartment = async (id: string) => {
+  // Cập nhật status của department
+  const updateDepartmentStatus = async (departmentId: number, status: 'ACTIVE' | 'INACTIVE') => {
     try {
-      await departmentService.delete(id);
-      setDepartments(departments.filter(d => d.id !== id));
+      await departmentService.updateStatus(departmentId, status);
+      setDepartments(departments.map(d => {
+        const match = (typeof d.id === 'number' && d.id === departmentId) || 
+                      (typeof d.id === 'string' && parseInt(d.id, 10) === departmentId);
+        if (match) {
+          return { ...d, status, isActive: status === 'ACTIVE' };
+        }
+        return d;
+      }));
+    } catch (error) {
+      console.error('Error updating department status:', error);
+      throw error;
+    }
+  };
+
+  // Xóa department
+  const deleteDepartment = async (departmentId: number) => {
+    try {
+      await departmentService.delete(departmentId);
+      setDepartments(departments.filter(d => 
+        !((typeof d.id === 'number' && d.id === departmentId) || 
+          (typeof d.id === 'string' && parseInt(d.id, 10) === departmentId))
+      ));
     } catch (error) {
       console.error('Error deleting department:', error);
       throw error;
@@ -70,6 +96,7 @@ export const useDepartments = () => {
     loading,
     createDepartment,
     updateDepartment,
+    updateDepartmentStatus,
     deleteDepartment,
     getDepartmentsByAdminId,
     loadDepartments,
