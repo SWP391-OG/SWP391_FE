@@ -140,6 +140,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     open: tickets.filter(t => t.status === 'open').length,
     inProgress: tickets.filter(t => t.status === 'in-progress' || t.status === 'assigned').length,
     resolved: tickets.filter(t => t.status === 'resolved' || t.status === 'closed').length,
+    cancelled: tickets.filter(t => t.status === 'cancelled').length,
   };
 
   // Format date
@@ -182,7 +183,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-5 gap-4 mb-8">
           <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
             <div className="text-[0.85rem] text-gray-500 mb-2">Tổng số ticket</div>
             <div className="text-3xl font-bold text-gray-800">{stats.total}</div>
@@ -199,37 +200,79 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
             <div className="text-[0.85rem] text-gray-500 mb-2">Hoàn thành</div>
             <div className="text-3xl font-bold text-emerald-500">{stats.resolved}</div>
           </div>
+          <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+            <div className="text-[0.85rem] text-gray-500 mb-2">Bị hủy</div>
+            <div className="text-3xl font-bold text-red-500">{stats.cancelled}</div>
+          </div>
         </div>
 
-        {/* Filters */}
+        {/* Tab Navigation */}
+        <div className="bg-white rounded-xl mb-8 border border-gray-200 shadow-sm">
+          <div className="flex gap-2 p-4 flex-wrap">
+            <button
+              className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${
+                filterStatus === 'all'
+                  ? 'bg-blue-500 text-white border-blue-500'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-blue-500'
+              }`}
+              onClick={() => setFilterStatus('all')}
+            >
+              📋 Tất cả
+            </button>
+            <button
+              className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${
+                filterStatus === 'open'
+                  ? 'bg-blue-500 text-white border-blue-500'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-blue-500'
+              }`}
+              onClick={() => setFilterStatus('open')}
+            >
+              🆕 Chưa xử lý ({stats.open})
+            </button>
+            <button
+              className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${
+                filterStatus === 'in-progress'
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-amber-500'
+              }`}
+              onClick={() => setFilterStatus('in-progress')}
+            >
+              ⏳ Đang xử lý ({stats.inProgress})
+            </button>
+            <button
+              className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${
+                filterStatus === 'resolved'
+                  ? 'bg-emerald-500 text-white border-emerald-500'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-emerald-500'
+              }`}
+              onClick={() => setFilterStatus('resolved')}
+            >
+              ✅ Đã hoàn thành ({stats.resolved})
+            </button>
+            <button
+              className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${
+                filterStatus === 'cancelled'
+                  ? 'bg-red-500 text-white border-red-500'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-red-500'
+              }`}
+              onClick={() => setFilterStatus('cancelled')}
+            >
+              🚫 Bị hủy ({stats.cancelled})
+            </button>
+          </div>
+        </div>
+
+        {/* Search Filter */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-8">
-          <div className="grid grid-cols-[2fr_1fr] gap-4 items-end">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-gray-700">Tìm kiếm</label>
-              <input
-                type="text"
-                placeholder="Tìm theo tiêu đề hoặc mô tả..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-semibold text-gray-700">Trạng thái</label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as Ticket['status'] | 'all')}
-                className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-              >
-                <option value="all">Tất cả</option>
-                <option value="open">Mới tạo</option>
-                <option value="assigned">Đã được giao việc</option>
-                <option value="in-progress">Đang xử lý</option>
-                <option value="resolved">Đã giải quyết</option>
-                <option value="closed">Đã đóng</option>
-                <option value="cancelled">Đã hủy</option>
-              </select>
-            </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-semibold text-gray-700">🔍 Tìm kiếm</label>
+            <input
+              type="text"
+              placeholder="Tìm theo tiêu đề hoặc mô tả..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+            />
           </div>
         </div>
       </div>

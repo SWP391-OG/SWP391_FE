@@ -39,6 +39,9 @@ const TicketReviewModal = ({
   const [isAssigning, setIsAssigning] = useState(false);
   const [assignMode, setAssignMode] = useState<'auto' | 'manual'>('auto');
   const [selectedStaffCode, setSelectedStaffCode] = useState<string>('');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelNote, setCancelNote] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const isFromApi = isTicketFromApi(ticket);
   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id;
@@ -175,6 +178,44 @@ const TicketReviewModal = ({
     }
   };
 
+  const handleCancelClick = () => {
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelNote.trim()) {
+      alert('Vui lòng nhập lý do hủy ticket');
+      return;
+    }
+
+    if (!isFromApi) {
+      alert('Chỉ có thể cancel ticket từ API');
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const response = await ticketService.cancelTicket(ticket.ticketCode, cancelNote);
+      console.log('✅ Cancel ticket response:', response);
+      
+      if (response.status) {
+        alert('✅ Đã hủy ticket thành công!');
+        setShowCancelModal(false);
+        if (onAssignSuccess) {
+          onAssignSuccess(); // Refresh tickets list
+        }
+        onClose();
+      } else {
+        alert('❌ Hủy ticket thất bại: ' + (response.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('❌ Error cancelling ticket:', error);
+      alert('❌ Lỗi khi hủy ticket: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
     const date = new Date(normalizedDateString);
@@ -220,9 +261,23 @@ const TicketReviewModal = ({
           {/* Status Badge */}
           <div className="flex items-center gap-3">
             <span className="px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 inline-flex items-center gap-2">
-              {ticket.status === 'open' || ticket.status === 'NEW' ? '🔵 Mới tạo' : ticket.status}
+              {ticket.status === 'open' || ticket.status === 'NEW' ? '🔵 Mới tạo' : 
+               ticket.status === 'CANCELLED' || ticket.status === 'cancelled' ? '🚫 Đã hủy' : 
+               ticket.status}
             </span>
           </div>
+
+          {/* Note from Admin when cancelled */}
+          {(ticket.status === 'CANCELLED' || ticket.status === 'cancelled') && ticket.note && (
+            <div className="bg-gradient-to-br from-red-50 to-white border-2 border-red-200 rounded-xl p-6">
+              <h3 className="text-lg font-bold text-red-800 mb-3 flex items-center gap-2">
+                🚫 Lý Do Hủy Ticket
+              </h3>
+              <div className="text-red-700 bg-white p-4 rounded-lg border border-red-300">
+                {ticket.note}
+              </div>
+            </div>
+          )}
 
           {/* Description Section */}
           <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">
@@ -436,7 +491,26 @@ const TicketReviewModal = ({
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gradient-to-r from-gray-100 to-gray-50 border-t-2 border-gray-200 px-8 py-6 flex items-center justify-end">
+        <div className="sticky bottom-0 bg-gradient-to-r from-gray-100 to-gray-50 border-t-2 border-gray-200 px-8 py-6 flex items-center justify-between">
+          {/* Cancel button - Hiển thị cho ticket chưa cancelled, chưa IN_PROGRESS, RESOLVED, CLOSED */}
+          {isFromApi && 
+           ticket.status !== 'CANCELLED' && 
+           ticket.status !== 'cancelled' && 
+           ticket.status !== 'IN_PROGRESS' && 
+           ticket.status !== 'RESOLVED' && 
+           ticket.status !== 'CLOSED' && (
+            <button
+              type="button"
+              onClick={handleCancelClick}
+              className="px-8 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>Hủy Ticket</span>
+            </button>
+          )}
+          <div className="flex-1"></div>
           <button
             type="button"
             onClick={onClose}
@@ -446,6 +520,75 @@ const TicketReviewModal = ({
           </button>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 bg-black/70 flex justify-center items-center z-[1100]"
+          onClick={() => setShowCancelModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 rounded-t-2xl">
+              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                Xác nhận hủy ticket
+              </h3>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-gray-700 font-medium">
+                Vui lòng nhập lý do hủy ticket này:
+              </p>
+              <textarea
+                value={cancelNote}
+                onChange={(e) => setCancelNote(e.target.value)}
+                placeholder="Nhập lý do hủy ticket..."
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                rows={4}
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 rounded-b-2xl flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+                className="px-6 py-2 border-2 border-gray-300 text-gray-700 rounded-lg font-semibold cursor-pointer hover:bg-gray-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelConfirm}
+                disabled={isCancelling || !cancelNote.trim()}
+                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold cursor-pointer transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCancelling ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    <span>Đang hủy...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Xác nhận</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

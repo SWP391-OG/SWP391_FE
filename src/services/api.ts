@@ -192,12 +192,13 @@ export const apiClient = {
   /**
    * DELETE request
    */
-  async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+  async delete<T>(endpoint: string, data?: unknown, options?: RequestOptions): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     const response = await fetchWithTimeout(url, {
       ...options,
       method: 'DELETE',
       headers: createHeaders(options?.headers),
+      body: data ? JSON.stringify(data) : undefined,
     });
     return handleResponse<T>(response);
   },

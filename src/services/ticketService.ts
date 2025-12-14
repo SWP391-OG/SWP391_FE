@@ -166,6 +166,20 @@ export const ticketService = {
     }
   },
 
+  // Cancel ticket (cho Admin) - DELETE method
+  async cancelTicket(ticketCode: string, note: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.delete<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/cancel`,
+        { reason: note }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error cancelling ticket:', error);
+      throw error;
+    }
+  },
+
   // Lấy tất cả tickets (legacy - localStorage)
   getAll(): Ticket[] {
     return loadTickets();
