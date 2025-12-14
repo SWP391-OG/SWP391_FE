@@ -8,7 +8,7 @@ import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import { ticketService } from '../../services/ticketService';
 
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
-type StudentTab = 'pending' | 'processing' | 'completed';
+type StudentTab = 'pending' | 'processing' | 'completed' | 'cancelled';
 
 interface StudentHomePageProps {
   currentUser: { id: string; fullName?: string } | null;
@@ -113,6 +113,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const completedTickets = studentTickets.filter(t => 
     t.status === 'resolved' || t.status === 'closed'
   );
+  const cancelledTickets = studentTickets.filter(t => t.status === 'cancelled');
 
   // Get tickets for current tab
   let tabTickets: Ticket[] = [];
@@ -120,8 +121,10 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     tabTickets = pendingTickets;
   } else if (studentTab === 'processing') {
     tabTickets = processingTickets;
-  } else {
+  } else if (studentTab === 'completed') {
     tabTickets = completedTickets;
+  } else if (studentTab === 'cancelled') {
+    tabTickets = cancelledTickets;
   }
 
   // Apply search and filters
@@ -159,7 +162,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
-    cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    cancelled: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Status labels
@@ -316,6 +319,16 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                 onClick={() => setStudentTab('completed')}
               >
                 Đã hoàn thành ({completedTickets.length})
+              </button>
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'cancelled'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('cancelled')}
+              >
+                Bị hủy ({cancelledTickets.length})
               </button>
             </div>
 
