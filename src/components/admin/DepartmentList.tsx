@@ -79,7 +79,7 @@ const DepartmentList = ({
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    {dept.createdAt ? new Date(dept.createdAt).toLocaleDateString('vi-VN') : '-'}
+                    {dept.createdAt ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(dept.createdAt.includes('Z') ? dept.createdAt : `${dept.createdAt}Z`)) : '-'}
                   </td>
                   <td className="px-4 py-4">
                     <button

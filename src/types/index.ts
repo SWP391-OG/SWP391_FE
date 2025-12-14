@@ -307,5 +307,8 @@ export interface Ticket {
   ratingComment?: string; // DB: rating_comment - Mô tả feedback
   slaTracking?: SLATracking; // Frontend only - không có trong DB (thường tính toán từ các timestamp)
   notes?: string; // Frontend only - không có trong DB (thường lưu trong bảng riêng)
-}
-
+  // Escalation fields (from backend)
+  isEscalated?: boolean; // DB: is_escalated - Cờ đánh dấu ticket đã escalate
+  escalatedAt?: string; // DB: escalated_at - Thời gian escalate
+  escalationCount?: number; // DB: escalation_count - Số lần escalate
+  escalationReason?: string; // DB: escalation_reason - Lý do escalate (VD: SLA miss, reassignment needed)

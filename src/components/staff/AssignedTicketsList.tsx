@@ -18,8 +18,10 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
 
   // Format date
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
+    const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(normalizedDateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -36,7 +38,9 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
     }
     
     const now = new Date();
-    const deadlineDate = new Date(deadline);
+    // Normalize timestamp by adding Z if missing (backend returns without Z)
+    const normalizedDeadline = deadline.includes('Z') ? deadline : `${deadline}Z`;
+    const deadlineDate = new Date(normalizedDeadline);
     const diff = deadlineDate.getTime() - now.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));

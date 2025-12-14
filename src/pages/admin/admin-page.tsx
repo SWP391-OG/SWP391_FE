@@ -5,6 +5,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
+import { useOverdueTickets } from '../../hooks/useOverdueTickets';
 import { ticketService } from '../../services/ticketService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import TicketReviewModal from '../../components/admin/TicketReviewModal';
@@ -20,8 +21,9 @@ import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
 import ReportsPage from '../../components/admin/ReportsPage';
+import OverdueTicketsPanel from '../../components/admin/OverdueTicketsPanel';
 
-type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports';
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports' | 'overdue';
 
 interface AdminPageProps {
   currentAdminId?: string;
@@ -34,6 +36,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { departments, createDepartment, updateDepartment, deleteDepartment, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, deleteUser, getStaffUsers, getStudentUsers } = useUsers();
+  const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
@@ -394,6 +397,21 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             >
               Quản lý Tickets
             </button>
+
+            {/* Overdue/Escalate - Critical tickets */}
+            <button
+              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
+                activeTab === 'overdue'
+                  ? 'bg-red-50 text-red-700 font-semibold border-l-4 border-red-600'
+                  : 'text-red-600 font-medium hover:bg-red-50 hover:text-red-700'
+              }`}
+              onClick={() => setActiveTab('overdue')}
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-lg">🔴</span>
+                <span>Tickets Quá Hạn ({overdueTickets.length})</span>
+              </span>
+            </button>
             
             {/* Members submenu */}
             <div>
@@ -745,6 +763,18 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={departments}
               users={users}
               adminDepartments={adminDepartments}
+            />
+          )}
+
+          {/* Overdue Tickets / Escalation Management */}
+          {activeTab === 'overdue' && (
+            <OverdueTicketsPanel
+              overdueTickets={overdueTickets}
+              loading={overdueLoading}
+              error={overdueError}
+              onEscalate={escalateTicket}
+              isEscalating={isEscalating}
+              onRefresh={refetchOverdue}
             />
           )}
         </div>

@@ -3,6 +3,7 @@ import { ticketService } from '../../services/ticketService';
 import AssignedTicketsList from '../../components/staff/AssignedTicketsList';
 import type { TicketFromApi } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
+import { formatDateToVN } from '../../utils/dateUtils';
 const StaffPage = () => {
   const [tickets, setTickets] = useState<TicketFromApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -295,20 +296,20 @@ const StaffPage = () => {
                   {/* Ngày tạo */}
                   <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
                     <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">📅 Ngày tạo</div>
-                    <div className="text-base font-semibold text-gray-800">{new Date(selectedTicket.createdAt).toLocaleString('vi-VN')}</div>
+                    <div className="text-base font-semibold text-gray-800">{formatDateToVN(selectedTicket.createdAt)}</div>
                   </div>
 
                   {/* Hạn xử lý */}
                   <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
                     <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">⏰ Hạn xử lý</div>
-                    <div className="text-base font-semibold text-gray-800">{new Date(selectedTicket.resolveDeadline).toLocaleString('vi-VN')}</div>
+                    <div className="text-base font-semibold text-gray-800">{formatDateToVN(selectedTicket.resolveDeadline)}</div>
                   </div>
 
                   {/* Ngày hoàn thành */}
                   {selectedTicket.resolvedAt && (
                     <div className="bg-green-50 p-4 rounded-lg border border-green-200">
                       <div className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wide">✅ Ngày hoàn thành</div>
-                      <div className="text-base font-semibold text-green-800">{new Date(selectedTicket.resolvedAt).toLocaleString('vi-VN')}</div>
+                      <div className="text-base font-semibold text-green-800">{formatDateToVN(selectedTicket.resolvedAt)}</div>
                     </div>
                   )}
                 </div>

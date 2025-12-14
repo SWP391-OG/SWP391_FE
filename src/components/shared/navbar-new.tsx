@@ -72,7 +72,9 @@ const NavbarNew = ({
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const formatTimeAgo = (iso: string) => {
-    const t = Date.now() - new Date(iso).getTime();
+    // Normalize timestamp by adding Z if missing (backend returns without Z)
+    const normalizedIso = iso.includes('Z') ? iso : `${iso}Z`;
+    const t = Date.now() - new Date(normalizedIso).getTime();
     const seconds = Math.floor(t / 1000);
     if (seconds < 60) return `${seconds} giây trước`;
     const minutes = Math.floor(seconds / 60);

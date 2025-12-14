@@ -321,4 +321,31 @@ export const ticketService = {
       throw error;
     }
   },
+
+  // Lấy danh sách tickets overdue - GET method (Admin only)
+  async getOverdueTickets(): Promise<GetAllTicketsResponse> {
+    try {
+      const response = await apiClient.get<GetAllTicketsResponse>(
+        `/Ticket/overdue`
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching overdue tickets:', error);
+      throw error;
+    }
+  },
+
+  // Escalate ticket - PATCH method (Admin only)
+  async escalateTicket(ticketCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/escalate`,
+        {} // Empty body for escalation
+      );
+      return response;
+    } catch (error) {
+      console.error('Error escalating ticket:', error);
+      throw error;
+    }
+  },
 };

@@ -28,6 +28,8 @@ const TicketDetailModal = ({
   const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
   const [ratingComment, setRatingComment] = useState<string>(() => ticket.ratingComment || '');
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
+  const [isSavingFeedback, setIsSavingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
   // State để lưu feedback đã submit để hiển thị ngay lập tức
   const [submittedRating, setSubmittedRating] = useState<{stars: number; comment: string} | null>(
     ticket.ratingStars ? { stars: ticket.ratingStars, comment: ticket.ratingComment || '' } : null
@@ -68,8 +70,11 @@ const TicketDetailModal = ({
 
   // Format date
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
+    // Backend returns timestamps without Z, so we treat them as UTC by adding Z
+    const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(normalizedDateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -297,6 +302,17 @@ const TicketDetailModal = ({
                       </div>
                     </div>
                   )}
+                  <button
+                    onClick={() => {
+                      setIsEditingFeedback(true);
+                      setRatingStars(displayRating.stars);
+                      setRatingComment(displayRating.comment);
+                      setFeedbackError(null);
+                    }}
+                    className="px-4 py-2 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-all duration-200"
+                  >
+                    ✏️ Chỉnh sửa đánh giá
+                  </button>
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
@@ -308,7 +324,8 @@ const TicketDetailModal = ({
                           key={star}
                           type="button"
                           onClick={() => setRatingStars(star)}
-                          className="text-3xl transition-all duration-200 hover:scale-110"
+                          disabled={isSavingFeedback}
+                          className="text-3xl transition-all duration-200 hover:scale-110 disabled:opacity-50"
                           style={{ color: star <= ratingStars ? '#fbbf24' : '#d1d5db' }}
                         >
                           ★
@@ -323,25 +340,47 @@ const TicketDetailModal = ({
                       value={ratingComment}
                       onChange={(e) => setRatingComment(e.target.value)}
                       placeholder="Nhập mô tả phản hồi của bạn..."
-                      className="w-full p-4 border-2 border-gray-200 rounded-lg text-base resize-none focus:outline-none focus:border-blue-500"
+                      disabled={isSavingFeedback}
+                      className="w-full p-4 border-2 border-gray-200 rounded-lg text-base resize-none focus:outline-none focus:border-blue-500 disabled:opacity-50"
                       rows={4}
                     />
                   </div>
                   <div className="flex gap-3">
                     <button
-                      onClick={() => {
-                        if (onUpdateFeedback && ratingStars > 0) {
-                          // Lưu feedback vào state để hiển thị ngay
+                      onClick={async () => {
+                        if (ratingStars < 1) {
+                          setFeedbackError('Vui lòng chọn số sao đánh giá (từ 1-5)');
+                          return;
+                        }
+
+                        try {
+                          setIsSavingFeedback(true);
+                          setFeedbackError(null);
+                          
+                          // Call API to persist feedback
+                          if (onUpdateFeedback) {
+                            await onUpdateFeedback(ticket.id, ratingStars, ratingComment);
+                          }
+                          
+                          // Update local state
                           setSubmittedRating({ stars: ratingStars, comment: ratingComment });
-                          onUpdateFeedback(ticket.id, ratingStars, ratingComment);
                           setIsEditingFeedback(false);
-                        } else {
-                          alert('Vui lòng chọn số sao đánh giá (từ 1-5)');
+                          
+                          // Show success message
+                          alert('✅ Cảm ơn bạn đã đánh giá!');
+                          
+                        } catch (error) {
+                          const errorMsg = error instanceof Error ? error.message : 'Lưu feedback thất bại';
+                          setFeedbackError(errorMsg);
+                          console.error('❌ Error saving feedback:', error);
+                        } finally {
+                          setIsSavingFeedback(false);
                         }
                       }}
-                      className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200"
+                      disabled={isSavingFeedback}
+                      className="px-6 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Lưu phản hồi
+                      {isSavingFeedback ? 'Đang lưu...' : 'Lưu phản hồi'}
                     </button>
                     {displayRating && (
                       <button
@@ -349,13 +388,20 @@ const TicketDetailModal = ({
                           setIsEditingFeedback(false);
                           setRatingStars(displayRating.stars);
                           setRatingComment(displayRating.comment);
+                          setFeedbackError(null);
                         }}
-                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-all duration-200"
+                        disabled={isSavingFeedback}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Hủy
                       </button>
                     )}
                   </div>
+                  {feedbackError && (
+                    <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                      ❌ {feedbackError}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

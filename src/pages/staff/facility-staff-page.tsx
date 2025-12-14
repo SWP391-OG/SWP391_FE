@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Ticket } from '../../types';
+import { isTicketOverdue, getTimeUntilDeadline } from '../../utils/dateUtils';
 
 interface FacilityStaffPageProps {
   tickets: Ticket[];
@@ -95,13 +96,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                     fontWeight: 600,
                     color: '#374151',
                     fontSize: '0.875rem',
-                  }}>Ưu tiên</th>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'left',
-                    fontWeight: 600,
-                    color: '#374151',
-                    fontSize: '0.875rem',
                   }}>SLA</th>
                   <th style={{
                     padding: '1rem',
@@ -130,14 +124,12 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                     urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
                   }[ticket.priority];
 
-                  // Calculate SLA status
-                  const now = new Date();
-                  const deadline = new Date(ticket.slaDeadline);
-                  const isOverdue = now > deadline;
-                  const hoursRemaining = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60);
+                  // Calculate SLA status using timezone-aware function
+                  const overdue = isTicketOverdue(ticket.resolveDeadline);
+                  const { hours: hoursRemaining } = getTimeUntilDeadline(ticket.resolveDeadline);
                   const slaStatus = ticket.status === 'resolved' || ticket.status === 'closed'
-                    ? (new Date(ticket.updatedAt || ticket.createdAt) <= deadline ? 'completed' : 'overdue')
-                    : isOverdue
+                    ? (isTicketOverdue(ticket.resolveDeadline) ? 'overdue' : 'completed')
+                    : overdue
                     ? 'overdue'
                     : hoursRemaining < 2
                     ? 'warning'
@@ -191,18 +183,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                           color: statusInfo.color,
                         }}>
                           {statusInfo.text}
-                        </span>
-                      </td>
-                      <td style={{ padding: '1rem' }}>
-                        <span style={{
-                          padding: '0.4rem 0.75rem',
-                          borderRadius: '6px',
-                          fontSize: '0.875rem',
-                          fontWeight: 600,
-                          background: priorityInfo.bg,
-                          color: priorityInfo.color,
-                        }}>
-                          {priorityInfo.text}
                         </span>
                       </td>
                       <td style={{ padding: '1rem' }}>

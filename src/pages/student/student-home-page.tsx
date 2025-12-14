@@ -135,7 +135,9 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
 
   // Format date
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    // Normalize timestamp by adding Z if missing (backend returns without Z)
+    const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(normalizedDateString);
     const now = new Date();
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
 

@@ -125,8 +125,10 @@ const TicketReviewModal = ({
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+    const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(normalizedDateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
