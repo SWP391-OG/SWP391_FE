@@ -224,37 +224,37 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
     (formData.locationCode?.trim() ?? '') !== '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-orange-100 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 py-8">
       <div className="max-w-[900px] mx-auto px-8">
         <button 
-          className="py-3 px-6 bg-white text-orange-600 border-2 border-orange-200 rounded-xl cursor-pointer text-[0.95rem] font-semibold mb-6 transition-all duration-200 hover:bg-orange-50 hover:border-orange-300 shadow-sm hover:shadow-md"
+          className="py-3 px-6 bg-white text-blue-600 border-2 border-blue-200 rounded-lg cursor-pointer text-[0.95rem] font-semibold mb-6 transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 shadow-sm hover:shadow-md"
           onClick={onBack}
         >
           ← Quay lại chọn loại vấn đề
         </button>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 mb-8 flex items-center gap-4 shadow-lg">
+        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 mb-8 flex items-center gap-4 shadow-lg">
           <div className="text-5xl">📝</div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold my-0 mb-1">{currentCategory.categoryName}</h2>
-            <p className="text-orange-100 text-sm m-0">Thời gian xử lý: {currentCategory.slaResolveHours}h</p>
+            <p className="text-blue-100 text-sm m-0">Thời gian xử lý: {currentCategory.slaResolveHours}h</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-orange-100">
+        <div className="bg-white rounded-xl p-8 shadow-md border border-gray-200">
           <div className="mb-6">
             <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
-              Mô tả chi tiết <span className="text-orange-500">*</span>
+              Mô tả chi tiết <span className="text-blue-500">*</span>
             </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleInputChange}
               placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl transition-all duration-200 min-h-[120px] resize-y font-[inherit] box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              className="w-full py-3 px-4 text-base border-2 border-blue-200 rounded-lg transition-all duration-200 min-h-[120px] resize-y font-[inherit] box-border focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               required
             />
-            <div className="text-[0.85rem] text-orange-600 mt-2 flex items-center gap-1">
+            <div className="text-[0.85rem] text-blue-600 mt-2 flex items-center gap-1">
               <span>💡</span>
               <span>Vui lòng mô tả chi tiết để chúng tôi có thể hỗ trợ bạn tốt hơn</span>
             </div>
@@ -262,13 +262,13 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
 
           <div className="mb-6">
             <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
-              Campus <span className="text-orange-500">*</span>
+              Campus <span className="text-blue-500">*</span>
             </label>
             <select
               name="campusCode"
               value={formData.campusCode}
               onChange={handleInputChange}
-              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              className="w-full py-3 px-4 text-base border-2 border-blue-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               required
               disabled={isLoadingCampuses}
             >
@@ -279,20 +279,20 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
                 </option>
               ))}
             </select>
-            <div className="text-[0.85rem] text-orange-600 mt-2">
+            <div className="text-[0.85rem] text-blue-600 mt-2">
               {isLoadingCampuses ? '⏳ Đang tải...' : '📍 Chọn campus nơi xảy ra sự cố'}
             </div>
           </div>
 
           <div className="mb-6">
             <label className="block text-[0.95rem] font-bold text-gray-800 mb-3">
-              Địa điểm <span className="text-orange-500">*</span>
+              Địa điểm <span className="text-blue-500">*</span>
             </label>
             <select
               name="locationCode"
               value={formData.locationCode}
               onChange={handleInputChange}
-              className="w-full py-3 px-4 text-base border-2 border-orange-200 rounded-xl bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              className="w-full py-3 px-4 text-base border-2 border-blue-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
               required
               disabled={!formData.campusCode || isLoadingLocations}
             >
@@ -303,7 +303,7 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
                 </option>
               ))}
             </select>
-            <div className="text-[0.85rem] text-orange-600 mt-2">
+            <div className="text-[0.85rem] text-blue-600 mt-2">
               {!formData.campusCode 
                 ? '⚠️ Vui lòng chọn campus trước' 
                 : isLoadingLocations 
@@ -317,12 +317,12 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
               Hình ảnh <span className="text-gray-400 font-normal">(Tùy chọn)</span>
             </label>
             <div
-              className="border-2 border-dashed border-orange-300 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 bg-orange-50/50 hover:border-orange-500 hover:bg-orange-100/50"
+              className="border-2 border-dashed border-blue-300 rounded-lg p-8 text-center cursor-pointer transition-all duration-200 bg-blue-50/50 hover:border-blue-500 hover:bg-blue-100/50"
               onClick={() => document.getElementById('imageUpload')?.click()}
             >
               <div className="text-5xl mb-4">📸</div>
-              <div className="text-orange-700 text-[0.95rem] mb-2 font-semibold">Nhấp để tải lên hình ảnh</div>
-              <div className="text-orange-600 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
+              <div className="text-blue-700 text-[0.95rem] mb-2 font-semibold">Nhấp để tải lên hình ảnh</div>
+              <div className="text-blue-600 text-[0.85rem]">PNG, JPG, GIF tối đa 5MB mỗi ảnh</div>
               <input
                 id="imageUpload"
                 type="file"
@@ -336,11 +336,11 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
             {imagePreview.length > 0 && (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mt-4">
                 {imagePreview.map((preview, index) => (
-                  <div key={index} className="relative rounded-xl overflow-hidden border-2 border-orange-200 aspect-square shadow-md hover:shadow-lg transition-shadow">
+                  <div key={index} className="relative rounded-lg overflow-hidden border-2 border-blue-200 aspect-square shadow-md hover:shadow-lg transition-shadow">
                     <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
                     <button
                       type="button"
-                      className="absolute top-2 right-2 bg-orange-500 text-white border-none rounded-full w-8 h-8 cursor-pointer text-lg flex items-center justify-center font-bold transition-all duration-200 hover:bg-orange-600 hover:scale-110 shadow-lg"
+                      className="absolute top-2 right-2 bg-blue-500 text-white border-none rounded-full w-8 h-8 cursor-pointer text-lg flex items-center justify-center font-bold transition-all duration-200 hover:bg-blue-600 hover:scale-110 shadow-lg"
                       onClick={() => removeImage(index)}
                     >
                       ×
@@ -352,14 +352,14 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
           </div>
 
           {submitError && (
-            <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 rounded-xl shadow-sm">
+            <div className="mb-6 p-4 bg-red-50 border-2 border-red-200 rounded-lg shadow-sm">
               <div className="text-red-700 font-bold mb-1">❌ Lỗi</div>
               <div className="text-red-600 text-sm">{submitError}</div>
             </div>
           )}
 
           {submitSuccess && (
-            <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-xl shadow-sm">
+            <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-lg shadow-sm">
               <div className="text-green-700 font-bold mb-1">✅ Thành công</div>
               <div className="text-green-600 text-sm">Ticket đã được tạo thành công!</div>
             </div>
@@ -368,7 +368,7 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
           <div className="flex gap-4 mt-8">
             <button
               type="button"
-              className="py-4 px-8 bg-gray-100 text-gray-700 border-2 border-gray-200 rounded-xl cursor-pointer text-base font-bold transition-all duration-200 hover:bg-gray-200 hover:border-gray-300"
+              className="py-4 px-8 bg-gray-100 text-gray-700 border-2 border-gray-200 rounded-lg cursor-pointer text-base font-bold transition-all duration-200 hover:bg-gray-200 hover:border-gray-300"
               onClick={onBack}
               disabled={isSubmitting}
             >
@@ -377,10 +377,10 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
             <button
               type="button"
               onClick={handleSubmit}
-              className={`flex-1 py-4 px-8 text-white border-none rounded-xl cursor-pointer text-base font-bold transition-all duration-200 shadow-lg ${
+              className={`flex-1 py-4 px-8 text-white border-none rounded-lg cursor-pointer text-base font-bold transition-all duration-200 shadow-lg ${
                 !isFormValid || isSubmitting
-                  ? 'opacity-60 cursor-not-allowed bg-orange-300'
-                  : 'bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 hover:shadow-xl hover:-translate-y-1'
+                  ? 'opacity-60 cursor-not-allowed bg-blue-300'
+                  : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-xl hover:-translate-y-1'
               }`}
               disabled={!isFormValid || isSubmitting}
             >
@@ -395,20 +395,20 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
             onClick={() => setShowDuplicateModal(false)}
           >
             <div
-              className="bg-white rounded-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl"
+              className="bg-white rounded-xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b-2 border-orange-100">
+              <div className="p-6 border-b-2 border-blue-100">
                 <h3 className="m-0 text-xl text-gray-900 font-bold">⚠️ Phát hiện Ticket tương tự</h3>
               </div>
               <div className="p-6">
                 <p className="mb-4 text-gray-700">
                   Chúng tôi phát hiện một ticket tương tự đã được tạo trước đó. Bạn có muốn xem ticket đó không?
                 </p>
-                <div className="bg-orange-50 p-4 rounded-xl mb-4 border-2 border-orange-200">
+                <div className="bg-blue-50 p-4 rounded-lg mb-4 border-2 border-blue-200">
                   <div className="font-bold text-gray-900 mb-2">{duplicateTicket.title}</div>
                   <div className="text-sm text-gray-700">
-                    Trạng thái: <span className="font-bold text-orange-600">
+                    Trạng thái: <span className="font-bold text-blue-600">
                       {duplicateTicket.status === 'open' ? 'Mở' :
                        duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
                        duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
@@ -424,21 +424,21 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
                   <button
                     type="button"
                     onClick={() => setShowDuplicateModal(false)}
-                    className="bg-gray-100 text-gray-700 border-2 border-gray-200 py-3 px-6 rounded-xl font-bold cursor-pointer hover:bg-gray-200"
+                    className="bg-gray-100 text-gray-700 border-2 border-gray-200 py-3 px-6 rounded-lg font-bold cursor-pointer hover:bg-gray-200"
                   >
                     Hủy
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowDuplicateModal(false)}
-                    className="bg-orange-500 text-white border-none py-3 px-6 rounded-xl font-bold cursor-pointer hover:bg-orange-600"
+                    className="bg-blue-500 text-white border-none py-3 px-6 rounded-lg font-bold cursor-pointer hover:bg-blue-600"
                   >
                     Xem Ticket
                   </button>
                   <button
                     type="button"
                     onClick={handleCreateAnyway}
-                    className="bg-gradient-to-br from-orange-600 to-orange-700 text-white border-none py-3 px-6 rounded-xl font-bold cursor-pointer hover:from-orange-700 hover:to-orange-800"
+                    className="bg-gradient-to-br from-blue-600 to-blue-700 text-white border-none py-3 px-6 rounded-lg font-bold cursor-pointer hover:from-blue-700 hover:to-blue-800"
                   >
                     Vẫn tạo mới
                   </button>

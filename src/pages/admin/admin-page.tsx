@@ -228,7 +228,12 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   
   console.log('📊 Admin Categories (filtered):', {
     count: adminCategories?.length || 0,
-    adminCategories: adminCategories
+    adminCategories: adminCategories?.map(c => ({ 
+      code: c.categoryCode, 
+      name: c.categoryName,
+      deptId: c.departmentId,
+      deptIdType: typeof c.departmentId
+    })),
   });
 
   // Map IssueCategory to Category name for ticket filtering
@@ -295,9 +300,20 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       return {
         id: user.id,
         name: user.fullName,
+        departmentId: user.departmentId, // ✅ Thêm departmentId để filter
         departmentName: dept?.name || dept?.deptName || 'N/A',
         userCode: user.userCode || user.id, // userCode để gửi cho backend
       };
+    });
+
+    console.log('👥 Admin Staff List:', {
+      count: staffList.length,
+      staff: staffList.map(s => ({
+        name: s.name,
+        deptId: s.departmentId,
+        deptIdType: typeof s.departmentId,
+        deptName: s.departmentName
+      }))
     });
     
     console.log('👥 Admin Staff List:', {
@@ -1005,6 +1021,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <TicketReviewModal
           ticket={selectedTicketForReview}
           staffList={adminStaffList}
+          categories={adminCategories}
           onApprove={handleApproveTicket}
           onReject={handleRejectTicket}
           onAssign={handleAssignTicket}

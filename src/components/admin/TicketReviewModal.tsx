@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { Ticket, TicketFromApi } from '../../types';
+import { useState, useMemo } from 'react';
+import type { Ticket, TicketFromApi, Category } from '../../types';
 import { ticketService } from '../../services/ticketService';
 import { parseTicketImages } from '../../utils/ticketUtils';
 
@@ -7,11 +7,13 @@ interface Staff {
   id: string;
   name: string;
   userCode?: string; // Mã nhân viên cần cho backend
+  departmentId?: string; // Department của staff
 }
 
 interface TicketReviewModalProps {
   ticket: Ticket | TicketFromApi;
   staffList: Staff[];
+  categories?: Category[]; // Optional: để filter staff theo category
   onApprove: (ticketId: string) => void;
   onReject: (ticketId: string, reason: string) => void;
   onAssign?: (ticketId: string, staffId: string) => void;
@@ -27,6 +29,7 @@ const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromAp
 const TicketReviewModal = ({
   ticket,
   staffList,
+  categories = [],
   onApprove: _onApprove,
   onReject: _onReject,
   onAssign: _onAssign,
@@ -44,12 +47,60 @@ const TicketReviewModal = ({
   const requesterName = isFromApi ? ticket.requesterName : ticket.requesterName || '';
   const ticketImages = parseTicketImages(ticket);
   
-  // Debug staffList
-  console.log('📋 TicketReviewModal - Staff List:', {
-    count: staffList.length,
-    staffList,
-    ticket: ticketCode,
-  });
+  // Filter staff theo category của ticket
+  const filteredStaffList = useMemo(() => {
+    console.log('🔍 Starting staff filter:', {
+      isFromApi,
+      categoriesLength: categories?.length || 0,
+      categories,
+      staffList: staffList.length,
+    });
+
+    if (!isFromApi) {
+      console.log('❌ Not from API, returning all staff');
+      return staffList;
+    }
+
+    if (!categories || categories.length === 0) {
+      console.log('⚠️ No categories provided, returning all staff');
+      return staffList;
+    }
+    
+    const ticketCategoryCode = (ticket as TicketFromApi).categoryCode;
+    console.log('🔎 Looking for category:', ticketCategoryCode);
+    
+    const ticketCategory = categories.find(c => {
+      console.log(`  Comparing: "${c.categoryCode}" === "${ticketCategoryCode}" ?`, c.categoryCode === ticketCategoryCode);
+      return c.categoryCode === ticketCategoryCode;
+    });
+    
+    if (!ticketCategory) {
+      console.log('❌ Category not found:', ticketCategoryCode);
+      return staffList; // Nếu không tìm thấy category, return tất cả
+    }
+    
+    console.log('✅ Found category:', ticketCategory);
+
+    // Filter staff có departmentId matching với category's departmentId
+    const filtered = staffList.filter(staff => {
+      // Convert to number để so sánh chính xác (vì một cái có thể là string, một cái là number)
+      const staffDeptId = Number(staff.departmentId);
+      const categoryDeptId = Number(ticketCategory.departmentId);
+      const match = staffDeptId === categoryDeptId;
+      console.log(`  Staff ${staff.name}: departmentId=${staffDeptId} (type:${typeof staffDeptId}), categoryDeptId=${categoryDeptId} (type:${typeof categoryDeptId}), match=${match}`);
+      return match;
+    });
+    
+    console.log('🔍 Filtered staff result:', {
+      categoryCode: ticketCategoryCode,
+      categoryDepartmentId: ticketCategory.departmentId,
+      totalStaff: staffList.length,
+      filteredStaff: filtered.length,
+      filtered: filtered.map(s => ({ id: s.id, name: s.name, deptId: s.departmentId })),
+    });
+    
+    return filtered;
+  }, [ticket, staffList, categories, isFromApi]);
 
   const handleAutoAssign = async () => {
     if (!isFromApi) {
@@ -315,20 +366,24 @@ const TicketReviewModal = ({
               {assignMode === 'manual' && (
                 <div className="mb-6">
                   <label className="block text-base font-semibold text-gray-700 mb-3">
-                    Chọn Staff
+                    Chọn Staff {filteredStaffList.length === 0 && <span className="text-red-600">(Không có staff phù hợp)</span>}
                   </label>
                   <select
                     value={selectedStaffCode}
                     onChange={(e) => setSelectedStaffCode(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                    disabled={filteredStaffList.length === 0}
                   >
                     <option value="">-- Chọn staff --</option>
-                    {staffList.map((staff) => (
+                    {filteredStaffList.map((staff) => (
                       <option key={staff.id} value={staff.id}>
                         {staff.name}
                       </option>
                     ))}
                   </select>
+                  {filteredStaffList.length === 0 && (
+                    <p className="text-sm text-red-600 mt-2">⚠️ Không có staff nào thuộc cùng department với category này</p>
+                  )}
                 </div>
               )}
 
@@ -344,9 +399,9 @@ const TicketReviewModal = ({
               <button
                 type="button"
                 onClick={handleAssign}
-                disabled={isAssigning || (assignMode === 'manual' && !selectedStaffCode)}
+                disabled={isAssigning || (assignMode === 'manual' && (!selectedStaffCode || filteredStaffList.length === 0))}
                 className={`w-full px-6 py-3 rounded-lg font-semibold text-white text-base transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 flex items-center justify-center gap-2 ${
-                  isAssigning || (assignMode === 'manual' && !selectedStaffCode)
+                  isAssigning || (assignMode === 'manual' && (!selectedStaffCode || filteredStaffList.length === 0))
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 cursor-pointer shadow-lg hover:shadow-xl'
                 }`}
