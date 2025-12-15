@@ -58,12 +58,15 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
           createdByName: apiTicket.requesterName,
           assignedTo: apiTicket.assignedToCode || undefined,
           assignedToName: apiTicket.assignedToName || undefined,
+          assignedToPhone: apiTicket.assignedToPhone || undefined,
+          managedByPhone: apiTicket.managedByPhone || undefined,
           createdAt: apiTicket.createdAt,
           updatedAt: apiTicket.createdAt,
           resolvedAt: apiTicket.resolvedAt || undefined,
           imageUrl: apiTicket.imageUrl,
-          contactPhone: apiTicket.contactPhone,
+          contactPhone: apiTicket.contactPhone || undefined,
           notes: apiTicket.note || undefined,
+          note: apiTicket.note || undefined,
           slaDeadline: apiTicket.resolveDeadline,
           ratingStars: apiTicket.ratingStars || undefined,
           ratingComment: apiTicket.ratingComment || undefined,
@@ -154,6 +157,20 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     }
   };
 
+  // Format full date time (like in modal details)
+  const formatDateTime = (dateString: string) => {
+    const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(normalizedDateString);
+    return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      hour: '2-digit',
+      minute: '2-digit',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+  };
+
   // Status colors
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
@@ -172,6 +189,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     'in-progress': 'Đang xử lý',
     resolved: 'Đã giải quyết',
     closed: 'Đã đóng',
+    cancelled: 'Đã hủy',
   };
 
   // Handle create ticket
@@ -387,6 +405,10 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
           ) : (
             <div className="flex flex-col gap-4">
               {displayedTickets.map((ticket) => {
+                // Check if ticket is completed (resolved or closed)
+                const isCompleted = ticket.status === 'resolved' || ticket.status === 'closed';
+                const isCancelled = ticket.status === 'cancelled';
+
                 return (
                   <div
                     key={ticket.id}
@@ -414,6 +436,56 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                     <p className="text-[0.95rem] text-gray-500 leading-relaxed line-clamp-2 overflow-hidden">
                       {ticket.description}
                     </p>
+
+                    {/* Show staff info and phone number for all tickets with assigned staff */}
+                    {ticket.assignedToName && (
+                      <div className="bg-blue-50 rounded-lg p-3 flex items-center gap-3">
+                        <span className="text-lg">👤</span>
+                        <div className="flex-1">
+                          <div className="text-[0.8rem] font-semibold text-gray-500">Người xử lý</div>
+                          <div className="text-sm font-medium text-gray-800">{ticket.assignedToName}</div>
+                        </div>
+                        {ticket.assignedToPhone && (
+                          <div className="text-right">
+                            <div className="text-[0.8rem] font-semibold text-gray-500">Điện thoại</div>
+                            <div className="text-sm font-medium text-gray-800">{ticket.assignedToPhone}</div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Show resolution date for completed tickets */}
+                    {isCompleted && ticket.resolvedAt && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 flex items-center gap-3">
+                        <span className="text-lg">✅</span>
+                        <div>
+                          <div className="text-[0.8rem] font-semibold text-gray-500">Được giải quyết vào</div>
+                          <div className="text-sm font-medium text-gray-800">{formatDateTime(ticket.resolvedAt)}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show contact phone in separate box */}
+                    {isCompleted && ticket.contactPhone && (
+                      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4 flex items-center gap-3">
+                        <span className="text-lg">📱</span>
+                        <div>
+                          <div className="text-[0.8rem] font-semibold text-gray-500">Số điện thoại liên hệ</div>
+                          <div className="text-sm font-medium text-gray-800">{ticket.contactPhone}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Show note/reason for cancelled tickets */}
+                    {isCancelled && ticket.note && (
+                      <div className="bg-red-50 rounded-lg p-4 flex gap-3">
+                        <span className="text-lg">📝</span>
+                        <div className="flex-1">
+                          <div className="text-[0.8rem] font-semibold text-red-600 mb-1">Lý do hủy</div>
+                          <div className="text-sm text-red-800">{ticket.note}</div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                       <div className="flex items-center gap-2 text-sm">

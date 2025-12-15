@@ -164,6 +164,9 @@ const TicketDetailModal = ({
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">👤 Người xử lý</div>
                   <div className="text-base text-gray-800 font-medium">{ticket.assignedToName || ticket.assignedTo}</div>
+                  {ticket.assignedToPhone && (
+                    <div className="text-sm text-gray-600 mt-2">📱 {ticket.assignedToPhone}</div>
+                  )}
                 </div>
               )}
               {ticket.managedByName && (
@@ -188,6 +191,14 @@ const TicketDetailModal = ({
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📱 Thông tin liên lạc</div>
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
+                </div>
+              )}
+              {ticket.note && (
+                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-gray-500'}`}>
+                    {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
+                  </div>
+                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-gray-800'}`}>{ticket.note}</div>
                 </div>
               )}
               {ticket.notes && (

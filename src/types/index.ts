@@ -305,8 +305,10 @@ export interface TicketFromApi {
   requesterName: string;
   assignedToCode: string;
   assignedToName: string;
+  assignedToPhone?: string; // Số điện thoại nhân viên được giao
   managedByCode: string;
   managedByName: string;
+  managedByPhone?: string; // Số điện thoại người quản lý
   locationCode: string;
   locationName: string;
   categoryCode: string;
@@ -360,8 +362,10 @@ export interface Ticket {
   assignedTo?: string; // Deprecated - dùng assignedToId thay thế
   assignedToId?: string; // DB: assigned_to_id (FK) - Nhân viên kỹ thuật được giao việc (NULL khi mới tạo)
   assignedToName?: string; // From API: assignedToName - Tên người được giao
+  assignedToPhone?: string; // From API: Số điện thoại của nhân viên được giao
   managedByCode?: string; // From API: managedByCode - Mã người quản lý
   managedByName?: string; // From API: managedByName - Tên người quản lý
+  managedByPhone?: string; // From API: Số điện thoại của người quản lý
   categoryName?: string; // From API: categoryName - Tên loại sự cố
   contactPhone?: string; // From API: contactPhone - Số điện thoại liên hệ
   note?: string; // From API: note - Ghi chú từ staff/admin
