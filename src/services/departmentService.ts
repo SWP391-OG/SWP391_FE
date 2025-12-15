@@ -288,64 +288,109 @@ export const departmentService = {
 
   /**
    * Xóa department
-   * DELETE /api/Department/{departmentId}
-   * Theo Swagger: cần departmentId (int32)
+   * DELETE /api/Department/{departmentId}?departmentId={departmentId}
+   * Theo Swagger:
+   * - Path parameter: departmentId (string) - REQUIRED
+   * - Query parameter: departmentId (integer, int32) - optional
+   * - Response: 200 OK với ApiResponse<PaginatedResponse<DepartmentDto>>
+   * 
+   * Giải pháp: Dùng cả path (string) và query (integer) để đảm bảo backend nhận đúng
    */
   async delete(departmentId: number): Promise<void> {
     try {
-      console.log('🏢 Deleting department ID:', departmentId);
-      console.log('🏢 Request URL:', `${API_BASE_URL}/Department/${departmentId}`);
-      
-      interface DepartmentDeleteResponse {
-        status: boolean;
-        message: string;
-        data: null;
-        errors: string[];
+      // Validate departmentId
+      if (!departmentId || isNaN(departmentId) || departmentId <= 0) {
+        throw new Error(`Invalid departmentId: ${departmentId}. DepartmentId must be a positive integer (int32).`);
       }
       
-      const response = await apiClient.delete<DepartmentDeleteResponse>(
-        `/Department/${departmentId}`
-      );
+      console.log(`🏢 Deleting department ID: ${departmentId} (type: ${typeof departmentId})`);
       
-      console.log('🏢 API Response:', response);
+      // Theo Swagger: Path parameter là REQUIRED (string), Query parameter là optional (integer)
+      // Giải pháp: Dùng cả 2 để đảm bảo backend nhận đúng
+      // URL: /api/Department/{departmentId}?departmentId={departmentId}
+      // Ví dụ: /api/Department/15?departmentId=15
+      const endpoint = `/Department/${departmentId}?departmentId=${departmentId}`;
+      console.log(`🏢 DELETE ${endpoint}`);
       
-      if (!response.status) {
-        const errorMsg = response.message || 'Failed to delete department';
-        const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
-        console.error('❌ Failed to delete department:', { response, errorMsg, errorDetails });
-        throw new Error(`${errorMsg}${errorDetails}`);
+      const response = await apiClient.delete<DepartmentApiResponse>(endpoint);
+      
+      console.log('🏢 DELETE response:', response);
+      
+      // Xử lý response theo Swagger: 200 OK với ApiResponse<PaginatedResponse<DepartmentDto>>
+      if (typeof response === 'object' && response !== null) {
+        // Kiểm tra nếu là empty object (có thể là 204 No Content được handleResponse xử lý)
+        if (Object.keys(response).length === 0) {
+          console.log('✅ Department deleted successfully (204 No Content)');
+          return;
+        }
+        
+        // Kiểm tra structure DepartmentApiResponse
+        if ('status' in response) {
+          const apiResponse = response as DepartmentApiResponse;
+          
+          if (!apiResponse.status) {
+            const errorMsg = apiResponse.message || 'Failed to delete department';
+            const errors = apiResponse.errors && apiResponse.errors.length > 0 
+              ? `\nErrors: ${apiResponse.errors.join(', ')}`
+              : '';
+            throw new Error(`${errorMsg}${errors}`);
+          }
+          
+          // Log thông tin response (có thể có pagination data)
+          if (apiResponse.data) {
+            if (Array.isArray(apiResponse.data)) {
+              console.log(`✅ Department deleted successfully. Remaining departments: ${apiResponse.data.length}`);
+            } else if (typeof apiResponse.data === 'object' && 'items' in apiResponse.data) {
+              const paginatedData = apiResponse.data as { items: DepartmentDto[]; totalCount: number };
+              console.log(`✅ Department deleted successfully. Remaining departments: ${paginatedData.items.length} (total: ${paginatedData.totalCount})`);
+            }
+          }
+          
+          console.log('✅ Department deleted successfully:', apiResponse.message || 'Success');
+          return;
+        }
       }
-
-      console.log('✅ Department deleted:', departmentId);
+      
+      // Nếu không có structure rõ ràng, coi như thành công (vì handleResponse đã xử lý lỗi rồi)
+      console.log('✅ Department deleted successfully (no explicit status check)');
     } catch (error) {
       console.error('❌ Error deleting department:', error);
+      console.error('❌ Error details:', {
+        departmentId,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       
-      // Xử lý các loại error khác nhau
+      // Cải thiện error message theo Swagger response codes
       if (error instanceof Error) {
+        if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
+          throw new Error('Backend không hỗ trợ phương thức DELETE cho endpoint này. Vui lòng kiểm tra Swagger API.');
+        }
+        if (error.message.includes('404')) {
+          throw new Error(`Không tìm thấy bộ phận với ID ${departmentId}. Có thể bộ phận đã bị xóa hoặc không tồn tại.`);
+        }
+        if (error.message.includes('400') || error.message.includes('Bad Request')) {
+          throw new Error(`Lỗi xóa bộ phận: ${error.message}\n\nLưu ý: API yêu cầu departmentId (số nguyên int32). Kiểm tra xem departmentId có đúng không hoặc bộ phận có đang được sử dụng không.`);
+        }
+        if (error.message.includes('401')) {
+          throw new Error('Unauthorized - Vui lòng đăng nhập lại.');
+        }
+        if (error.message.includes('403')) {
+          throw new Error('Forbidden - Bạn không có quyền xóa bộ phận này.');
+        }
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
           throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc backend API có đang chạy không.');
         }
         if (error.message.includes('timeout')) {
           throw new Error('Request timeout. Vui lòng thử lại sau.');
         }
-        if (error.message.includes('404')) {
-          throw new Error('API endpoint không tồn tại. Backend có thể chưa hỗ trợ DELETE /api/Department/{departmentId}.\n\nVui lòng yêu cầu backend implement endpoint này.');
-        }
-        if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
-          throw new Error('Backend không hỗ trợ phương thức này.\n\nBackend hiện tại CHƯA HỖ TRỢ DELETE /api/Department/{departmentId}.\nVui lòng yêu cầu backend implement endpoint này.');
-        }
-        if (error.message.includes('401') || error.message.includes('403')) {
-          throw new Error('Không có quyền truy cập. Vui lòng đăng nhập lại.');
-        }
-        if (error.message.includes('400')) {
-          throw new Error('Không thể xóa bộ phận này. Có thể bộ phận đang được sử dụng.');
-        }
         if (error.message.includes('500')) {
           throw new Error('Lỗi server. Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
         }
-        throw error;
       }
-      throw new Error('Có lỗi xảy ra khi xóa bộ phận. Vui lòng thử lại.');
+      
+      throw error;
     }
   },
 };

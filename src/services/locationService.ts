@@ -203,67 +203,96 @@ export const locationService = {
 
   /**
    * Xóa location
-   * DELETE /api/Location/{locationId} hoặc DELETE /api/Location?locationId={locationId}
-   * Theo Swagger: cần locationId (int32), không phải locationCode
+   * DELETE /api/Location/{locationId}?locationId={locationId}
+   * Theo Swagger:
+   * - Path parameter: locationId (string) - REQUIRED
+   * - Query parameter: locationId (integer, int32) - optional
+   * - Response: 200 OK với ApiResponse<PaginatedResponse<LocationDto>>
+   * 
+   * Giải pháp: Dùng cả path (string) và query (integer) để đảm bảo backend nhận đúng
    */
   async delete(locationId: number): Promise<void> {
     try {
-      console.log(`📍 Deleting location ID: ${locationId}`);
-      
-      // Thử path parameter trước (theo Swagger: DELETE /api/Location/{locationId})
-      try {
-        console.log(`📍 Trying DELETE /Location/${locationId} (path parameter)`);
-        
-        const response = await apiClient.delete<LocationApiResponse>(
-          `/Location/${locationId}`
-        );
-        
-        if (!response.status) {
-          throw new Error(response.message || 'Failed to delete location');
-        }
-
-        console.log('✅ Location deleted successfully (path parameter)');
-        return;
-      } catch (pathError: any) {
-        // Nếu path parameter fail với 404 hoặc 405, thử query parameter
-        const errorMsg = pathError instanceof Error ? pathError.message : String(pathError);
-        if (errorMsg.includes('404') || errorMsg.includes('405') || errorMsg.includes('Method Not Allowed')) {
-          console.log('⚠️ Path parameter failed, trying query parameter...');
-          console.log(`📍 Trying DELETE /Location?locationId=${locationId} (query parameter)`);
-          
-          try {
-            const response = await apiClient.delete<LocationApiResponse>(
-              `/Location?locationId=${locationId}`
-            );
-            
-            if (!response.status) {
-              throw new Error(response.message || 'Failed to delete location');
-            }
-
-            console.log('✅ Location deleted successfully (query parameter)');
-            return;
-          } catch (queryError: any) {
-            // Cả 2 cách đều fail
-            const queryErrorMsg = queryError instanceof Error ? queryError.message : String(queryError);
-            if (queryErrorMsg.includes('405') || queryErrorMsg.includes('Method Not Allowed')) {
-              throw new Error('Backend không hỗ trợ phương thức DELETE cho endpoint này. Vui lòng kiểm tra Swagger API để xem endpoint đúng.\n\nThử:\n- DELETE /api/Location/{locationId}\n- DELETE /api/Location?locationId={locationId}');
-            }
-            throw queryError;
-          }
-        }
-        // Nếu lỗi khác, throw lại
-        throw pathError;
+      // Validate locationId
+      if (!locationId || isNaN(locationId) || locationId <= 0) {
+        throw new Error(`Invalid locationId: ${locationId}. LocationId must be a positive integer (int32).`);
       }
+      
+      console.log(`📍 Deleting location ID: ${locationId} (type: ${typeof locationId})`);
+      
+      // Theo Swagger: Path parameter là REQUIRED (string), Query parameter là optional (integer)
+      // Giải pháp: Dùng cả 2 để đảm bảo backend nhận đúng
+      // URL: /api/Location/{locationId}?locationId={locationId}
+      // Ví dụ: /api/Location/15?locationId=15
+      const endpoint = `/Location/${locationId}?locationId=${locationId}`;
+      console.log(`📍 DELETE ${endpoint}`);
+      
+      const response = await apiClient.delete<LocationApiResponse>(endpoint);
+      
+      console.log('📍 DELETE response:', response);
+      
+      // Xử lý response theo Swagger: 200 OK với ApiResponse<PaginatedResponse<LocationDto>>
+      if (typeof response === 'object' && response !== null) {
+        // Kiểm tra nếu là empty object (có thể là 204 No Content được handleResponse xử lý)
+        if (Object.keys(response).length === 0) {
+          console.log('✅ Location deleted successfully (204 No Content)');
+          return;
+        }
+        
+        // Kiểm tra structure LocationApiResponse
+        if ('status' in response) {
+          const apiResponse = response as LocationApiResponse;
+          
+          if (!apiResponse.status) {
+            const errorMsg = apiResponse.message || 'Failed to delete location';
+            const errors = apiResponse.errors && apiResponse.errors.length > 0 
+              ? `\nErrors: ${apiResponse.errors.join(', ')}`
+              : '';
+            throw new Error(`${errorMsg}${errors}`);
+          }
+          
+          // Log thông tin response (có thể có pagination data)
+          if (apiResponse.data) {
+            if (Array.isArray(apiResponse.data)) {
+              console.log(`✅ Location deleted successfully. Remaining locations: ${apiResponse.data.length}`);
+            } else if (typeof apiResponse.data === 'object' && 'items' in apiResponse.data) {
+              const paginatedData = apiResponse.data as { items: LocationDto[]; totalCount: number };
+              console.log(`✅ Location deleted successfully. Remaining locations: ${paginatedData.items.length} (total: ${paginatedData.totalCount})`);
+            }
+          }
+          
+          console.log('✅ Location deleted successfully:', apiResponse.message || 'Success');
+          return;
+        }
+      }
+      
+      // Nếu không có structure rõ ràng, coi như thành công (vì handleResponse đã xử lý lỗi rồi)
+      console.log('✅ Location deleted successfully (no explicit status check)');
     } catch (error) {
       console.error('❌ Error deleting location:', error);
+      console.error('❌ Error details:', {
+        locationId,
+        errorType: typeof error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       
-      // Cải thiện error message
+      // Cải thiện error message theo Swagger response codes
       if (error instanceof Error) {
         if (error.message.includes('405') || error.message.includes('Method Not Allowed')) {
-          throw new Error('Backend không hỗ trợ phương thức DELETE cho endpoint này. Vui lòng kiểm tra Swagger API để xem endpoint đúng.');
+          throw new Error('Backend không hỗ trợ phương thức DELETE cho endpoint này. Vui lòng kiểm tra Swagger API.');
         }
         if (error.message.includes('404')) {
-          throw new Error('Không tìm thấy địa điểm cần xóa. Có thể địa điểm đã bị xóa hoặc không tồn tại.');
+          throw new Error(`Không tìm thấy địa điểm với ID ${locationId}. Có thể địa điểm đã bị xóa hoặc không tồn tại.`);
+        }
+        if (error.message.includes('400') || error.message.includes('Bad Request')) {
+          throw new Error(`Lỗi xóa địa điểm: ${error.message}\n\nLưu ý: API yêu cầu locationId (số nguyên int32). Kiểm tra xem locationId có đúng không.`);
+        }
+        if (error.message.includes('401')) {
+          throw new Error('Unauthorized - Vui lòng đăng nhập lại.');
+        }
+        if (error.message.includes('403')) {
+          throw new Error('Forbidden - Bạn không có quyền xóa địa điểm này.');
         }
       }
       

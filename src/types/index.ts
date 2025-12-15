@@ -142,7 +142,15 @@ export interface DepartmentDto {
 export interface DepartmentApiResponse {
   status: boolean;
   message: string;
-  data: DepartmentDto[];     // Backend trả về array của DepartmentDto
+  data: DepartmentDto[] | {  // Backend có thể trả về array trực tiếp hoặc pagination object
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+    items: DepartmentDto[];
+  };
   errors: string[];
 }
 
@@ -191,7 +199,15 @@ export interface LocationDto {
 export interface LocationApiResponse {
   status: boolean;
   message: string;
-  data: LocationDto[];  // Backend trả về array trực tiếp
+  data: LocationDto[] | {  // Backend có thể trả về array trực tiếp hoặc pagination object
+    pageNumber: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+    hasPrevious: boolean;
+    hasNext: boolean;
+    items: LocationDto[];
+  };
   errors: string[];
 }
 
