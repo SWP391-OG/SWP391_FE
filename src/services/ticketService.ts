@@ -166,11 +166,11 @@ export const ticketService = {
     }
   },
 
-  // Cancel ticket (cho Admin) - DELETE method
+  // Cancel ticket (cho Student) - DELETE method
   async cancelTicket(ticketCode: string, note: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
       const response = await apiClient.delete<{ status: boolean; message: string; data: unknown; errors: string[] }>(
-        `/Ticket/${ticketCode}/cancel`,
+        `/Ticket/${ticketCode}`,
         { reason: note }
       );
       return response;
