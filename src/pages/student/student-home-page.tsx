@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Ticket, Category, TicketFromApi } from '../../types';
 import IssueSelectionPage from './issue-selection-page';
 import CreateTicketPage from './create-ticket-page';
@@ -31,62 +31,63 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
 
-  // Fetch tickets from API
-  useEffect(() => {
-    const fetchMyTickets = async () => {
-      try {
-        setLoadingTickets(true);
-        setTicketsError(null);
-        const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
-        
-        // Map API response to Ticket format
-        const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
-          id: apiTicket.ticketCode,
-          title: apiTicket.title,
-          description: apiTicket.description,
-          status: mapApiStatus(apiTicket.status),
-          priority: 'medium' as const, // API doesn't have priority, default to medium
-          issueType: {
-            id: apiTicket.categoryCode,
-            name: apiTicket.categoryName,
-            icon: '🔧',
-            description: ''
-          },
-          location: apiTicket.locationName,
-          roomNumber: '',
-          createdBy: apiTicket.requesterCode,
-          createdByName: apiTicket.requesterName,
-          assignedTo: apiTicket.assignedToCode || undefined,
-          assignedToName: apiTicket.assignedToName || undefined,
-          assignedToPhone: apiTicket.assignedToPhone || undefined,
-          managedByPhone: apiTicket.managedByPhone || undefined,
+  // Function to fetch/refresh tickets from API
+  const fetchMyTickets = useCallback(async () => {
+    try {
+      setLoadingTickets(true);
+      setTicketsError(null);
+      const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
+      
+      // Map API response to Ticket format
+      const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
+        id: apiTicket.ticketCode,
+        title: apiTicket.title,
+        description: apiTicket.description,
+        status: mapApiStatus(apiTicket.status),
+        priority: 'medium' as const, // API doesn't have priority, default to medium
+        issueType: {
+          id: apiTicket.categoryCode,
+          name: apiTicket.categoryName,
+          icon: '🔧',
+          description: ''
+        },
+        location: apiTicket.locationName,
+        roomNumber: '',
+        createdBy: apiTicket.requesterCode,
+        createdByName: apiTicket.requesterName,
+        assignedTo: apiTicket.assignedToCode || undefined,
+        assignedToName: apiTicket.assignedToName || undefined,
+        assignedToPhone: apiTicket.assignedToPhone || undefined,
+        managedByPhone: apiTicket.managedByPhone || undefined,
+        createdAt: apiTicket.createdAt,
+        updatedAt: apiTicket.createdAt,
+        resolvedAt: apiTicket.resolvedAt || undefined,
+        imageUrl: apiTicket.imageUrl,
+        contactPhone: apiTicket.contactPhone || undefined,
+        notes: apiTicket.note || undefined,
+        note: apiTicket.note || undefined,
+        slaDeadline: apiTicket.resolveDeadline,
+        ratingStars: apiTicket.ratingStars || undefined,
+        ratingComment: apiTicket.ratingComment || undefined,
+        slaTracking: {
           createdAt: apiTicket.createdAt,
-          updatedAt: apiTicket.createdAt,
-          resolvedAt: apiTicket.resolvedAt || undefined,
-          imageUrl: apiTicket.imageUrl,
-          contactPhone: apiTicket.contactPhone || undefined,
-          notes: apiTicket.note || undefined,
-          note: apiTicket.note || undefined,
-          slaDeadline: apiTicket.resolveDeadline,
-          ratingStars: apiTicket.ratingStars || undefined,
-          ratingComment: apiTicket.ratingComment || undefined,
-          slaTracking: {
-            createdAt: apiTicket.createdAt,
-            deadline: apiTicket.resolveDeadline,
-            isOverdue: false,
-            timeline: []
-          }
-        }));
-        
-        setApiTickets(mappedTickets);
-      } catch (error) {
-        console.error('Error fetching my tickets:', error);
-        setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
-      } finally {
-        setLoadingTickets(false);
-      }
-    };
+          deadline: apiTicket.resolveDeadline,
+          isOverdue: false,
+          timeline: []
+        }
+      }));
+      
+      setApiTickets(mappedTickets);
+    } catch (error) {
+      console.error('Error fetching my tickets:', error);
+      setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
+    } finally {
+      setLoadingTickets(false);
+    }
+  }, []);
 
+  // Fetch tickets from API on component mount
+  useEffect(() => {
     if (currentUser) {
       fetchMyTickets();
     }
@@ -269,8 +270,13 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
 
     onTicketCreated(newTicket);
     alert('Ticket đã được gửi thành công! 🎉');
+    
+    // Refresh tickets from API to show the new ticket
+    fetchMyTickets();
+    
     setStudentView('home');
     setSelectedIssue(null);
+    setStudentTab('pending'); // Switch to pending tab to show new ticket
   };
 
   return (

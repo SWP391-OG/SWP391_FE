@@ -22,6 +22,7 @@ interface FormData {
 
 const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps) => {
   const defaultCategory: Category = {
+    id: 'default',
     categoryCode: 'default',
     categoryName: 'Vấn đề chung',
     departmentId: 0,

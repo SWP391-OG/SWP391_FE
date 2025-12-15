@@ -144,13 +144,33 @@ const TicketReviewModal = ({
       return;
     }
 
-    // Tìm staff được chọn để lấy userCode
-    const selectedStaff = staffList.find(s => s.id === selectedStaffCode);
-    const staffCode = selectedStaff?.userCode || selectedStaffCode; // Fallback to id if userCode not available
+    // Debug logging
+    console.log('🔍 handleManualAssign - Debug info:', {
+      selectedStaffCode,
+      selectedStaffCodeType: typeof selectedStaffCode,
+      staffListLength: staffList.length,
+      staffListIds: staffList.map(s => ({ id: s.id, idType: typeof s.id, name: s.name }))
+    });
+
+    // Tìm staff được chọn để lấy userCode - fix type mismatch
+    const selectedStaff = staffList.find(s => String(s.id) === String(selectedStaffCode));
+    
+    console.log('🔍 handleManualAssign - Selected staff:', {
+      found: !!selectedStaff,
+      selectedStaff
+    });
+    
+    // Ưu tiên userCode, nếu không có thì dùng id
+    const staffCode = selectedStaff?.userCode || selectedStaff?.id;
+    
+    if (!staffCode) {
+      alert('Không thể xác định mã nhân viên');
+      return;
+    }
 
     setIsAssigning(true);
     try {
-      const response = await ticketService.assignTicketManual(ticket.ticketCode, staffCode);
+      const response = await ticketService.assignTicketManual(ticket.ticketCode, String(staffCode));
       console.log('✅ Manual assign ticket response:', response);
       
       if (response.status) {

@@ -7,8 +7,11 @@ export interface Campus {
 }
 
 export interface Location {
+  id?: number; // Location ID từ API
   locationCode: string;
   locationName: string;
+  campusName?: string; // Campus name từ API
+  campusCode?: string; // Campus code từ API
   status: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -93,9 +96,20 @@ export const campusService = {
   async getLocationsByCampus(campusCode: string): Promise<Location[]> {
     try {
       const response = await apiClient.get<LocationApiResponse>(`/Campus/${campusCode}/locations`);
+      console.log('📍 Raw API response for locations:', response);
+      
       if (response.status && response.data) {
-        // Filter only active locations
-        return response.data.filter(loc => loc.status === 'ACTIVE');
+        console.log('📍 All locations from API:', response.data);
+        
+        // Filter only active locations - check for various status formats
+        const filtered = response.data.filter(loc => {
+          const isActive = loc.status === 'ACTIVE' || loc.status === 'active' || loc.status === 'Active';
+          console.log(`📍 Location ${loc.locationName}: status="${loc.status}" => active=${isActive}`);
+          return isActive;
+        });
+        
+        console.log('📍 Filtered active locations:', filtered);
+        return filtered;
       }
       return [];
     } catch (error) {
