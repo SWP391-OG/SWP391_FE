@@ -207,4 +207,190 @@ export const authService = {
   isAuthenticated(): boolean {
     return !!localStorage.getItem('auth_token');
   },
+
+  /**
+   * Forgot password - bước 1: gửi email để nhận reset code
+   * @param email - Email đăng ký
+   * @returns success status và message
+   */
+  async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('📧 Sending forgot password request for:', email);
+      
+      const response = await apiClient.post<{ status: boolean; message: string; errors: string[] }>(
+        '/auth/forgot-password',
+        { email }
+      );
+
+      if (!response.status) {
+        console.error('❌ Forgot password request failed:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Gửi yêu cầu quên mật khẩu thất bại!',
+        };
+      }
+
+      console.log('✅ Forgot password email sent successfully');
+      return {
+        success: true,
+        message: response.message || 'Email hướng dẫn đặt lại mật khẩu đã được gửi!',
+      };
+    } catch (error) {
+      console.error('❌ Forgot password failed:', error);
+      let errorMessage = 'Gửi yêu cầu quên mật khẩu thất bại!';
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Reset password - bước 2: đặt lại mật khẩu với reset code
+   * @param email - Email đăng ký
+   * @param resetCode - Mã reset được gửi qua email
+   * @param newPassword - Mật khẩu mới
+   * @returns success status và message
+   */
+  async resetPassword(
+    email: string,
+    resetCode: string,
+    newPassword: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('🔐 Sending reset password request for:', email);
+      
+      const response = await apiClient.post<{ status: boolean; message: string; errors: string[] }>(
+        '/auth/reset-password',
+        {
+          email,
+          resetCode,
+          newPassword,
+        }
+      );
+
+      if (!response.status) {
+        console.error('❌ Reset password failed:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Đặt lại mật khẩu thất bại!',
+        };
+      }
+
+      console.log('✅ Reset password successful');
+      return {
+        success: true,
+        message: response.message || 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập lại.',
+      };
+    } catch (error) {
+      console.error('❌ Reset password failed:', error);
+      let errorMessage = 'Đặt lại mật khẩu thất bại!';
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Verify email - xác thực email sau khi đăng ký
+   * @param email - Email đăng ký
+   * @param verificationCode - Mã xác thực được gửi qua email
+   * @returns success status và message
+   */
+  async verifyEmail(email: string, verificationCode: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('📧 Sending email verification request for:', email);
+      
+      const response = await apiClient.post<{ status: boolean; message: string; errors: string[] }>(
+        '/auth/verify-email',
+        {
+          email,
+          verificationCode,
+        }
+      );
+
+      if (!response.status) {
+        console.error('❌ Email verification failed:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Xác thực email thất bại!',
+        };
+      }
+
+      console.log('✅ Email verification successful');
+      return {
+        success: true,
+        message: response.message || 'Xác thực email thành công! Vui lòng đăng nhập.',
+      };
+    } catch (error) {
+      console.error('❌ Email verification failed:', error);
+      let errorMessage = 'Xác thực email thất bại!';
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
+
+  /**
+   * Resend verification email
+   * @param email - Email để gửi lại mã xác thực
+   * @returns success status và message
+   */
+  async resendVerificationEmail(email: string): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log('📧 Sending resend verification email request for:', email);
+      
+      const response = await apiClient.post<{ status: boolean; message: string; errors: string[] }>(
+        '/auth/resend-verification',
+        { email }
+      );
+
+      if (!response.status) {
+        console.error('❌ Resend verification email failed:', response.message);
+        return {
+          success: false,
+          message: response.message || 'Gửi lại mã xác thực thất bại!',
+        };
+      }
+
+      console.log('✅ Resend verification email successful');
+      return {
+        success: true,
+        message: response.message || 'Mã xác thực đã được gửi lại!',
+      };
+    } catch (error) {
+      console.error('❌ Resend verification email failed:', error);
+      let errorMessage = 'Gửi lại mã xác thực thất bại!';
+      
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        errorMessage = error.message;
+      }
+      
+      return {
+        success: false,
+        message: errorMessage,
+      };
+    }
+  },
 };
