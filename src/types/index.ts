@@ -402,3 +402,4 @@ export interface Ticket {
   escalatedAt?: string; // DB: escalated_at - Thời gian escalate
   escalationCount?: number; // DB: escalation_count - Số lần escalate
   escalationReason?: string; // DB: escalation_reason - Lý do escalate (VD: SLA miss, reassignment needed)
+}
