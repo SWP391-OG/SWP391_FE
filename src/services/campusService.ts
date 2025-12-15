@@ -103,7 +103,8 @@ export const campusService = {
         
         // Filter only active locations - check for various status formats
         const filtered = response.data.filter(loc => {
-          const isActive = loc.status === 'ACTIVE' || loc.status === 'active' || loc.status === 'Active';
+          const normalizedStatus = (loc.status || '').toUpperCase();
+          const isActive = normalizedStatus === 'ACTIVE';
           console.log(`📍 Location ${loc.locationName}: status="${loc.status}" => active=${isActive}`);
           return isActive;
         });

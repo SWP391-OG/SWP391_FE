@@ -1,5 +1,5 @@
 import { apiClient } from './api';
-import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, UserStatusUpdateDto, UserProfileApiResponse, UserUpdateProfileDto, ROLE_ID_MAP, ROLE_TO_ID_MAP } from '../types';
+import type { User, UserRole, UserDto, UserApiResponse, UserSingleApiResponse, UserRequestDto, UserUpdateDto, UserStatusUpdateDto, UserProfileApiResponse, UserUpdateProfileDto, UserProfileDto } from '../types';
 
 // Import role mappings (dựa vào database thực tế)
 const ROLE_ID_MAP: Record<number, UserRole> = {

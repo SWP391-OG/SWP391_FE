@@ -50,7 +50,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     ? categories.filter(cat => 
         cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         cat.categoryCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        false // Category.description không tồn tại trong interface
       )
     : categories;
 

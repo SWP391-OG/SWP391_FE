@@ -132,7 +132,7 @@ const CategoryForm = ({
                   
                   // Thử parse từ id (string) sang number
                   if (dept.id) {
-                    const parsed = parseInt(dept.id, 10);
+                    const parsed = parseInt(String(dept.id), 10);
                     if (!isNaN(parsed) && parsed > 0) {
                       deptId = parsed;
                     }

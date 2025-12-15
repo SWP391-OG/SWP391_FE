@@ -108,21 +108,27 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
               </thead>
               <tbody>
                 {tickets.map((ticket) => {
+                  // Normalize status to lowercase with dashes
+                  const normalizedStatus = (ticket.status || 'open').toLowerCase().replace(/_/g, '-');
                   const statusInfo = {
-                    open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
+                    'open': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
+                    'new': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
+                    'assigned': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
-                    resolved: { bg: '#d1fae5', color: '#065f46', text: 'Đã giải quyết' },
-                    closed: { bg: '#f3f4f6', color: '#374151', text: 'Đã đóng' },
-                    cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
-                  }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
+                    'in_progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
+                    'resolved': { bg: '#d1fae5', color: '#065f46', text: 'Đã giải quyết' },
+                    'closed': { bg: '#f3f4f6', color: '#374151', text: 'Đã đóng' },
+                    'cancelled': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
+                  }[normalizedStatus] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
 
-                  const priorityInfo = {
-                    low: { bg: '#d1fae5', color: '#065f46', text: 'Thấp' },
-                    medium: { bg: '#fef3c7', color: '#92400e', text: 'Trung bình' },
-                    high: { bg: '#fed7aa', color: '#9a3412', text: 'Cao' },
-                    urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
-                  }[ticket.priority];
+                  // Unused - commented out
+                  // const _priorityInfo = ticket.priority ? {
+                  //   low: { bg: '#d1fae5', color: '#065f46', text: 'Thấp' },
+                  //   medium: { bg: '#fef3c7', color: '#92400e', text: 'Trung bình' },
+                  //   high: { bg: '#fed7aa', color: '#9a3412', text: 'Cao' },
+                  //   urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
+                  // }[ticket.priority] : undefined;
 
                   // Calculate SLA status using timezone-aware function
                   const overdue = isTicketOverdue(ticket.resolveDeadline);
@@ -213,14 +219,18 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                             value={ticket.status}
                             onChange={(e) => {
                               const newStatus = e.target.value as Ticket['status'];
+                              const normalizedStatus = (newStatus || 'open').toLowerCase().replace(/_/g, '-');
                               const newStatusText = {
-                                open: 'Mở',
+                                'open': 'Mở',
+                                'new': 'Mới tạo',
                                 'acknowledged': 'Đã xác nhận',
+                                'assigned': 'Đã giao việc',
                                 'in-progress': 'Đang xử lý',
-                                resolved: 'Đã giải quyết',
-                                closed: 'Đã đóng',
-                                cancelled: 'Đã hủy',
-                              }[newStatus];
+                                'in_progress': 'Đang xử lý',
+                                'resolved': 'Đã giải quyết',
+                                'closed': 'Đã đóng',
+                                'cancelled': 'Đã hủy',
+                              }[normalizedStatus] || newStatus;
                               if (confirm(`Bạn có chắc muốn cập nhật trạng thái ticket ${ticket.id} thành "${newStatusText}"?`)) {
                                 onUpdateStatus(ticket.id, newStatus);
                               } else {

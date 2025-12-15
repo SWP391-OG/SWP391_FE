@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { UserRole, User, Ticket } from './types';
 import { 
-  loadTickets, loadCurrentUser, saveCurrentUser, loadUsers
+  loadTickets, loadCurrentUser, saveCurrentUser
 } from './utils/localStorage';
 import { useTicketByCode } from './hooks/useTicketByCode';
 import { authService } from './services/authService';
@@ -230,7 +230,7 @@ function App() {
         {/* Student Page */}
         {currentRole === 'student' && (
           <StudentHomePage
-            currentUser={currentUser}
+            currentUser={currentUser ? { id: String(currentUser.id), fullName: currentUser.fullName } : null}
             tickets={tickets}
             onTicketCreated={(newTicket) => {
               setTickets(prev => [...prev, newTicket]);

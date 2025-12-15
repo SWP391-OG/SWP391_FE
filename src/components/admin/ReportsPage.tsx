@@ -12,7 +12,7 @@ interface ReportsPageProps {
 const ReportsPage = ({
   tickets,
   categories,
-  departments,
+  // departments,
   users,
   adminDepartments,
 }: ReportsPageProps) => {
@@ -81,7 +81,7 @@ const ReportsPage = ({
     const byCategory: Record<string, number> = {};
     adminTickets.forEach(ticket => {
       const category = categories.find(c => c.id === ticket.categoryId);
-      const categoryName = category?.name || 'Không xác định';
+      const categoryName = category?.categoryName || 'Không xác định';
       byCategory[categoryName] = (byCategory[categoryName] || 0) + 1;
     });
 

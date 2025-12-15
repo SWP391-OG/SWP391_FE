@@ -1,133 +1,109 @@
-import type { Department, Location, Category, Ticket, SLATracking, SLATimelineEvent, UserRole } from '../types';
-import { issueTypes } from './issueTypes';
+import type { Department, Location, Category, Ticket, UserRole } from '../types';
+// import { issueTypes } from './issueTypes';
 
 export const mockCategories: Category[] = [
   {
     id: 'cat-1',
-    code: 'CAT001',
-    name: 'Cơ sở vật chất',
-    description: 'Phản ánh về hư hỏng cơ sở vật chất: tường, sàn, trần, cửa...',
-    icon: '🏢',
-    color: '#3b82f6',
+    categoryCode: 'CAT001',
+    categoryName: 'Cơ sở vật chất',
     slaResolveHours: 72, // 3 days
-    defaultPriority: 'medium',
-    departmentId: 'dept-2', // Facilities Management
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 2, // Facilities Management
+    status: 'ACTIVE',
   },
   {
     id: 'cat-2',
-    code: 'CAT002',
-    name: 'WiFi/Mạng',
-    description: 'Vấn đề về kết nối WiFi, mạng chậm, mất kết nối',
-    icon: '📶',
-    color: '#10b981',
+    categoryCode: 'CAT002',
+    categoryName: 'WiFi/Mạng',
     slaResolveHours: 24, // 1 day
-    defaultPriority: 'high',
-    departmentId: 'dept-1', // IT Department
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 1, // IT Department
+    status: 'ACTIVE',
   },
   {
     id: 'cat-3',
-    code: 'CAT003',
-    name: 'Thiết bị',
-    description: 'Hư hỏng thiết bị: máy chiếu, máy lạnh, đèn, quạt...',
-    icon: '🖥️',
-    color: '#f59e0b',
+    categoryCode: 'CAT003',
+    categoryName: 'Thiết bị',
     slaResolveHours: 48, // 2 days
-    defaultPriority: 'medium',
-    departmentId: 'dept-1', // IT Department
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 1, // IT Department
+    status: 'ACTIVE',
   },
   {
     id: 'cat-4',
-    code: 'CAT004',
-    name: 'Điện nước',
-    description: 'Vấn đề về điện, nước: mất điện, rò rỉ nước...',
-    icon: '💡',
-    color: '#ef4444',
+    categoryCode: 'CAT004',
+    categoryName: 'Điện nước',
     slaResolveHours: 24, // 1 day
-    defaultPriority: 'high',
-    departmentId: 'dept-2', // Facilities Management
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 2, // Facilities Management
+    status: 'ACTIVE',
   },
   {
     id: 'cat-5',
-    code: 'CAT005',
-    name: 'Vệ sinh',
-    description: 'Vấn đề về vệ sinh: toilet, rác, làm sạch...',
-    icon: '🧹',
-    color: '#8b5cf6',
+    categoryCode: 'CAT005',
+    categoryName: 'Vệ sinh',
     slaResolveHours: 24, // 1 day
-    defaultPriority: 'medium',
-    departmentId: 'dept-2', // Facilities Management
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 2, // Facilities Management
+    status: 'ACTIVE',
   },
   {
     id: 'cat-6',
-    code: 'CAT006',
-    name: 'Khẩn cấp',
-    description: 'Tình huống khẩn cấp cần xử lý ngay lập tức',
-    icon: '🚨',
-    color: '#dc2626',
+    categoryCode: 'CAT006',
+    categoryName: 'Khẩn cấp',
     slaResolveHours: 4, // 4 hours
-    defaultPriority: 'urgent',
-    departmentId: 'dept-2', // Facilities Management
-    status: 'active',
-    isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
+    departmentId: 2, // Facilities Management
+    status: 'ACTIVE',
   },
 ];
 
 export const mockDepartments: Department[] = [
   {
-    id: 'dept-1',
+    id: 1,
+    deptCode: 'IT',
+    deptName: 'IT Department',
+    status: 'ACTIVE',
+    createdAt: '2024-01-15T08:00:00Z',
     name: 'IT Department',
     description: 'Bộ phận Công nghệ Thông tin - Quản lý hạ tầng IT và hỗ trợ kỹ thuật',
     location: 'Tầng 5, Tòa nhà Alpha',
     adminId: 'admin-001',
     staffIds: ['staff-001', 'staff-002'],
     isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
   },
   {
-    id: 'dept-2',
+    id: 2,
+    deptCode: 'FACILITY',
+    deptName: 'Facilities Management',
+    status: 'ACTIVE',
+    createdAt: '2024-01-15T08:00:00Z',
     name: 'Facilities Management',
     description: 'Bộ phận Quản lý Cơ sở Vật chất - Bảo trì và quản lý tòa nhà',
     location: 'Tầng 1, Tòa nhà Alpha',
     adminId: 'admin-002',
     staffIds: ['staff-003', 'staff-004'],
     isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
   },
   {
-    id: 'dept-3',
+    id: 3,
+    deptCode: 'ACADEMIC',
+    deptName: 'Academic Affairs',
+    status: 'ACTIVE',
+    createdAt: '2024-01-15T08:00:00Z',
     name: 'Academic Affairs',
     description: 'Phòng Đào tạo - Quản lý học vụ và chương trình đào tạo',
     location: 'Tầng 2, Tòa nhà Beta',
     adminId: 'admin-003',
     staffIds: [],
     isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
   },
   {
-    id: 'dept-4',
+    id: 4,
+    deptCode: 'STUDENT',
+    deptName: 'Student Services',
+    status: 'ACTIVE',
+    createdAt: '2024-01-15T08:00:00Z',
     name: 'Student Services',
     description: 'Phòng Công tác Sinh viên - Hỗ trợ và chăm sóc sinh viên',
     location: 'Tầng 1, Tòa nhà Beta',
     adminId: 'admin-004',
     staffIds: [],
     isActive: true,
-    createdAt: '2024-01-15T08:00:00Z',
   },
 ];
 
@@ -205,18 +181,21 @@ export const mockLocations: Location[] = [
 // ============================================================================
 
 // Helper function to calculate SLA deadline based on priority
-const calculateSLADeadline = (createdAt: string, priority: Ticket['priority']): string => {
-  const created = new Date(createdAt);
-  const slaHours = {
-    urgent: 4,
-    high: 24,
-    medium: 48,
-    low: 72,
-  };
-  
-  created.setHours(created.getHours() + slaHours[priority]);
-  return created.toISOString();
-};
+// Unused function - commented out
+// const _calculateSLADeadline = (createdAt: string, priority: Ticket['priority']): string => {
+//   const created = new Date(createdAt);
+//   const slaHours = {
+//     urgent: 4,
+//     high: 24,
+//     medium: 48,
+//     low: 72,
+//   };
+//   
+//   if (priority && slaHours[priority]) {
+//     created.setHours(created.getHours() + slaHours[priority]);
+//   }
+//   return created.toISOString();
+// };
 
 // SLA Timeline Events
 export interface SLAEvent {
@@ -489,83 +468,83 @@ export const mockSLAEvents: Record<string, SLAEvent[]> = {
   ],
 };
 
-// Helper function to generate SLA tracking from events
-const generateSLATracking = (
-  ticketId: string,
-  createdAt: string,
-  slaDeadline: string,
-  events: SLAEvent[]
-): SLATracking => {
-  const now = new Date();
-  const deadline = new Date(slaDeadline);
-  const created = new Date(createdAt);
+// Helper function to generate SLA tracking from events - Unused, commented out
+// const _generateSLATracking = (
+//   _ticketId: string,
+//   createdAt: string,
+//   slaDeadline: string,
+//   events: SLAEvent[]
+// ): SLATracking => {
+//   const now = new Date();
+//   const deadline = new Date(slaDeadline);
+//   const created = new Date(createdAt);
+//   
+//   const acknowledgedEvent = events.find(e => e.eventType === 'assigned');
+//   const startedEvent = events.find(e => e.eventType === 'in_progress');
+//   const resolvedEvent = events.find(e => e.eventType === 'resolved');
+//   const closedEvent = events.find(e => e.eventType === 'closed');
+//   
+//   const acknowledgedAt = acknowledgedEvent?.timestamp;
+//   const startedAt = startedEvent?.timestamp;
+//   const resolvedAt = resolvedEvent?.timestamp;
+//   const closedAt = closedEvent?.timestamp;
+//   
+//   const responseTime = acknowledgedAt 
+//     ? Math.round((new Date(acknowledgedAt).getTime() - created.getTime()) / (1000 * 60))
+//     : undefined;
+//   
+//   const resolutionTime = resolvedAt
+//     ? Math.round((new Date(resolvedAt).getTime() - created.getTime()) / (1000 * 60))
+//     : undefined;
+//   
+//   const isOverdue = now > deadline && !resolvedAt;
+//   const overdueBy = isOverdue 
+//     ? Math.round((now.getTime() - deadline.getTime()) / (1000 * 60))
+//     : undefined;
+//   
+//   // Convert SLAEvent to SLATimelineEvent
+//   const timeline: SLATimelineEvent[] = events.map((event, index) => {
+//     const prevEvent = index > 0 ? events[index - 1] : null;
+//     const duration = prevEvent
+//       ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEvent.timestamp).getTime()) / (1000 * 60))
+//       : undefined;
+//     
+//     // Map eventType to status
+//     const statusMap: Record<string, SLATimelineEvent['status']> = {
+//       'created': 'open',
+//       'assigned': 'acknowledged',
+//       'in_progress': 'in-progress',
+//       'resolved': 'resolved',
+//       'closed': 'closed',
+//       'comment': 'in-progress',
+//     };
+//     
+//     return {
+//       id: event.id,
+//       timestamp: event.timestamp,
+//       status: statusMap[event.eventType] || 'open',
+//       actor: event.performedBy,
+//       actorRole: event.performedByRole as UserRole,
+//       action: event.title,
+//       note: event.description,
+//       duration,
+//     };
+//   });
   
-  const acknowledgedEvent = events.find(e => e.eventType === 'assigned');
-  const startedEvent = events.find(e => e.eventType === 'in_progress');
-  const resolvedEvent = events.find(e => e.eventType === 'resolved');
-  const closedEvent = events.find(e => e.eventType === 'closed');
-  
-  const acknowledgedAt = acknowledgedEvent?.timestamp;
-  const startedAt = startedEvent?.timestamp;
-  const resolvedAt = resolvedEvent?.timestamp;
-  const closedAt = closedEvent?.timestamp;
-  
-  const responseTime = acknowledgedAt 
-    ? Math.round((new Date(acknowledgedAt).getTime() - created.getTime()) / (1000 * 60))
-    : undefined;
-  
-  const resolutionTime = resolvedAt
-    ? Math.round((new Date(resolvedAt).getTime() - created.getTime()) / (1000 * 60))
-    : undefined;
-  
-  const isOverdue = now > deadline && !resolvedAt;
-  const overdueBy = isOverdue 
-    ? Math.round((now.getTime() - deadline.getTime()) / (1000 * 60))
-    : undefined;
-  
-  // Convert SLAEvent to SLATimelineEvent
-  const timeline: SLATimelineEvent[] = events.map((event, index) => {
-    const prevEvent = index > 0 ? events[index - 1] : null;
-    const duration = prevEvent
-      ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEvent.timestamp).getTime()) / (1000 * 60))
-      : undefined;
-    
-    // Map eventType to status
-    const statusMap: Record<string, SLATimelineEvent['status']> = {
-      'created': 'open',
-      'assigned': 'acknowledged',
-      'in_progress': 'in-progress',
-      'resolved': 'resolved',
-      'closed': 'closed',
-      'comment': 'in-progress',
-    };
-    
-    return {
-      id: event.id,
-      timestamp: event.timestamp,
-      status: statusMap[event.eventType] || 'open',
-      actor: event.performedBy,
-      actorRole: event.performedByRole as UserRole,
-      action: event.title,
-      note: event.description,
-      duration,
-    };
-  });
-  
-  return {
-    createdAt,
-    acknowledgedAt,
-    startedAt,
-    resolvedAt,
-    closedAt,
-    deadline: slaDeadline,
-    responseTime,
-    resolutionTime,
-    isOverdue,
-    overdueBy,
-    timeline,
-  };
-};
+//   return {
+//     createdAt,
+//     acknowledgedAt,
+//     startedAt,
+//     resolvedAt,
+//     closedAt,
+//     deadline: slaDeadline,
+//     responseTime,
+//     resolutionTime,
+//     isOverdue,
+//     overdueBy,
+//     timeline,
+//   };
+// };
 
 // Mock tickets data - loaded from backend or mock, NOT persisted to localStorage
 export const mockTickets: Ticket[] = [
@@ -573,7 +552,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-001',
     title: 'Máy chiếu phòng 501 không hoạt động',
     description: 'Máy chiếu trong phòng 501 không bật được, đã thử nhiều lần nhưng vẫn không có tín hiệu. Ảnh hưởng đến việc học của lớp.',
-    category: 'equipment',
     priority: 'high',
     status: 'in-progress',
     location: 'Tòa nhà Alpha',
@@ -614,7 +592,7 @@ export const mockTickets: Ticket[] = [
           timestamp: '2025-12-11T21:16:01.175Z',
           status: 'acknowledged',
           actor: 'Hệ thống',
-          actorRole: 'system',
+          actorRole: 'admin' as UserRole,
           action: 'Ticket được phân công',
           note: 'Hệ thống tự động phân công cho nhân viên kỹ thuật',
           duration: 30
@@ -624,7 +602,7 @@ export const mockTickets: Ticket[] = [
           timestamp: '2025-12-11T22:46:01.175Z',
           status: 'in-progress',
           actor: 'Trần Văn B',
-          actorRole: 'staff',
+          actorRole: 'it-staff' as UserRole,
           action: 'Bắt đầu xử lý',
           note: 'Nhân viên kỹ thuật đã đến hiện trường kiểm tra',
           duration: 90
@@ -636,7 +614,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-002',
     title: 'WiFi tầng 3 không kết nối được',
     description: 'Tất cả sinh viên ở tầng 3 đều không thể kết nối WiFi. Đã thử khởi động lại thiết bị nhưng vẫn không được.',
-    category: 'wifi',
     priority: 'urgent',
     status: 'open',
     location: 'Tòa nhà Beta',
@@ -673,7 +650,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-003',
     title: 'Điều hòa phòng 302 hỏng',
     description: 'Điều hòa trong phòng 302 không làm lạnh, phòng rất nóng khiến sinh viên khó tập trung học.',
-    category: 'facility',
     priority: 'medium',
     status: 'resolved',
     location: 'Tòa nhà Alpha',
@@ -717,7 +693,7 @@ export const mockTickets: Ticket[] = [
           timestamp: '2025-12-09T03:46:01.175Z',
           status: 'acknowledged',
           actor: 'Hệ thống',
-          actorRole: 'system',
+          actorRole: 'admin' as UserRole,
           action: 'Ticket được phân công',
           note: 'Phân công cho bộ phận bảo trì cơ sở vật chất',
           duration: 120
@@ -729,7 +705,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-004',
     title: 'Phòng 401 chưa được dọn dẹp',
     description: 'Phòng học 401 chưa được vệ sinh, bàn ghế bẩn và có nhiều rác.',
-    category: 'classroom',
     priority: 'low',
     status: 'open',
     location: 'Tòa nhà Alpha',
@@ -766,7 +741,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-005',
     title: 'Thiếu bàn ghế phòng 205',
     description: 'Phòng 205 chỉ có 25 bàn ghế nhưng lớp có 35 sinh viên, cần bổ sung thêm 10 bộ bàn ghế.',
-    category: 'facility',
     priority: 'medium',
     status: 'in-progress',
     location: 'Tòa nhà Beta',
@@ -809,7 +783,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-006',
     title: 'Mất điện phòng 101',
     description: 'Phòng 101 bị mất điện hoàn toàn, không thể sử dụng máy chiếu và đèn.',
-    category: 'facility',
     priority: 'urgent',
     status: 'resolved',
     location: 'Tòa nhà Alpha',
@@ -857,7 +830,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-007',
     title: 'Vòi nước nhà vệ sinh tầng 2 hỏng',
     description: 'Vòi nước trong nhà vệ sinh nam tầng 2 bị hỏng, nước chảy liên tục không tắt được.',
-    category: 'facility',
     priority: 'high',
     status: 'closed',
     location: 'Tòa nhà Beta',
@@ -905,7 +877,6 @@ export const mockTickets: Ticket[] = [
     id: 'TKT-008',
     title: 'Loa phòng 601 không có tiếng',
     description: 'Loa trong phòng 601 không phát ra tiếng, giáo viên phải nói rất to.',
-    category: 'equipment',
     priority: 'medium',
     status: 'open',
     location: 'Tòa nhà Alpha',

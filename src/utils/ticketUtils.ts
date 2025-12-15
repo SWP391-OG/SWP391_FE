@@ -66,11 +66,8 @@ export const checkDuplicateTicket = (
       (ticket.roomNumber && newTicket.roomNumber && 
        ticket.roomNumber.toLowerCase().trim() === newTicket.roomNumber.toLowerCase().trim());
     
-    // So sánh issueType
-    const issueTypeMatch = 
-      (!ticket.issueType && !newTicket.issueType) ||
-      (ticket.issueType && newTicket.issueType && 
-       ticket.issueType.id === newTicket.issueType.id);
+    // So sánh issueType - removed vì Ticket interface không có issueType
+    // const issueTypeMatch = true; // Always match since issueType is not in Ticket interface
 
     // Nếu title giống nhau và (description tương đồng > 80% hoặc location/roomNumber giống nhau)
     if (titleMatch && (descSimilarity > 0.8 || (locationMatch && roomMatch))) {
@@ -78,7 +75,8 @@ export const checkDuplicateTicket = (
     }
 
     // Hoặc nếu description tương đồng > 90% và location/roomNumber giống nhau
-    if (descSimilarity > 0.9 && locationMatch && roomMatch && issueTypeMatch) {
+    // Removed issueTypeMatch vì Ticket interface không có issueType
+    if (descSimilarity > 0.9 && locationMatch && roomMatch) {
       return ticket;
     }
   }

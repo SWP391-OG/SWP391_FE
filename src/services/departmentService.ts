@@ -20,8 +20,16 @@ export const departmentService = {
         return [];
       }
 
+      // Xử lý response.data - có thể là array hoặc pagination object
+      let departmentDtos: DepartmentDto[] = [];
+      if (Array.isArray(response.data)) {
+        departmentDtos = response.data;
+      } else if (typeof response.data === 'object' && 'items' in response.data) {
+        departmentDtos = response.data.items;
+      }
+
       // Map DepartmentDto từ API sang Department
-      const departments: Department[] = response.data.map((dto: DepartmentDto) => {
+      const departments: Department[] = departmentDtos.map((dto: DepartmentDto) => {
         const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
         return {
           id: dto.id,                    // Sử dụng id (int32) từ API

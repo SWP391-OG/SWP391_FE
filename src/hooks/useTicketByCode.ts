@@ -24,7 +24,7 @@ export const useTicketByCode = (ticketCode: string | null) => {
         console.log('📢 Ticket response:', response);
         
         if (response && response.data) {
-          const apiData = response.data as TicketFromApi;
+          const apiData = response.data as unknown as TicketFromApi;
           
           // Convert API response to Ticket format
           const convertedTicket: Ticket = {
@@ -36,8 +36,8 @@ export const useTicketByCode = (ticketCode: string | null) => {
             createdAt: apiData.createdAt,
             updatedAt: apiData.createdAt,
             resolveDeadline: apiData.resolveDeadline,
-            resolvedAt: apiData.resolvedAt,
-            closedAt: apiData.closedAt,
+            resolvedAt: apiData.resolvedAt || undefined,
+            closedAt: apiData.closedAt || undefined,
             ratingStars: apiData.ratingStars || 0,
             ratingComment: apiData.ratingComment || '',
             locationName: apiData.locationName,
