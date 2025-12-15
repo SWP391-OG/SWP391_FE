@@ -484,6 +484,30 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                       {ticket.description}
                     </p>
 
+                    {/* Show note if exists */}
+                    {ticket.note && (
+                      <div className={`mt-3 p-3 rounded-lg border-2 ${
+                        ticket.status === 'cancelled' 
+                          ? 'bg-red-50 border-red-200' 
+                          : 'bg-green-50 border-green-200'
+                      }`}>
+                        <div className={`text-xs font-semibold mb-1 ${
+                          ticket.status === 'cancelled' 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                        }`}>
+                          {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
+                        </div>
+                        <div className={`text-sm line-clamp-2 ${
+                          ticket.status === 'cancelled' 
+                            ? 'text-red-800' 
+                            : 'text-green-800'
+                        }`}>
+                          {ticket.note}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Show staff info and phone number for all tickets with assigned staff */}
                     {ticket.assignedToName && (
                       <div className="bg-blue-50 rounded-lg p-3 flex items-center gap-3">
