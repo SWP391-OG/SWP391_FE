@@ -227,7 +227,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
               }`}
               onClick={() => setFilterStatus('open')}
             >
-              🆕 Chưa xử lý ({stats.open})
+              🆕 Mới tạo ({stats.open})
             </button>
             <button
               className={`py-3 px-5 rounded-lg font-semibold text-[0.95rem] transition-all duration-200 border-2 ${

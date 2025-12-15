@@ -18,6 +18,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
       inProgress: tickets.filter(t => t.status === 'in-progress').length,
       resolved: tickets.filter(t => t.status === 'resolved').length,
       closed: tickets.filter(t => t.status === 'closed').length,
+      cancelled: tickets.filter(t => t.status === 'cancelled').length,
     };
   }, [tickets]);
 
@@ -25,7 +26,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
     <div className="max-w-[1400px] mx-auto p-8">
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-500 mt-1">Tổng số</div>
@@ -49,6 +50,10 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
         <div className="bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-200">
           <div className="text-2xl font-bold text-gray-600">{stats.closed}</div>
           <div className="text-sm text-gray-600 mt-1">Đã đóng</div>
+        </div>
+        <div className="bg-red-50 rounded-xl p-4 shadow-sm border border-red-200">
+          <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+          <div className="text-sm text-red-600 mt-1">Bị hủy</div>
         </div>
       </div>
 

@@ -129,6 +129,7 @@ const StaffPage = () => {
     assigned: tickets.filter(t => t.status === 'ASSIGNED').length,
     inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
     resolved: tickets.filter(t => t.status === 'RESOLVED').length,
+    closed: tickets.filter(t => t.status === 'CLOSED').length,
   };
 
   if (loading) {
@@ -171,7 +172,7 @@ const StaffPage = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
           <div className="text-3xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-500 mt-1">Tổng số</div>
@@ -187,6 +188,10 @@ const StaffPage = () => {
         <div className="bg-green-50 rounded-xl p-6 shadow-sm border border-green-200">
           <div className="text-3xl font-bold text-green-600">{stats.resolved}</div>
           <div className="text-sm text-green-600 mt-1">Đã giải quyết</div>
+        </div>
+        <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
+          <div className="text-3xl font-bold text-gray-600">{stats.closed}</div>
+          <div className="text-sm text-gray-600 mt-1">Đã đóng</div>
         </div>
       </div>
 
