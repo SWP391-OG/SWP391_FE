@@ -413,8 +413,8 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
                       {duplicateTicket.status === 'open' ? 'Mở' :
                        duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
                        duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
-                       duplicateTicket.status === 'resolved' ? 'Đã giải quyết' :
-                       duplicateTicket.status === 'closed' ? 'Đã đóng' : duplicateTicket.status}
+                       duplicateTicket.status === 'resolved' ? 'chờ đánh giá' :
+                       duplicateTicket.status === 'closed' ? 'Đã hoàn thành' : duplicateTicket.status}
                     </span>
                   </div>
                   {duplicateTicket.location && (

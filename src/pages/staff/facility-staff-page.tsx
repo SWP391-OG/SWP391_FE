@@ -42,13 +42,13 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
           <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
           <div className="text-sm text-yellow-600 mt-1">Đang xử lý</div>
         </div>
-        <div className="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200">
-          <div className="text-2xl font-bold text-green-600">{stats.resolved}</div>
-          <div className="text-sm text-green-600 mt-1">Đã giải quyết</div>
+        <div className="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200">
+          <div className="text-2xl font-bold text-blue-600">{stats.resolved}</div>
+          <div className="text-sm text-blue-600 mt-1">chờ đánh giá</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-4 shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-gray-600">{stats.closed}</div>
-          <div className="text-sm text-gray-600 mt-1">Đã đóng</div>
+        <div className="bg-emerald-50 rounded-xl p-4 shadow-sm border border-emerald-200">
+          <div className="text-2xl font-bold text-emerald-600">{stats.closed}</div>
+          <div className="text-sm text-emerald-600 mt-1">Đã hoàn thành</div>
         </div>
       </div>
 
@@ -110,19 +110,19 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                 {tickets.map((ticket) => {
                   const statusInfo = {
                     open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
+                    'NEW': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
+                    assigned: { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
+                    'ASSIGNED': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
-                    resolved: { bg: '#d1fae5', color: '#065f46', text: 'Đã giải quyết' },
-                    closed: { bg: '#f3f4f6', color: '#374151', text: 'Đã đóng' },
+                    'IN_PROGRESS': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
+                    resolved: { bg: '#dbeafe', color: '#1e40af', text: 'chờ đánh giá' },
+                    'RESOLVED': { bg: '#dbeafe', color: '#1e40af', text: 'chờ đánh giá' },
+                    closed: { bg: '#d1fae5', color: '#065f46', text: 'Đã hoàn thành' },
+                    'CLOSED': { bg: '#d1fae5', color: '#065f46', text: 'Đã hoàn thành' },
                     cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
+                    'CANCELLED': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
                   }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
-
-                  const priorityInfo = {
-                    low: { bg: '#d1fae5', color: '#065f46', text: 'Thấp' },
-                    medium: { bg: '#fef3c7', color: '#92400e', text: 'Trung bình' },
-                    high: { bg: '#fed7aa', color: '#9a3412', text: 'Cao' },
-                    urgent: { bg: '#fee2e2', color: '#991b1b', text: 'Khẩn cấp' },
-                  }[ticket.priority];
 
                   // Calculate SLA status using timezone-aware function
                   const overdue = isTicketOverdue(ticket.resolveDeadline);
@@ -215,11 +215,18 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                               const newStatus = e.target.value as Ticket['status'];
                               const newStatusText = {
                                 open: 'Mở',
+                                'NEW': 'Mới tạo',
+                                assigned: 'Đã giao việc',
                                 'acknowledged': 'Đã xác nhận',
+                                'ASSIGNED': 'Đã giao việc',
                                 'in-progress': 'Đang xử lý',
-                                resolved: 'Đã giải quyết',
-                                closed: 'Đã đóng',
+                                'IN_PROGRESS': 'Đang xử lý',
+                                resolved: 'chờ đánh giá',
+                                'RESOLVED': 'chờ đánh giá',
+                                closed: 'Đã hoàn thành',
+                                'CLOSED': 'Đã hoàn thành',
                                 cancelled: 'Đã hủy',
+                                'CANCELLED': 'Đã hủy',
                               }[newStatus];
                               if (confirm(`Bạn có chắc muốn cập nhật trạng thái ticket ${ticket.id} thành "${newStatusText}"?`)) {
                                 onUpdateStatus(ticket.id, newStatus);
@@ -232,8 +239,8 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                             <option value="open">Mở</option>
                             <option value="acknowledged">Đã xác nhận</option>
                             <option value="in-progress">Đang xử lý</option>
-                            <option value="resolved">Đã giải quyết</option>
-                            <option value="closed">Đã đóng</option>
+                            <option value="resolved">chờ đánh giá</option>
+                            <option value="closed">Đã hoàn thành</option>
                           </select>
                           
                           {/* View Detail Button */}

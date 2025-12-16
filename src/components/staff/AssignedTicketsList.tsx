@@ -71,8 +71,8 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
       'NEW': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới' },
       'ASSIGNED': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Đã giao' },
       'IN_PROGRESS': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
-      'RESOLVED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
-      'CLOSED': { bg: 'bg-gray-100', text: 'text-gray-800', label: 'Đã đóng' },
+      'RESOLVED': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'chờ đánh giá' },
+      'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Đã hoàn thành' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
     };
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };

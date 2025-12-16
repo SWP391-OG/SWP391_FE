@@ -1,11 +1,21 @@
 import type { Ticket, Location, TicketFromApi } from '../../types';
+import Pagination from '../shared/Pagination';
 
 interface TicketsTableProps {
   tickets: Ticket[] | TicketFromApi[];
   locations: Location[];
-  staffList: any; // Not used but kept for compatibility
-  onAssignTicket: any; // Not used but kept for compatibility
+  staffList?: unknown; // Not used but kept for compatibility
+  onAssignTicket?: unknown; // Not used but kept for compatibility
   onViewTicket: (ticket: Ticket | TicketFromApi) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  totalPages?: number;
+  totalCount?: number;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 // Helper function để check xem ticket có phải từ API không
@@ -17,6 +27,14 @@ const TicketsTable = ({
   tickets,
   locations,
   onViewTicket,
+  pageNumber = 1,
+  pageSize = 10,
+  totalPages = 1,
+  totalCount = 0,
+  hasPrevious = false,
+  hasNext = false,
+  onPageChange,
+  onPageSizeChange,
 }: TicketsTableProps) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -37,10 +55,10 @@ const TicketsTable = ({
       'ASSIGNED': { bg: 'bg-indigo-100', text: 'text-indigo-800', label: 'Đã giao việc' },
       'in-progress': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
       'IN_PROGRESS': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
-      'resolved': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
-      'RESOLVED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã giải quyết' },
-      'closed': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
-      'CLOSED': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã đóng' },
+      'resolved': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Chờ đánh giá' },
+      'RESOLVED': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Chờ đánh giá' },
+      'closed': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Đã hoàn thành' },
+      'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Đã hoàn thành' },
       'cancelled': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
     };
@@ -172,6 +190,20 @@ const TicketsTable = ({
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <Pagination
+          pageNumber={pageNumber}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 };

@@ -117,8 +117,8 @@ const TicketDetailModal = ({
               {ticket.status === 'open' && '🔵 Mới tạo'}
               {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
-              {ticket.status === 'closed' && '⚫ Đã đóng'}
+              {ticket.status === 'resolved' && '� chờ đánh giá'}
+              {ticket.status === 'closed' && '✅ Đã hoàn thành'}
               {ticket.status === 'cancelled' && '🔴 Đã hủy'}
             </span>
           </div>
@@ -202,18 +202,12 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
                 </div>
               )}
-              {ticket.note && (
-                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}`}>
-                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-gray-500'}`}>
+              {(ticket.note || ticket.notes) && (
+                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-emerald-700'}`}>
                     {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
                   </div>
-                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-gray-800'}`}>{ticket.note}</div>
-                </div>
-              )}
-              {ticket.notes && (
-                <div className="bg-gray-50 p-4 rounded-lg col-span-2">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📝 Ghi chú</div>
-                  <div className="text-base text-gray-800 font-medium">{ticket.notes}</div>
+                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-emerald-900'}`}>{ticket.note || ticket.notes}</div>
                 </div>
               )}
               {ticket.resolvedAt && (

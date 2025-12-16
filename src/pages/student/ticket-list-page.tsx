@@ -134,7 +134,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
       acknowledged: 'Mới tạo',
       created: 'Mới tạo',
       'in-progress': 'Đang xử lý',
-      resolved: 'Đã giải quyết',
+      resolved: 'chờ đánh giá',
       cancelled: 'Đã hủy',
     };
     return statusLabelsMap[status] || status;
