@@ -963,26 +963,49 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           onSubmit={async () => {
             try {
               if (editingDept) {
-                // Update: lấy departmentId (int32) từ editingDept
-                const departmentId = typeof editingDept.id === 'number' 
-                  ? editingDept.id 
-                  : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
-                
-                if (!departmentId || isNaN(departmentId)) {
-                  alert('Không thể xác định ID bộ phận. Vui lòng thử lại.');
+                // Validate form data trước khi update
+                if (!deptFormData.deptCode || deptFormData.deptCode.trim().length === 0) {
+                  alert('Vui lòng nhập mã bộ phận.');
                   return;
                 }
                 
-                // Theo Swagger: PUT /api/Department/{departmentId} có thể sửa cả deptCode và deptName
-                await updateDepartment(departmentId, {
-                  deptCode: deptFormData.deptCode, // Có thể sửa deptCode
-                  deptName: deptFormData.deptName,
+                if (!deptFormData.deptName || deptFormData.deptName.trim().length === 0) {
+                  alert('Vui lòng nhập tên bộ phận.');
+                  return;
+                }
+                
+                // Update: lấy departmentId (int32) từ editingDept
+                let departmentId: number | null = null;
+                
+                if (typeof editingDept.id === 'number') {
+                  departmentId = editingDept.id;
+                } else if (typeof editingDept.id === 'string') {
+                  const parsed = parseInt(editingDept.id, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    departmentId = parsed;
+                  }
+                }
+                
+                if (!departmentId || isNaN(departmentId) || departmentId <= 0) {
+                  console.error('❌ Invalid departmentId:', editingDept.id, 'from editingDept:', editingDept);
+                  alert(`Không thể xác định ID bộ phận (ID: ${editingDept.id}). Vui lòng thử lại hoặc reload trang.`);
+                  return;
+                }
+                
+                console.log('🏢 Updating department:', {
+                  departmentId,
+                  editingDept,
+                  formData: deptFormData
                 });
                 
-                // Nếu status thay đổi, update riêng qua PATCH /api/Department/status
-                if (deptFormData.status !== editingDept.status) {
-                  await updateDepartmentStatus(departmentId, deptFormData.status);
-                }
+                // Cập nhật department: có thể sửa mã bộ phận, tên bộ phận và trạng thái
+                // PUT /api/Department/{departmentId} để cập nhật deptCode và deptName
+                // Nếu có status, sẽ tự động cập nhật status qua PATCH /api/Department/status
+                await updateDepartment(departmentId, {
+                  deptCode: deptFormData.deptCode.trim(), // Có thể sửa mã bộ phận
+                  deptName: deptFormData.deptName.trim(), // Có thể sửa tên bộ phận
+                  status: deptFormData.status,     // Có thể sửa trạng thái
+                });
               } else {
                 // Create: theo Swagger chỉ cần deptCode và deptName (không có status)
                 await createDepartment({

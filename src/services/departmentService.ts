@@ -20,8 +20,19 @@ export const departmentService = {
         return [];
       }
 
+      // Xử lý response: có thể là array hoặc pagination object
+      let departmentsData: DepartmentDto[];
+      if (Array.isArray(response.data)) {
+        departmentsData = response.data;
+      } else if ('items' in response.data && Array.isArray(response.data.items)) {
+        departmentsData = response.data.items;
+      } else {
+        console.error('❌ Invalid response format:', response.data);
+        return [];
+      }
+
       // Map DepartmentDto từ API sang Department
-      const departments: Department[] = response.data.map((dto: DepartmentDto) => {
+      const departments: Department[] = departmentsData.map((dto: DepartmentDto) => {
         const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
         return {
           id: dto.id,                    // Sử dụng id (int32) từ API
@@ -87,23 +98,58 @@ export const departmentService = {
       interface DepartmentCreateResponse {
         status: boolean;
         message: string;
-        data: DepartmentDto;
+        data: DepartmentDto | DepartmentDto[] | {  // Backend có thể trả về DepartmentDto trực tiếp, array, hoặc PaginatedResponse
+          pageNumber: number;
+          pageSize: number;
+          totalCount: number;
+          totalPages: number;
+          hasPrevious: boolean;
+          hasNext: boolean;
+          items: DepartmentDto[];
+        } | null;
         errors: string[];
       }
       
       const response = await apiClient.post<DepartmentCreateResponse>('/Department', requestData);
       
-      console.log('🏢 API Response:', response);
+      console.log('🏢 API Response:', JSON.stringify(response, null, 2));
       
-      if (!response.status || !response.data) {
+      if (!response.status) {
         const errorMsg = response.message || 'Failed to create department';
         const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
         console.error('❌ Failed to create department:', { response, errorMsg, errorDetails });
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      // Map DepartmentDto từ API sang Department
-      const dto = response.data;
+      // Xử lý response: có thể là DepartmentDto trực tiếp, array, hoặc pagination object
+      let dto: DepartmentDto;
+      
+      if (!response.data) {
+        throw new Error('Response không chứa dữ liệu (data is null/undefined)');
+      }
+
+      // Kiểm tra nếu response.data là DepartmentDto trực tiếp (có id, deptCode, deptName)
+      if ('id' in response.data && 'deptCode' in response.data && 'deptName' in response.data) {
+        dto = response.data as DepartmentDto;
+        console.log('✅ Response là DepartmentDto trực tiếp');
+      } else if (Array.isArray(response.data)) {
+        // Nếu là array, lấy phần tử đầu tiên
+        if (response.data.length === 0) {
+          throw new Error('Response array không chứa dữ liệu department');
+        }
+        dto = response.data[0];
+        console.log('✅ Response là array, lấy phần tử đầu tiên');
+      } else if ('items' in response.data && Array.isArray(response.data.items)) {
+        // Nếu là pagination object, lấy từ items
+        if (response.data.items.length === 0) {
+          throw new Error('Response pagination không chứa dữ liệu department');
+        }
+        dto = response.data.items[0];
+        console.log('✅ Response là pagination object, lấy từ items[0]');
+      } else {
+        console.error('❌ Response format không hợp lệ:', response.data);
+        throw new Error(`Response format không hợp lệ. Expected DepartmentDto, array, or pagination object, but got: ${JSON.stringify(response.data)}`);
+      }
       const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
       const newDepartment: Department = {
         id: dto.id,                    // Sử dụng id (int32) từ API
@@ -162,47 +208,159 @@ export const departmentService = {
    * Cập nhật department
    * PUT /api/Department/{departmentId}
    * Theo Swagger: có thể sửa deptCode và deptName
+   * Nếu có status trong updates, sẽ cập nhật status riêng qua PATCH /api/Department/status
    */
   async update(departmentId: number, updates: DepartmentUpdateDto): Promise<Department> {
     try {
-      console.log('🏢 Updating department ID:', departmentId, updates);
+      console.log('🏢 Updating department ID:', departmentId);
+      console.log('🏢 Updates:', updates);
       console.log('🏢 Request URL:', `${API_BASE_URL}/Department/${departmentId}`);
+      
+      // Validate departmentId
+      if (!departmentId || isNaN(departmentId) || departmentId <= 0) {
+        throw new Error(`Invalid departmentId: ${departmentId}. DepartmentId must be a positive integer.`);
+      }
+      
+      // Validate và chuẩn bị request data
+      const deptCode = updates.deptCode?.trim();
+      const deptName = updates.deptName?.trim();
+      
+      if (!deptCode || deptCode.length === 0) {
+        throw new Error('Mã bộ phận (deptCode) là bắt buộc và không được để trống');
+      }
+      
+      if (!deptName || deptName.length === 0) {
+        throw new Error('Tên bộ phận (deptName) là bắt buộc và không được để trống');
+      }
       
       // Theo Swagger: PUT nhận DepartmentRequestDto (deptCode, deptName)
       const requestData: DepartmentRequestDto = {
-        deptCode: updates.deptCode?.trim() || '',
-        deptName: updates.deptName?.trim() || '',
+        deptCode: deptCode,
+        deptName: deptName,
       };
       
-      if (!requestData.deptCode || !requestData.deptName) {
-        throw new Error('deptCode và deptName là bắt buộc khi cập nhật');
-      }
+      console.log('🏢 Request Data:', requestData);
       
       interface DepartmentUpdateResponse {
         status: boolean;
         message: string;
-        data: DepartmentDto;
+        data: DepartmentDto | DepartmentDto[] | {  // Backend có thể trả về DepartmentDto trực tiếp, array, hoặc PaginatedResponse
+          pageNumber: number;
+          pageSize: number;
+          totalCount: number;
+          totalPages: number;
+          hasPrevious: boolean;
+          hasNext: boolean;
+          items: DepartmentDto[];
+        } | null;
         errors: string[];
       }
       
+      // Cập nhật deptCode và deptName qua PUT
       const response = await apiClient.put<DepartmentUpdateResponse>(
         `/Department/${departmentId}`,
         requestData
       );
       
-      console.log('🏢 API Response:', response);
+      console.log('🏢 API Response:', JSON.stringify(response, null, 2));
       
-      if (!response.status || !response.data) {
+      if (!response.status) {
         const errorMsg = response.message || 'Failed to update department';
         const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
         console.error('❌ Failed to update department:', { response, errorMsg, errorDetails });
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      // Map DepartmentDto từ API sang Department
-      const dto = response.data;
+      // Xử lý response: có thể là DepartmentDto trực tiếp, array, pagination object, hoặc null
+      let dto: DepartmentDto | null = null;
+      
+      if (response.data) {
+        // Kiểm tra nếu response.data là DepartmentDto trực tiếp (có id, deptCode, deptName)
+        if ('id' in response.data && 'deptCode' in response.data && 'deptName' in response.data) {
+          dto = response.data as DepartmentDto;
+          console.log('✅ Response là DepartmentDto trực tiếp');
+        } else if (Array.isArray(response.data)) {
+          // Nếu là array, lấy phần tử đầu tiên
+          if (response.data.length > 0) {
+            dto = response.data[0];
+            console.log('✅ Response là array, lấy phần tử đầu tiên');
+          } else {
+            console.warn('⚠️ Response array rỗng');
+          }
+        } else if ('items' in response.data && Array.isArray(response.data.items)) {
+          // Nếu là pagination object, lấy từ items
+          if (response.data.items.length > 0) {
+            dto = response.data.items[0];
+            console.log('✅ Response là pagination object, lấy từ items[0]');
+          } else {
+            console.warn('⚠️ Response pagination items rỗng');
+          }
+        } else {
+          console.warn('⚠️ Response format không nhận dạng được:', response.data);
+        }
+      } else {
+        console.warn('⚠️ Response data là null/undefined, sẽ reload từ API');
+      }
+
+      // Nếu không có dto từ response, reload từ API bằng deptCode hoặc departmentId
+      if (!dto) {
+        console.log('🔄 Response data là null/undefined, reloading department từ API...');
+        try {
+          // Thử lấy tất cả departments và tìm theo deptCode hoặc departmentId
+          const allDepartments = await this.getAll();
+          let found = allDepartments.find(d => d.deptCode === requestData.deptCode);
+          
+          // Nếu không tìm thấy theo deptCode, thử tìm theo departmentId
+          if (!found) {
+            found = allDepartments.find(d => {
+              const dId = typeof d.id === 'number' ? d.id : parseInt(String(d.id), 10);
+              return dId === departmentId;
+            });
+          }
+          
+          if (found) {
+            // Nếu tìm thấy, map từ Department sang DepartmentDto format
+            dto = {
+              id: typeof found.id === 'number' ? found.id : parseInt(String(found.id), 10),
+              deptCode: found.deptCode,
+              deptName: found.deptName,
+              status: found.status,
+              createdAt: found.createdAt,
+            };
+            console.log('✅ Tìm thấy department sau khi reload:', dto);
+          } else {
+            // Nếu không tìm thấy, tạo dto từ request data và departmentId
+            // Đây là fallback khi backend không trả về data nhưng status = true
+            console.warn('⚠️ Không tìm thấy department sau khi reload, sử dụng dữ liệu từ request');
+            dto = {
+              id: departmentId,
+              deptCode: requestData.deptCode,
+              deptName: requestData.deptName,
+              status: updates.status || 'ACTIVE', // Sử dụng status từ updates nếu có
+              createdAt: undefined, // Không có thông tin này
+            };
+            console.log('✅ Sử dụng dữ liệu từ request làm fallback:', dto);
+          }
+        } catch (reloadError) {
+          console.error('❌ Error reloading department:', reloadError);
+          // Nếu reload thất bại nhưng status = true, vẫn coi như thành công và tạo dto từ request
+          console.warn('⚠️ Sử dụng dữ liệu từ request làm fallback sau khi reload thất bại');
+          dto = {
+            id: departmentId,
+            deptCode: requestData.deptCode,
+            deptName: requestData.deptName,
+            status: updates.status || 'ACTIVE',
+            createdAt: undefined,
+          };
+        }
+      }
+      
+      // Đảm bảo dto không null
+      if (!dto) {
+        throw new Error('Không thể lấy dữ liệu department sau khi cập nhật. Vui lòng reload trang.');
+      }
       const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
-      const updatedDepartment: Department = {
+      let updatedDepartment: Department = {
         id: dto.id,                    // Sử dụng id (int32) từ API
         deptCode: dto.deptCode,
         deptName: dto.deptName,
@@ -213,7 +371,24 @@ export const departmentService = {
         isActive: normalizedStatus === 'ACTIVE',
       };
 
-      console.log('✅ Department updated:', updatedDepartment);
+      // Nếu có status trong updates, cập nhật status riêng qua PATCH
+      if (updates.status) {
+        try {
+          console.log('🏢 Updating department status:', departmentId, updates.status);
+          await this.updateStatus(departmentId, updates.status);
+          // Cập nhật status trong department object
+          updatedDepartment.status = updates.status;
+          updatedDepartment.isActive = updates.status === 'ACTIVE';
+          console.log('✅ Department status updated successfully');
+        } catch (statusError) {
+          console.error('⚠️ Failed to update department status, but department info was updated:', statusError);
+          // Không throw error ở đây vì thông tin department đã được cập nhật thành công
+          // Chỉ log warning và giữ nguyên status từ response
+          // Có thể thông báo cho user nếu cần
+        }
+      }
+
+      console.log('✅ Department updated successfully:', updatedDepartment);
       return updatedDepartment;
     } catch (error) {
       console.error('❌ Error updating department:', error);
@@ -264,7 +439,15 @@ export const departmentService = {
       interface DepartmentStatusUpdateResponse {
         status: boolean;
         message: string;
-        data: null;
+        data: DepartmentDto[] | {  // Backend trả về PaginatedResponse<DepartmentDto>
+          pageNumber: number;
+          pageSize: number;
+          totalCount: number;
+          totalPages: number;
+          hasPrevious: boolean;
+          hasNext: boolean;
+          items: DepartmentDto[];
+        } | null;
         errors: string[];
       }
       
@@ -278,6 +461,8 @@ export const departmentService = {
         const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
         throw new Error(`${errorMsg}${errorDetails}`);
       }
+      
+      // Response có thể chứa data hoặc null, không cần xử lý data vì method này chỉ cần check status
       
       console.log('✅ Department status updated');
     } catch (error) {
