@@ -10,6 +10,9 @@ const StaffPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<TicketFromApi | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [resolutionNote, setResolutionNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // Fetch assigned tickets
   useEffect(() => {
@@ -72,6 +75,10 @@ const StaffPage = () => {
         nextStatus = 'IN_PROGRESS';
       } else if (selectedTicket.status === 'IN_PROGRESS') {
         nextStatus = 'RESOLVED';
+        // Nếu chuyển sang RESOLVED, hiển thị dialog nhập note
+        setShowNoteDialog(true);
+        setIsUpdatingStatus(false);
+        return;
       } else {
         // Ticket đã RESOLVED, không làm gì
         alert('Ticket đã được giải quyết');
@@ -118,6 +125,64 @@ const StaffPage = () => {
     } catch (err) {
       console.error('❌ Error updating ticket status:', err);
       alert('Đã xảy ra lỗi khi cập nhật trạng thái ticket');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleConfirmResolution = async () => {
+    if (!selectedTicket) return;
+
+    if (!resolutionNote.trim()) {
+      setNoteError('Vui lòng nhập ghi chú giải quyết');
+      return;
+    }
+
+    try {
+      setIsUpdatingStatus(true);
+      setNoteError(null);
+
+      console.log(`📤 Updating ticket ${selectedTicket.ticketCode} to RESOLVED with note`);
+      
+      const response = await ticketService.updateTicketStatus(
+        selectedTicket.ticketCode,
+        'RESOLVED',
+        resolutionNote
+      );
+      
+      console.log('📥 API Response:', response);
+      
+      if (response.status) {
+        console.log('✅ Status updated with note successfully');
+        
+        // Cập nhật ticket trong danh sách
+        setTickets(prevTickets => 
+          prevTickets.map(t => 
+            t.ticketCode === selectedTicket.ticketCode 
+              ? { ...t, status: 'RESOLVED', note: resolutionNote }
+              : t
+          )
+        );
+        
+        // Cập nhật selectedTicket
+        setSelectedTicket({ ...selectedTicket, status: 'RESOLVED', note: resolutionNote });
+        
+        // Đóng dialog
+        setShowNoteDialog(false);
+        setResolutionNote('');
+        
+        alert('Cập nhật trạng thái thành công! Ticket đã hoàn thành.');
+        
+        // Đóng modal sau 1 giây
+        setTimeout(() => {
+          handleCloseDetail();
+        }, 1000);
+      } else {
+        alert('Không thể cập nhật trạng thái ticket');
+      }
+    } catch (err) {
+      console.error('❌ Error updating ticket status:', err);
+      setNoteError('Đã xảy ra lỗi khi cập nhật trạng thái ticket');
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -385,6 +450,52 @@ const StaffPage = () => {
                   <span>Đã hoàn thành</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resolution Note Dialog */}
+      {showNoteDialog && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Ghi Chú Giải Quyết</h3>
+            <p className="text-gray-600 mb-4">
+              Vui lòng nhập ghi chú về cách giải quyết vấn đề:
+            </p>
+            
+            <textarea
+              value={resolutionNote}
+              onChange={(e) => setResolutionNote(e.target.value)}
+              placeholder="Nhập ghi chú giải quyết..."
+              className="w-full p-3 border-2 border-gray-200 rounded-lg mb-4 resize-none focus:outline-none focus:border-blue-500"
+              rows={5}
+            />
+
+            {noteError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                ❌ {noteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowNoteDialog(false);
+                  setResolutionNote('');
+                  setNoteError(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-200"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmResolution}
+                disabled={isUpdatingStatus}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdatingStatus ? 'Đang lưu...' : 'Xác nhận'}
+              </button>
             </div>
           </div>
         </div>

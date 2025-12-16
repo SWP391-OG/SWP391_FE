@@ -8,7 +8,7 @@ import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import { ticketService } from '../../services/ticketService';
 
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
-type StudentTab = 'pending' | 'processing' | 'completed' | 'cancelled';
+type StudentTab = 'pending' | 'processing' | 'waiting-feedback' | 'completed' | 'cancelled';
 
 interface StudentHomePageProps {
   currentUser: { id: string; fullName?: string } | null;
@@ -114,9 +114,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const processingTickets = studentTickets.filter(t => 
     t.status === 'assigned' || t.status === 'acknowledged' || t.status === 'in-progress'
   );
-  const completedTickets = studentTickets.filter(t => 
-    t.status === 'resolved' || t.status === 'closed'
-  );
+  const waitingFeedbackTickets = studentTickets.filter(t => t.status === 'resolved');
+  const completedTickets = studentTickets.filter(t => t.status === 'closed');
   const cancelledTickets = studentTickets.filter(t => t.status === 'cancelled');
 
   // Get tickets for current tab
@@ -125,6 +124,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     tabTickets = pendingTickets;
   } else if (studentTab === 'processing') {
     tabTickets = processingTickets;
+  } else if (studentTab === 'waiting-feedback') {
+    tabTickets = waitingFeedbackTickets;
   } else if (studentTab === 'completed') {
     tabTickets = completedTickets;
   } else if (studentTab === 'cancelled') {
@@ -184,13 +185,22 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   };
 
   // Status labels
-  const statusLabels: Record<string, string> = {
-    open: 'Mới tạo',
-    assigned: 'Đã được giao việc',
-    'in-progress': 'Đang xử lý',
-    resolved: 'Đã giải quyết',
-    closed: 'Đã đóng',
-    cancelled: 'Đã hủy',
+  // Function to get status label - changes based on tab and status
+  const getStatusLabel = (status: string) => {
+    if (status === 'resolved' && studentTab === 'waiting-feedback') {
+      return 'Chờ đánh giá';
+    }
+    if (status === 'closed') {
+      return 'Đã hoàn thành';
+    }
+    const statusLabelsMap: Record<string, string> = {
+      open: 'Mới tạo',
+      assigned: 'Đã được giao việc',
+      'in-progress': 'Đang xử lý',
+      resolved: 'Đã giải quyết',
+      cancelled: 'Đã hủy',
+    };
+    return statusLabelsMap[status] || status;
   };
 
   // Handle create ticket
@@ -271,12 +281,29 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     onTicketCreated(newTicket);
     alert('Ticket đã được gửi thành công! 🎉');
     
-    // Refresh tickets from API to show the new ticket
-    fetchMyTickets();
-    
+    // Reset view to home to show new ticket
     setStudentView('home');
     setSelectedIssue(null);
-    setStudentTab('pending'); // Switch to pending tab to show new ticket
+    
+    // Refresh tickets from API to show the new ticket
+    fetchMyTickets();
+  };
+
+  // Handle cancel ticket
+  const handleCancelTicket = async (ticketId: string, reason: string) => {
+    try {
+      const response = await ticketService.cancelTicket(ticketId, reason);
+      
+      if (response.status) {
+        // Refresh tickets to show cancelled ticket
+        await fetchMyTickets();
+      } else {
+        throw new Error(response.message || 'Không thể hủy ticket');
+      }
+    } catch (error) {
+      console.error('Error cancelling ticket:', error);
+      throw error;
+    }
   };
 
   return (
@@ -333,6 +360,16 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                 onClick={() => setStudentTab('processing')}
               >
                 Đang xử lý ({processingTickets.length})
+              </button>
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'waiting-feedback'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('waiting-feedback')}
+              >
+                Đợi đánh giá ({waitingFeedbackTickets.length})
               </button>
               <button
                 className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
@@ -398,6 +435,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                   ? 'Chưa có ticket chưa xử lý'
                   : studentTab === 'processing'
                   ? 'Chưa có ticket đang xử lý'
+                  : studentTab === 'waiting-feedback'
+                  ? 'Chưa có ticket đợi đánh giá'
                   : 'Chưa có ticket đã hoàn thành'}
               </h3>
               <p className="text-base text-gray-500">
@@ -405,6 +444,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                   ? 'Bạn chưa có ticket nào chưa được xử lý hoặc bạn chưa tạo ticket nào'
                   : studentTab === 'processing'
                   ? 'Tất cả các ticket của bạn đã được xử lý hoặc bạn chưa tạo ticket nào'
+                  : studentTab === 'waiting-feedback'
+                  ? 'Tất cả các ticket đã được giải quyết và bạn đã hoàn thành đánh giá'
                   : 'Bạn chưa có ticket nào đã hoàn thành'}
               </p>
             </div>
@@ -427,7 +468,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                         <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                         <div className="flex gap-4 flex-wrap items-center">
                           <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                            {statusLabels[ticket.status] || ticket.status}
+                            {getStatusLabel(ticket.status)}
                           </span>
                           {ticket.location && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
@@ -442,6 +483,30 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                     <p className="text-[0.95rem] text-gray-500 leading-relaxed line-clamp-2 overflow-hidden">
                       {ticket.description}
                     </p>
+
+                    {/* Show note if exists */}
+                    {ticket.note && (
+                      <div className={`mt-3 p-3 rounded-lg border-2 ${
+                        ticket.status === 'cancelled' 
+                          ? 'bg-red-50 border-red-200' 
+                          : 'bg-green-50 border-green-200'
+                      }`}>
+                        <div className={`text-xs font-semibold mb-1 ${
+                          ticket.status === 'cancelled' 
+                            ? 'text-red-600' 
+                            : 'text-green-600'
+                        }`}>
+                          {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
+                        </div>
+                        <div className={`text-sm line-clamp-2 ${
+                          ticket.status === 'cancelled' 
+                            ? 'text-red-800' 
+                            : 'text-green-800'
+                        }`}>
+                          {ticket.note}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Show staff info and phone number for all tickets with assigned staff */}
                     {ticket.assignedToName && (
@@ -574,6 +639,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
             setStudentView('edit-ticket');
           }}
           onUpdateFeedback={onFeedbackUpdated}
+          onCancelTicket={handleCancelTicket}
         />
       )}
     </div>

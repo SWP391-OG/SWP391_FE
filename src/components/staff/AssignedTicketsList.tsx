@@ -136,6 +136,14 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
                         {ticket.description}
                       </p>
                       
+                      {/* Note - if exists */}
+                      {ticket.note && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
+                          <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
+                        </div>
+                      )}
+                      
                       {/* Meta Info */}
                       <div className="flex items-center gap-6 text-sm text-gray-500">
                         <div className="flex items-center gap-2">
