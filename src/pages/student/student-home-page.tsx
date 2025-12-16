@@ -91,7 +91,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     if (currentUser) {
       fetchMyTickets();
     }
-  }, [currentUser]);
+  }, [currentUser, fetchMyTickets]);
 
   // Map API status to UI status
   const mapApiStatus = (apiStatus: string): Ticket['status'] => {
@@ -454,7 +454,6 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
               {displayedTickets.map((ticket) => {
                 // Check if ticket is completed (resolved or closed)
                 const isCompleted = ticket.status === 'resolved' || ticket.status === 'closed';
-                const isCancelled = ticket.status === 'cancelled';
 
                 return (
                   <div
