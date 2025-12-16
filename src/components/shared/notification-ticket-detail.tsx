@@ -41,9 +41,9 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
       case 'assigned':
         return { text: 'Trung bình', bg: 'bg-yellow-100', icon: '🟡' };
       case 'resolved':
-        return { text: 'Đã giải quyết', bg: 'bg-emerald-100',  icon: '🟢' };
+        return { text: 'chờ đánh giá', bg: 'bg-blue-100',  icon: '🔵' };
       case 'closed':
-        return { text: 'Đã đóng', bg: 'bg-gray-100',  icon: '⚫' };
+        return { text: 'Đã hoàn thành', bg: 'bg-emerald-100',  icon: '✅' };
       default:
         return { text: 'Mở', bg: 'bg-gray-100', icon: '⚪' };
     }

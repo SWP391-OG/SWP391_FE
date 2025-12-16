@@ -197,7 +197,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
       open: 'Mới tạo',
       assigned: 'Đã được giao việc',
       'in-progress': 'Đang xử lý',
-      resolved: 'Đã giải quyết',
+      resolved: 'chờ đánh giá',
       cancelled: 'Đã hủy',
     };
     return statusLabelsMap[status] || status;
@@ -417,8 +417,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                     <option value="open">Mới tạo</option>
                     <option value="assigned">Đã được giao việc</option>
                     <option value="in-progress">Đang xử lý</option>
-                    <option value="resolved">Đã giải quyết</option>
-                    <option value="closed">Đã đóng</option>
+                    <option value="resolved">Chờ đánh giá</option>
+                    <option value="closed">Đã hoàn thành</option>
                     <option value="cancelled">Đã hủy</option>
                   </select>
                 </div>
@@ -543,17 +543,6 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                         <div>
                           <div className="text-[0.8rem] font-semibold text-gray-500">Số điện thoại liên hệ</div>
                           <div className="text-sm font-medium text-gray-800">{ticket.contactPhone}</div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Show note/reason for cancelled tickets */}
-                    {isCancelled && ticket.note && (
-                      <div className="bg-red-50 rounded-lg p-4 flex gap-3">
-                        <span className="text-lg">📝</span>
-                        <div className="flex-1">
-                          <div className="text-[0.8rem] font-semibold text-red-600 mb-1">Lý do hủy</div>
-                          <div className="text-sm text-red-800">{ticket.note}</div>
                         </div>
                       </div>
                     )}

@@ -69,7 +69,7 @@ const StaffPage = () => {
       setIsUpdatingStatus(true);
       
       // Xác định trạng thái tiếp theo
-      let nextStatus: 'IN_PROGRESS' | 'RESOLVED';
+      let nextStatus: 'IN_PROGRESS' | 'RESOLVED' = 'IN_PROGRESS';
       
       if (selectedTicket.status === 'ASSIGNED') {
         nextStatus = 'IN_PROGRESS';
@@ -113,8 +113,8 @@ const StaffPage = () => {
         const statusText = nextStatus === 'IN_PROGRESS' ? 'đang sửa chữa' : 'đã hoàn thành';
         alert(`Cập nhật trạng thái thành công! Ticket ${statusText}.`);
         
-        // Nếu đã RESOLVED, đóng modal sau 1 giây
-        if (nextStatus === 'RESOLVED') {
+        // Nếu đã RESOLVED, đóng modal sau 1 giây (này không bao giờ chạy do logic phía trên nhưng giữ lại cho an toàn)
+        if ((nextStatus as string) === 'RESOLVED') {
           setTimeout(() => {
             handleCloseDetail();
           }, 1000);
@@ -250,13 +250,13 @@ const StaffPage = () => {
           <div className="text-3xl font-bold text-yellow-600">{stats.inProgress}</div>
           <div className="text-sm text-yellow-600 mt-1">Đang xử lý</div>
         </div>
-        <div className="bg-green-50 rounded-xl p-6 shadow-sm border border-green-200">
-          <div className="text-3xl font-bold text-green-600">{stats.resolved}</div>
-          <div className="text-sm text-green-600 mt-1">Đã giải quyết</div>
+        <div className="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-200">
+          <div className="text-3xl font-bold text-blue-600">{stats.resolved}</div>
+          <div className="text-sm text-blue-600 mt-1">Chờ đánh giá</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-3xl font-bold text-gray-600">{stats.closed}</div>
-          <div className="text-sm text-gray-600 mt-1">Đã đóng</div>
+        <div className="bg-emerald-50 rounded-xl p-6 shadow-sm border border-emerald-200">
+          <div className="text-3xl font-bold text-emerald-600">{stats.closed}</div>
+          <div className="text-sm text-emerald-600 mt-1">Đã hoàn thành</div>
         </div>
       </div>
 
@@ -290,12 +290,14 @@ const StaffPage = () => {
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${
                   selectedTicket.status === 'ASSIGNED' ? 'bg-purple-100 text-purple-800' :
                   selectedTicket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                  selectedTicket.status === 'RESOLVED' ? 'bg-green-100 text-green-800' :
+                  selectedTicket.status === 'RESOLVED' ? 'bg-blue-100 text-blue-800' :
+                  selectedTicket.status === 'CLOSED' ? 'bg-emerald-100 text-emerald-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {selectedTicket.status === 'ASSIGNED' && '🔔 Được giao'}
                   {selectedTicket.status === 'IN_PROGRESS' && '🔧 Đang sửa chữa'}
-                  {selectedTicket.status === 'RESOLVED' && '✅ Đã hoàn thành'}
+                  {selectedTicket.status === 'RESOLVED' && '⏳ Chờ đánh giá'}
+                  {selectedTicket.status === 'CLOSED' && '✅ Đã hoàn thành'}
                 </span>
               </div>
 
@@ -384,6 +386,42 @@ const StaffPage = () => {
                   )}
                 </div>
               </div>
+
+              {/* User Feedback - Show when ticket is resolved/closed and has feedback */}
+              {(selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED') && (selectedTicket.ratingStars || selectedTicket.ratingComment) && (
+                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    ⭐ Phản Hồi Của Người Dùng
+                  </h3>
+                  <div className="space-y-4">
+                    {selectedTicket.ratingStars && (
+                      <div className="flex items-center gap-3">
+                        <div className="text-base font-semibold text-gray-800">Đánh giá:</div>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className="text-2xl"
+                              style={{ color: star <= (selectedTicket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-base font-semibold text-gray-800">({selectedTicket.ratingStars}/5)</div>
+                      </div>
+                    )}
+                    {selectedTicket.ratingComment && (
+                      <div>
+                        <div className="text-sm font-semibold text-gray-600 mb-2">💬 Nhận xét:</div>
+                        <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-yellow-100">
+                          {selectedTicket.ratingComment}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -443,7 +481,16 @@ const StaffPage = () => {
               )}
               
               {selectedTicket.status === 'RESOLVED' && (
-                <div className="px-8 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-green-300">
+                <div className="px-8 py-3 bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-blue-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Chờ đánh giá</span>
+                </div>
+              )}
+              
+              {selectedTicket.status === 'CLOSED' && (
+                <div className="px-8 py-3 bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-emerald-300">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

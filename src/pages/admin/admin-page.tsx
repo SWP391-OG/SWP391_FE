@@ -43,15 +43,31 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
+  const [paginationState, setPaginationState] = useState({
+    pageNumber: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasPrevious: false,
+    hasNext: false,
+  });
 
   // Fetch tickets from API
-  const fetchTickets = async () => {
+  const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
     setTicketsError(null);
     try {
-      const response = await ticketService.getAllTicketsFromApi(1, 100); // Fetch first 100 tickets
+      const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
+      setPaginationState({
+        pageNumber: response.data.pageNumber,
+        pageSize: response.data.pageSize,
+        totalCount: response.data.totalCount,
+        totalPages: response.data.totalPages,
+        hasPrevious: response.data.hasPrevious,
+        hasNext: response.data.hasNext,
+      });
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -61,8 +77,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, []); // Run once on mount
+    fetchTickets(1, 10);
+  }, []); // Run once on mount with page 1 and size 10
 
   // Debug categories
   console.log('📊 Admin Page - Categories:', {
@@ -413,6 +429,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     cancelTicket(ticketId, reason);
   };
 
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    fetchTickets(page, paginationState.pageSize);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    fetchTickets(1, size); // Reset to page 1 when changing page size
+  };
+
 
   return (
     <div className="min-h-screen max-w-[1400px] mx-auto p-8">
@@ -578,6 +603,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   staffList={adminStaffList}
                   onAssignTicket={handleAssignTicket}
                   onViewTicket={setSelectedTicketForReview}
+                  pageNumber={paginationState.pageNumber}
+                  pageSize={paginationState.pageSize}
+                  totalPages={paginationState.totalPages}
+                  totalCount={paginationState.totalCount}
+                  hasPrevious={paginationState.hasPrevious}
+                  hasNext={paginationState.hasNext}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
                 />
               )}
             </>
