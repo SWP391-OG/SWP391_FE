@@ -11,7 +11,7 @@ type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' 
 type StudentTab = 'pending' | 'processing' | 'waiting-feedback' | 'completed' | 'cancelled';
 
 interface StudentHomePageProps {
-  currentUser: { id: string; fullName?: string } | null;
+  currentUser: { id: string | number; fullName?: string } | null;
   tickets: Ticket[];
   onTicketCreated: (ticket: Ticket) => void;
   onTicketUpdated?: (ticket: Ticket) => void;
@@ -268,8 +268,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
       location: ticketData.location,
       locationId: ticketData.locationId,
       images: ticketData.images,
-      createdBy: currentUser?.id || 'unknown',
-      requesterId: currentUser?.id || 'unknown',
+      createdBy: currentUser?.id ? String(currentUser.id) : 'unknown',
+      requesterId: currentUser?.id ? String(currentUser.id) : 'unknown',
       createdByName: currentUser?.fullName,
       createdAt,
       updatedAt: createdAt,

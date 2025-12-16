@@ -72,7 +72,7 @@ export const loadTickets = (): Ticket[] => {
   return mockTickets;
 };
 
-export const saveTickets = (tickets: Ticket[]): void => {
+export const saveTickets = (): void => {
   // Tickets are not saved to localStorage
   // This function is kept for backward compatibility but does nothing
   console.debug('Tickets are managed server-side, not persisted locally');

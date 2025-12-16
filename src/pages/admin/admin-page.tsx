@@ -32,11 +32,11 @@ interface AdminPageProps {
 
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
-  const { tickets, assignTicket, updateTicketPriority, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
+  const { tickets, assignTicket, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
   const { categories, createCategory, updateCategory, updateCategoryStatus, deleteCategory, loadCategories } = useCategories();
   const { departments, createDepartment, updateDepartment, updateDepartmentStatus, deleteDepartment, loadDepartments } = useDepartments();
-  const { locations, loading: locationsLoading, createLocation, updateLocation, updateLocationStatus, deleteLocation, loadLocations } = useLocations();
-  const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, deleteUser, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
+  const { locations, loading: locationsLoading, createLocation, updateLocation, deleteLocation, loadLocations } = useLocations();
+  const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
   const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
@@ -108,7 +108,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | TicketFromApi | null>(null);
-  const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
 
   // Form state
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -275,114 +274,24 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     })),
   });
 
-  // Map IssueCategory to Category name for ticket filtering
-  const categoryNameMap: Record<string, string[]> = {
-    'wifi': ['WiFi/Mạng'],
-    'equipment': ['Thiết bị'],
-    'facility': ['Cơ sở vật chất', 'Điện nước', 'Khẩn cấp'],
-    'classroom': ['Vệ sinh'],
-    'other': ['Cơ sở vật chất', 'Vệ sinh'],
-  };
-
-  // Filter tickets by admin's departments
-  const adminTickets = useMemo(() => {
-    console.log('🔍 DEBUG Admin Tickets Filtering:', {
-      totalTickets: tickets.length,
-      adminDepartmentIds,
-      availableCategories: categories.map(c => ({ name: c.name, departmentId: c.departmentId })),
-    });
-
-    const filtered = tickets.filter(ticket => {
-      if (ticket.status === 'cancelled') return false;
-      
-      const matchingCategoryNames = categoryNameMap[ticket.category] || [];
-      const matchingCategories = categories.filter(cat => 
-        matchingCategoryNames.includes(cat.name)
-      );
-      
-      const isMatch = matchingCategories.some(cat => 
-        adminDepartmentIds.includes(cat.departmentId)
-      );
-
-      // Debug each ticket
-      if (!isMatch || matchingCategories.length === 0) {
-        console.log(`❌ Ticket FILTERED OUT:`, {
-          id: ticket.id.substring(0, 8),
-          title: ticket.title,
-          category: ticket.category,
-          status: ticket.status,
-          expectedCategoryNames: matchingCategoryNames,
-          matchingCategories: matchingCategories.map(c => ({ name: c.name, deptId: c.departmentId })),
-          adminDepartmentIds,
-          reason: matchingCategories.length === 0 ? 'No matching category name' : 'Category not in admin departments',
-        });
-      } else {
-        console.log(`✅ Ticket INCLUDED:`, {
-          id: ticket.id.substring(0, 8),
-          title: ticket.title,
-          category: ticket.category,
-        });
-      }
-      
-      return isMatch;
-    });
-
-    console.log(`📊 Result: ${filtered.length} of ${tickets.length} tickets shown`);
-    return filtered;
-  }, [tickets, categories, adminDepartmentIds, categoryNameMap]);
-
   // Get staff list for admin's departments - Đơn giản hóa để lấy tất cả staff từ API
   const adminStaffList = useMemo(() => {
     // Lấy tất cả staff users (it-staff + facility-staff) từ hook
     const staffList = getStaffUsers.map(user => {
       const dept = departments.find(d => d.id === user.departmentId);
       return {
-        id: user.id,
+        id: String(user.id),
         name: user.fullName,
-        departmentId: user.departmentId, // ✅ Thêm departmentId để filter
+        departmentId: String(user.departmentId || ''),
         departmentName: dept?.name || dept?.deptName || 'N/A',
-        userCode: user.userCode || user.id, // userCode để gửi cho backend
+        userCode: user.userCode || String(user.id),
       };
-    });
-
-    console.log('👥 Admin Staff List:', {
-      count: staffList.length,
-      staff: staffList.map(s => ({
-        name: s.name,
-        deptId: s.departmentId,
-        deptIdType: typeof s.departmentId,
-        deptName: s.departmentName
-      }))
-    });
-    
-    console.log('👥 Admin Staff List:', {
-      count: staffList.length,
-      staffList,
-      getStaffUsersCount: getStaffUsers.length,
-      departmentsCount: departments.length,
     });
     
     return staffList;
   }, [getStaffUsers, departments]);
 
-  // Filter staff users
-  // Filter staff users - Lấy từ hook getStaffUsers (đã filter it-staff + facility-staff)
-  const adminStaffUsers = useMemo(() => {
-    return getStaffUsers
-      .sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-      });
-  }, [getStaffUsers]);
-
-  const paginatedStaffUsers = useMemo(() => {
-    const startIndex = (staffPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return adminStaffUsers.slice(startIndex, endIndex);
-  }, [adminStaffUsers, staffPage]);
-
-  const totalStaffPages = Math.ceil(adminStaffUsers.length / itemsPerPage);
+  const totalStaffPages = Math.ceil(getStaffUsers.length / itemsPerPage);
 
   // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
@@ -394,12 +303,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       });
   }, [getStudentUsers]);
 
-  const paginatedStudentUsers = useMemo(() => {
-    const startIndex = (usersPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return studentUsers.slice(startIndex, endIndex);
-  }, [studentUsers, usersPage]);
-
   const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Handlers
@@ -407,16 +310,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     const staff = adminStaffList.find(s => s.id === staffId);
     if (!staff) return;
     assignTicket(ticketId, staffId, staff.name);
-  };
-
-  const handleCancelTicket = (ticketId: string) => {
-    const reason = prompt('Lý do hủy ticket (ví dụ: Báo cáo sai, spam, không thuộc phạm vi xử lý):');
-    if (reason === null) return;
-    cancelTicket(ticketId, reason);
-  };
-
-  const handleUpdatePriority = (ticketId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
-    updateTicketPriority(ticketId, newPriority);
   };
 
   const handleApproveTicket = (ticketId: string) => {
@@ -639,10 +532,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               }}
               onEditClick={(cat) => {
                 setEditingCategory(cat);
+                const deptId = typeof cat.departmentId === 'string' ? parseInt(cat.departmentId, 10) || 0 : (cat.departmentId || 0);
                 setCategoryFormData({
                   categoryCode: cat.categoryCode,
                   categoryName: cat.categoryName,
-                  departmentId: cat.departmentId,
+                  departmentId: deptId,
                   slaResolveHours: cat.slaResolveHours,
                   status: cat.status,
                   icon: '📋', // Frontend-only
@@ -719,7 +613,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {/* Staff Management */}
           {activeTab === 'staff' && (
             <StaffList
-              staffUsers={adminStaffUsers}
+              staffUsers={getStaffUsers}
               departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
@@ -738,7 +632,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: '',
                   phoneNumber: '',
                   role: 'it-staff',
-                  departmentId: adminDepartments[0]?.id || '',
+                  departmentId: adminDepartments[0]?.id ? String(adminDepartments[0].id) : '',
                 });
                 setIsFormOpen(true);
               }}
@@ -750,6 +644,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   d.deptCode === staff.departmentId?.toString()
                 );
                 setEditingStaff(staff);
+                const deptId = dept?.id ? String(dept.id) : (staff.departmentId?.toString() || '');
                 setStaffFormData({
                   userCode: staff.userCode || '',
                   username: staff.username || staff.email || '',
@@ -758,7 +653,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: staff.email,
                   phoneNumber: staff.phoneNumber || '',
                   role: staff.role,
-                  departmentId: dept?.id || staff.departmentId?.toString() || '',
+                  departmentId: deptId,
                 });
                 setIsFormOpen(true);
               }}
@@ -783,6 +678,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   password: user.password || '',
                   fullName: user.fullName,
                   email: user.email,
+                  role: user.role,
                 });
                 setIsFormOpen(true);
               }}
@@ -820,7 +716,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingCategory={editingCategory}
           categoryFormData={categoryFormData}
           adminDepartments={adminDepartments}
-          onFormDataChange={setCategoryFormData}
+          onFormDataChange={setCategoryFormData as any}
           onSubmit={async () => {
             try {
               if (editingCategory) {
@@ -1075,7 +971,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingLocation={editingLocation}
           locationFormData={locationFormData}
           campuses={campuses}
-          onFormDataChange={setLocationFormData}
+          onFormDataChange={setLocationFormData as any}
           onSubmit={async () => {
             try {
               if (editingLocation) {
@@ -1091,7 +987,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 }
                 
                 const newCode = locationFormData.code.trim();
-                const oldCode = editingLocation.code || '';
                 
                 // Get campusId from selected campus
                 let campusId: number | undefined;
@@ -1138,7 +1033,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 if (!locationFormData.campusCode) {
                   alert('Vui lòng chọn Campus');
                   return;
-                }
+                }   
                 
                 // Get campusId from selected campusCode
                 const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
@@ -1279,12 +1174,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingStaff={editingStaff}
           staffFormData={staffFormData}
           adminDepartments={adminDepartments}
-          onFormDataChange={setStaffFormData}
+          onFormDataChange={setStaffFormData as any}
           onSubmit={async () => {
             try {
               if (editingStaff) {
                 // Update existing staff
-                await updateUser(editingStaff.userCode || editingStaff.id, {
+                const userId = typeof editingStaff.id === 'number' ? editingStaff.id : parseInt(editingStaff.id.toString(), 10);
+                await updateUser(userId, {
                   fullName: staffFormData.fullName,
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
@@ -1369,13 +1265,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <UserForm
           editingUser={editingUser}
           userFormData={userFormData}
-          userTickets={editingUser ? getTicketsByUserId(editingUser.id) : []}
-          onFormDataChange={setUserFormData}
+          userTickets={editingUser ? getTicketsByUserId(typeof editingUser.id === 'number' ? editingUser.id.toString() : editingUser.id) : []}
+          onFormDataChange={setUserFormData as any}
           onSubmit={async () => {
             try {
               if (editingUser) {
                 // Update existing user
-                await updateUser(editingUser.userCode || editingUser.id, {
+                const userId = typeof editingUser.id === 'number' ? editingUser.id : parseInt(editingUser.id.toString(), 10);
+                await updateUser(userId, {
                   fullName: userFormData.fullName,
                 });
               } else {

@@ -3,7 +3,6 @@ import type { ChangeEvent, FormEvent } from 'react';
 import type { Ticket } from '../../types';
 import { ticketService } from '../../services/ticketService';
 import { imageUploadService } from '../../services/imageUploadService';
-import { campusService, type Campus, type Location } from '../../services/campusService';
 import { parseTicketImages } from '../../utils/ticketUtils';
 
 interface EditTicketPageProps {
@@ -29,37 +28,13 @@ const EditTicketPage = ({ ticket, onBack, onSubmit }: EditTicketPageProps) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [campuses, setCampuses] = useState<Campus[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
 
   // Load campus and location data for display
   useEffect(() => {
-    loadCampusAndLocation();
+    // Campus and location data loading removed - using API directly when needed
   }, []);
-
-  const loadCampusAndLocation = async () => {
-    try {
-      const campusData = await campusService.getAllCampuses();
-      setCampuses(campusData);
-      
-      // Find the campus for this ticket to load locations
-      if (ticket.location) {
-        // Try to find campus from location
-        for (const campus of campusData) {
-          const locs = await campusService.getLocationsByCampus(campus.campusCode);
-          const matchingLocation = locs.find(loc => loc.locationName === ticket.location);
-          if (matchingLocation) {
-            setLocations(locs);
-            break;
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading campus/location data:', error);
-    }
-  };
 
   // Validate ticket exists
   if (!ticket) {

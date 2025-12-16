@@ -90,24 +90,15 @@ export const locationService = {
 
       console.log('✅ Location created successfully');
       
-      // If status is provided and not active, update it after creation
-      const defaultStatus = location.status || 'active';
-      if (defaultStatus !== 'active') {
-        try {
-          await this.updateStatus(location.code, defaultStatus);
-          console.log(`✅ Location status set to ${defaultStatus}`);
-        } catch (statusError) {
-          console.warn('⚠️ Failed to set location status, but location was created:', statusError);
-          // Don't throw - location was created successfully
-        }
-      }
+      // Note: Status update would require the newly created location ID from API response
+      // which is not provided in the current response, so status cannot be updated here
       
       // Return newly created location
       return {
         id: location.code,
         code: location.code,
         name: location.name,
-        status: defaultStatus,
+        status: location.status || 'active',
       };
     } catch (error) {
       console.error('❌ Error creating location:', error);

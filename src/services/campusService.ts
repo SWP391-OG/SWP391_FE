@@ -100,16 +100,11 @@ export const campusService = {
       
       if (response.status && response.data) {
         console.log('📍 All locations from API:', response.data);
+        console.log('📍 Number of locations returned:', response.data.length);
         
-        // Filter only active locations - check for various status formats
-        const filtered = response.data.filter(loc => {
-          const isActive = loc.status === 'ACTIVE' || loc.status === 'active' || loc.status === 'Active';
-          console.log(`📍 Location ${loc.locationName}: status="${loc.status}" => active=${isActive}`);
-          return isActive;
-        });
-        
-        console.log('📍 Filtered active locations:', filtered);
-        return filtered;
+        // Return all locations without filtering
+        // Show all locations to user, don't filter by status
+        return response.data;
       }
       return [];
     } catch (error) {

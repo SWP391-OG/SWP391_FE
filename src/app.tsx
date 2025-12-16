@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { UserRole, User, Ticket } from './types';
 import { 
-  loadTickets, loadCurrentUser, saveCurrentUser, loadUsers
+  loadTickets, loadCurrentUser, saveCurrentUser
 } from './utils/localStorage';
 import { useTicketByCode } from './hooks/useTicketByCode';
 import { authService } from './services/authService';

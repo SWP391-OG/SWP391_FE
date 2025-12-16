@@ -233,7 +233,7 @@ export const ticketService = {
       },
     };
     tickets.push(newTicket);
-    saveTickets(tickets);
+    saveTickets();
     return newTicket;
   },
 
@@ -271,7 +271,7 @@ export const ticketService = {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    saveTickets(tickets);
+    saveTickets();
     return tickets[index];
   },
 
@@ -311,8 +311,8 @@ export const ticketService = {
 
   // Xóa ticket (nếu cần)
   delete(id: string): void {
-    const tickets = this.getAll().filter(t => t.id !== id);
-    saveTickets(tickets);
+    this.getAll().filter(t => t.id !== id);
+    saveTickets();
   },
 
   // Cập nhật feedback cho ticket - PATCH method

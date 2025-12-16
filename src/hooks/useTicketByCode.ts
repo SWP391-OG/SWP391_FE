@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Ticket, TicketFromApi } from '../types';
+import type { Ticket } from '../types';
 import { ticketService } from '../services/ticketService';
 
 export const useTicketByCode = (ticketCode: string | null) => {
@@ -24,7 +24,24 @@ export const useTicketByCode = (ticketCode: string | null) => {
         console.log('📢 Ticket response:', response);
         
         if (response && response.data) {
-          const apiData = response.data as TicketFromApi;
+          // Safely convert API response to Ticket format
+          const apiData = response.data as unknown as {
+            ticketCode: string;
+            title: string;
+            description: string;
+            status?: string;
+            createdAt: string;
+            resolveDeadline?: string;
+            resolvedAt?: string | null;
+            closedAt?: string | null;
+            ratingStars?: number;
+            ratingComment?: string;
+            locationName?: string;
+            locationCode?: string;
+            categoryCode?: string;
+            assignedToName?: string;
+            requesterName?: string;
+          };
           
           // Convert API response to Ticket format
           const convertedTicket: Ticket = {
@@ -36,8 +53,8 @@ export const useTicketByCode = (ticketCode: string | null) => {
             createdAt: apiData.createdAt,
             updatedAt: apiData.createdAt,
             resolveDeadline: apiData.resolveDeadline,
-            resolvedAt: apiData.resolvedAt,
-            closedAt: apiData.closedAt,
+            resolvedAt: apiData.resolvedAt || undefined,
+            closedAt: apiData.closedAt || undefined,
             ratingStars: apiData.ratingStars || 0,
             ratingComment: apiData.ratingComment || '',
             locationName: apiData.locationName,

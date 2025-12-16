@@ -127,12 +127,12 @@ const CategoryForm = ({
                 adminDepartments.map((dept, index) => {
                   // CategoryList so sánh: cat.departmentId?.toString() === d.id
                   // Vậy Department.id là string representation của departmentId (number)
-                  // Cần parse Department.id (string) sang number để dùng làm Category.departmentId
+                  // Cần parse Department.id (string | number) sang number để dùng làm Category.departmentId
                   let deptId = 0;
                   
-                  // Thử parse từ id (string) sang number
+                  // Thử parse từ id (string | number) sang number
                   if (dept.id) {
-                    const parsed = parseInt(dept.id, 10);
+                    const parsed = typeof dept.id === 'number' ? dept.id : parseInt(String(dept.id), 10);
                     if (!isNaN(parsed) && parsed > 0) {
                       deptId = parsed;
                     }
