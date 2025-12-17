@@ -1203,6 +1203,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               const newStatus = editingStaff.status === 'active' ? 'inactive' : 'active';
               await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
+              setIsFormOpen(false);
+              setEditingStaff(null);
             } catch (error) {
               console.error('Error toggling staff status:', error);
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -1280,9 +1282,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 }
               }
 
-              const newStatus = editingUser.status === 'active' ? 'banned' : 'active';
+              const newStatus = editingUser.status === 'active' ? 'inactive' : 'active';
               await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
+              setIsFormOpen(false);
+              setEditingUser(null);
             } catch (error) {
               console.error('Error toggling user ban status:', error);
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));

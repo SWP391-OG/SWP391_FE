@@ -76,14 +76,13 @@ const StaffForm = ({
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Mật khẩu *
+              Mật khẩu 
             </label>
             <input
               type="password"
-              required
               value={staffFormData.password}
               onChange={(e) => onFormDataChange({ ...staffFormData, password: e.target.value })}
-              placeholder="Nhập mật khẩu"
+              placeholder="Nhập mật khẩu (không bắt buộc)"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
