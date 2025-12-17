@@ -43,15 +43,31 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
+  const [paginationState, setPaginationState] = useState({
+    pageNumber: 1,
+    pageSize: 10,
+    totalCount: 0,
+    totalPages: 0,
+    hasPrevious: false,
+    hasNext: false,
+  });
 
   // Fetch tickets from API
-  const fetchTickets = async () => {
+  const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
     setTicketsError(null);
     try {
-      const response = await ticketService.getAllTicketsFromApi(1, 100); // Fetch first 100 tickets
+      const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
+      setPaginationState({
+        pageNumber: response.data.pageNumber,
+        pageSize: response.data.pageSize,
+        totalCount: response.data.totalCount,
+        totalPages: response.data.totalPages,
+        hasPrevious: response.data.hasPrevious,
+        hasNext: response.data.hasNext,
+      });
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -61,8 +77,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   };
 
   useEffect(() => {
-    fetchTickets();
-  }, []); // Run once on mount
+    fetchTickets(1, 10);
+  }, []); // Run once on mount with page 1 and size 10
 
   // Debug categories
   console.log('📊 Admin Page - Categories:', {
@@ -92,7 +108,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | TicketFromApi | null>(null);
-  // const [selectedUserForHistory, setSelectedUserForHistory] = useState<User | null>(null);
 
   // Form state
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -274,61 +289,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     })),
   });
 
-
-  // Filter tickets by admin's departments - Unused, commented out
-  // Unused - commented out
-  // const _adminTickets = useMemo(() => {
-  //   console.log('🔍 DEBUG Admin Tickets Filtering:', {
-  //     totalTickets: tickets.length,
-  //     adminDepartmentIds,
-  //     availableCategories: categories.map(c => ({ categoryName: c.categoryName, departmentId: c.departmentId })),
-  //   });
-  //
-  //   const filtered = tickets.filter(ticket => {
-  //     if (ticket.status === 'cancelled' || ticket.status === 'CANCELLED') return false;
-  //     
-  //     // Find category by categoryId
-  //     if (!ticket.categoryId) return false;
-  //     
-  //     const ticketCategory = categories.find(cat => 
-  //       cat.id === ticket.categoryId || cat.categoryCode === ticket.categoryId
-  //     );
-  //     
-  //     if (!ticketCategory) return false;
-  //     
-  //     // Check if category's department is in admin's departments
-  //     const categoryDeptId = typeof ticketCategory.departmentId === 'number' 
-  //       ? ticketCategory.departmentId.toString() 
-  //       : ticketCategory.departmentId;
-  //     
-  //     const isMatch = adminDepartmentIds.includes(categoryDeptId);
-  //
-  //     // Debug each ticket
-  //     if (!isMatch) {
-  //       console.log(`❌ Ticket FILTERED OUT:`, {
-  //         id: ticket.id.substring(0, 8),
-  //         title: ticket.title,
-  //         categoryId: ticket.categoryId,
-  //         categoryName: ticketCategory.categoryName,
-  //         categoryDeptId,
-  //         adminDepartmentIds,
-  //         reason: 'Category not in admin departments',
-  //       });
-  //     } else {
-  //       console.log(`✅ Ticket INCLUDED:`, {
-  //         id: ticket.id.substring(0, 8),
-  //         title: ticket.title,
-  //         categoryId: ticket.categoryId,
-  //       });
-  //     }
-  //     
-  //     return isMatch;
-  //   });
-  //
-  //   console.log(`📊 Result: ${filtered.length} of ${tickets.length} tickets shown`);
-  //   return filtered;
-  // }, [tickets, categories, adminDepartmentIds]);
-
   // Get staff list for admin's departments - Đơn giản hóa để lấy tất cả staff từ API
   const adminStaffList = useMemo(() => {
     // Lấy tất cả staff users (it-staff + facility-staff) từ hook
@@ -339,53 +299,18 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         (typeof d.id === 'string' && d.id === String(user.departmentId))
       );
       return {
-        id: typeof user.id === 'string' ? user.id : String(user.id),
+        id: String(user.id),
         name: user.fullName,
-        departmentId: user.departmentId ? String(user.departmentId) : undefined,
+        departmentId: String(user.departmentId || ''),
         departmentName: dept?.name || dept?.deptName || 'N/A',
-        userCode: user.userCode ? String(user.userCode) : (typeof user.id === 'string' ? user.id : String(user.id)),
+        userCode: user.userCode || String(user.id),
       };
-    });
-
-    console.log('👥 Admin Staff List:', {
-      count: staffList.length,
-      staff: staffList.map(s => ({
-        name: s.name,
-        deptId: s.departmentId,
-        deptIdType: typeof s.departmentId,
-        deptName: s.departmentName
-      }))
-    });
-    
-    console.log('👥 Admin Staff List:', {
-      count: staffList.length,
-      staffList,
-      getStaffUsersCount: getStaffUsers.length,
-      departmentsCount: departments.length,
     });
     
     return staffList;
   }, [getStaffUsers, departments]);
 
-  // Filter staff users
-  // Filter staff users - Lấy từ hook getStaffUsers (đã filter it-staff + facility-staff)
-  const adminStaffUsers = useMemo(() => {
-    return getStaffUsers
-      .sort((a, b) => {
-        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-      });
-  }, [getStaffUsers]);
-
-  // Unused - commented out
-  // const _paginatedStaffUsers = useMemo(() => {
-  //   const startIndex = (staffPage - 1) * itemsPerPage;
-  //   const endIndex = startIndex + itemsPerPage;
-  //   return adminStaffUsers.slice(startIndex, endIndex);
-  // }, [adminStaffUsers, staffPage]);
-
-  const totalStaffPages = Math.ceil(adminStaffUsers.length / itemsPerPage);
+  const totalStaffPages = Math.ceil(getStaffUsers.length / itemsPerPage);
 
   // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
@@ -397,13 +322,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       });
   }, [getStudentUsers]);
 
-  // Unused - commented out
-  // const _paginatedStudentUsers = useMemo(() => {
-  //   const startIndex = (usersPage - 1) * itemsPerPage;
-  //   const endIndex = startIndex + itemsPerPage;
-  //   return studentUsers.slice(startIndex, endIndex);
-  // }, [studentUsers, usersPage]);
-
   const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Handlers
@@ -413,18 +331,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     assignTicket(ticketId, staffId, staff.name);
   };
 
-  // Unused - commented out
-  // const _handleCancelTicket = (ticketId: string) => {
-  //   const reason = prompt('Lý do hủy ticket (ví dụ: Báo cáo sai, spam, không thuộc phạm vi xử lý):');
-  //   if (reason === null) return;
-  //   cancelTicket(ticketId, reason);
-  // };
-
-  // Unused - commented out
-  // const _handleUpdatePriority = (ticketId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
-  //   updateTicketPriority(ticketId, newPriority);
-  // };
-
   const handleApproveTicket = (ticketId: string) => {
     // Chấp nhận ticket: chuyển từ 'open' sang 'acknowledged'
     updateTicketStatus(ticketId, 'acknowledged');
@@ -433,6 +339,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const handleRejectTicket = (ticketId: string, reason: string) => {
     // Từ chối ticket: chuyển sang 'cancelled' với lý do
     cancelTicket(ticketId, reason);
+  };
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    fetchTickets(page, paginationState.pageSize);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    fetchTickets(1, size); // Reset to page 1 when changing page size
   };
 
 
@@ -600,6 +515,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   staffList={adminStaffList}
                   onAssignTicket={handleAssignTicket}
                   onViewTicket={setSelectedTicketForReview}
+                  pageNumber={paginationState.pageNumber}
+                  pageSize={paginationState.pageSize}
+                  totalPages={paginationState.totalPages}
+                  totalCount={paginationState.totalCount}
+                  hasPrevious={paginationState.hasPrevious}
+                  hasNext={paginationState.hasNext}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
                 />
               )}
             </>
@@ -628,10 +551,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               }}
               onEditClick={(cat) => {
                 setEditingCategory(cat);
+                const deptId = typeof cat.departmentId === 'string' ? parseInt(cat.departmentId, 10) || 0 : (cat.departmentId || 0);
                 setCategoryFormData({
                   categoryCode: cat.categoryCode,
                   categoryName: cat.categoryName,
-                  departmentId: cat.departmentId,
+                  departmentId: deptId,
                   slaResolveHours: cat.slaResolveHours,
                   status: cat.status,
                   icon: '📋', // Frontend-only
@@ -708,7 +632,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {/* Staff Management */}
           {activeTab === 'staff' && (
             <StaffList
-              staffUsers={adminStaffUsers}
+              staffUsers={getStaffUsers}
               departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
@@ -739,6 +663,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   d.deptCode === staff.departmentId?.toString()
                 );
                 setEditingStaff(staff);
+                const deptId = dept?.id ? String(dept.id) : (staff.departmentId?.toString() || '');
                 setStaffFormData({
                   userCode: staff.userCode || '',
                   username: staff.username || staff.email || '',
@@ -747,7 +672,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: staff.email,
                   phoneNumber: staff.phoneNumber || '',
                   role: staff.role,
-                  departmentId: dept?.id ? String(dept.id) : (staff.departmentId ? String(staff.departmentId) : ''),
+                  departmentId: deptId,
                 });
                 setIsFormOpen(true);
               }}
@@ -810,7 +735,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingCategory={editingCategory}
           categoryFormData={categoryFormData}
           adminDepartments={adminDepartments}
-          onFormDataChange={(data) => setCategoryFormData(prev => ({ ...prev, ...data }))}
+          onFormDataChange={setCategoryFormData as any}
           onSubmit={async () => {
             try {
               if (editingCategory) {
@@ -953,26 +878,49 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           onSubmit={async () => {
             try {
               if (editingDept) {
-                // Update: lấy departmentId (int32) từ editingDept
-                const departmentId = typeof editingDept.id === 'number' 
-                  ? editingDept.id 
-                  : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
-                
-                if (!departmentId || isNaN(departmentId)) {
-                  alert('Không thể xác định ID bộ phận. Vui lòng thử lại.');
+                // Validate form data trước khi update
+                if (!deptFormData.deptCode || deptFormData.deptCode.trim().length === 0) {
+                  alert('Vui lòng nhập mã bộ phận.');
                   return;
                 }
                 
-                // Theo Swagger: PUT /api/Department/{departmentId} có thể sửa cả deptCode và deptName
-                await updateDepartment(departmentId, {
-                  deptCode: deptFormData.deptCode, // Có thể sửa deptCode
-                  deptName: deptFormData.deptName,
+                if (!deptFormData.deptName || deptFormData.deptName.trim().length === 0) {
+                  alert('Vui lòng nhập tên bộ phận.');
+                  return;
+                }
+                
+                // Update: lấy departmentId (int32) từ editingDept
+                let departmentId: number | null = null;
+                
+                if (typeof editingDept.id === 'number') {
+                  departmentId = editingDept.id;
+                } else if (typeof editingDept.id === 'string') {
+                  const parsed = parseInt(editingDept.id, 10);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    departmentId = parsed;
+                  }
+                }
+                
+                if (!departmentId || isNaN(departmentId) || departmentId <= 0) {
+                  console.error('❌ Invalid departmentId:', editingDept.id, 'from editingDept:', editingDept);
+                  alert(`Không thể xác định ID bộ phận (ID: ${editingDept.id}). Vui lòng thử lại hoặc reload trang.`);
+                  return;
+                }
+                
+                console.log('🏢 Updating department:', {
+                  departmentId,
+                  editingDept,
+                  formData: deptFormData
                 });
                 
-                // Nếu status thay đổi, update riêng qua PATCH /api/Department/status
-                if (deptFormData.status !== editingDept.status) {
-                  await updateDepartmentStatus(departmentId, deptFormData.status);
-                }
+                // Cập nhật department: có thể sửa mã bộ phận, tên bộ phận và trạng thái
+                // PUT /api/Department/{departmentId} để cập nhật deptCode và deptName
+                // Nếu có status, sẽ tự động cập nhật status qua PATCH /api/Department/status
+                await updateDepartment(departmentId, {
+                  deptCode: deptFormData.deptCode.trim(), // Có thể sửa mã bộ phận
+                  deptName: deptFormData.deptName.trim(), // Có thể sửa tên bộ phận
+                  status: deptFormData.status,     // Có thể sửa trạng thái
+                });
               } else {
                 // Create: theo Swagger chỉ cần deptCode và deptName (không có status)
                 await createDepartment({
@@ -1042,7 +990,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingLocation={editingLocation}
           locationFormData={locationFormData}
           campuses={campuses}
-          onFormDataChange={(data) => setLocationFormData(prev => ({ ...prev, ...data }))}
+          onFormDataChange={setLocationFormData as any}
           onSubmit={async () => {
             try {
               if (editingLocation) {
@@ -1104,7 +1052,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 if (!locationFormData.campusCode) {
                   alert('Vui lòng chọn Campus');
                   return;
-                }
+                }   
                 
                 // Get campusId from selected campusCode
                 const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
@@ -1245,18 +1193,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           editingStaff={editingStaff}
           staffFormData={staffFormData}
           adminDepartments={adminDepartments}
-          onFormDataChange={(data) => setStaffFormData(prev => ({ ...prev, ...data }))}
+          onFormDataChange={setStaffFormData as any}
           onSubmit={async () => {
             try {
               if (editingStaff) {
                 // Update existing staff
-                const staffId = typeof editingStaff.id === 'number' 
-                  ? editingStaff.id 
-                  : (typeof editingStaff.id === 'string' ? parseInt(editingStaff.id, 10) : (editingStaff.userCode ? parseInt(editingStaff.userCode, 10) : 0));
-                if (isNaN(staffId)) {
-                  throw new Error('Invalid staff ID');
-                }
-                await updateUser(staffId, {
+                const userId = typeof editingStaff.id === 'number' ? editingStaff.id : parseInt(editingStaff.id.toString(), 10);
+                await updateUser(userId, {
                   fullName: staffFormData.fullName,
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
@@ -1341,22 +1284,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         <UserForm
           editingUser={editingUser}
           userFormData={userFormData}
-          userTickets={editingUser ? getTicketsByUserId(typeof editingUser.id === 'string' ? editingUser.id : String(editingUser.id)) : []}
-          onFormDataChange={(data) => {
-            if (data) {
-              setUserFormData(prev => ({ ...prev, ...data }));
-            }
-          }}
+          userTickets={editingUser ? getTicketsByUserId(typeof editingUser.id === 'number' ? editingUser.id.toString() : editingUser.id) : []}
+          onFormDataChange={setUserFormData as any}
           onSubmit={async () => {
             try {
               if (editingUser) {
                 // Update existing user
-                const userId = typeof editingUser.id === 'number' 
-                  ? editingUser.id 
-                  : (typeof editingUser.id === 'string' ? parseInt(editingUser.id, 10) : (editingUser.userCode ? parseInt(editingUser.userCode, 10) : 0));
-                if (isNaN(userId)) {
-                  throw new Error('Invalid user ID');
-                }
+                const userId = typeof editingUser.id === 'number' ? editingUser.id : parseInt(editingUser.id.toString(), 10);
                 await updateUser(userId, {
                   fullName: userFormData.fullName,
                 });

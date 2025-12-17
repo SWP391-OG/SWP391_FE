@@ -10,6 +10,9 @@ const StaffPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTicket, setSelectedTicket] = useState<TicketFromApi | null>(null);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [showNoteDialog, setShowNoteDialog] = useState(false);
+  const [resolutionNote, setResolutionNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // Fetch assigned tickets
   useEffect(() => {
@@ -66,12 +69,16 @@ const StaffPage = () => {
       setIsUpdatingStatus(true);
       
       // Xác định trạng thái tiếp theo
-      let nextStatus: 'IN_PROGRESS' | 'RESOLVED';
+      let nextStatus: 'IN_PROGRESS' | 'RESOLVED' = 'IN_PROGRESS';
       
       if (selectedTicket.status === 'ASSIGNED') {
         nextStatus = 'IN_PROGRESS';
       } else if (selectedTicket.status === 'IN_PROGRESS') {
         nextStatus = 'RESOLVED';
+        // Nếu chuyển sang RESOLVED, hiển thị dialog nhập note
+        setShowNoteDialog(true);
+        setIsUpdatingStatus(false);
+        return;
       } else {
         // Ticket đã RESOLVED, không làm gì
         alert('Ticket đã được giải quyết');
@@ -106,8 +113,8 @@ const StaffPage = () => {
         const statusText = nextStatus === 'IN_PROGRESS' ? 'đang sửa chữa' : 'đã hoàn thành';
         alert(`Cập nhật trạng thái thành công! Ticket ${statusText}.`);
         
-        // Nếu đã RESOLVED, đóng modal sau 1 giây
-        if (nextStatus === 'RESOLVED') {
+        // Nếu đã RESOLVED, đóng modal sau 1 giây (này không bao giờ chạy do logic phía trên nhưng giữ lại cho an toàn)
+        if ((nextStatus as string) === 'RESOLVED') {
           setTimeout(() => {
             handleCloseDetail();
           }, 1000);
@@ -118,6 +125,64 @@ const StaffPage = () => {
     } catch (err) {
       console.error('❌ Error updating ticket status:', err);
       alert('Đã xảy ra lỗi khi cập nhật trạng thái ticket');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleConfirmResolution = async () => {
+    if (!selectedTicket) return;
+
+    if (!resolutionNote.trim()) {
+      setNoteError('Vui lòng nhập ghi chú giải quyết');
+      return;
+    }
+
+    try {
+      setIsUpdatingStatus(true);
+      setNoteError(null);
+
+      console.log(`📤 Updating ticket ${selectedTicket.ticketCode} to RESOLVED with note`);
+      
+      const response = await ticketService.updateTicketStatus(
+        selectedTicket.ticketCode,
+        'RESOLVED',
+        resolutionNote
+      );
+      
+      console.log('📥 API Response:', response);
+      
+      if (response.status) {
+        console.log('✅ Status updated with note successfully');
+        
+        // Cập nhật ticket trong danh sách
+        setTickets(prevTickets => 
+          prevTickets.map(t => 
+            t.ticketCode === selectedTicket.ticketCode 
+              ? { ...t, status: 'RESOLVED', note: resolutionNote }
+              : t
+          )
+        );
+        
+        // Cập nhật selectedTicket
+        setSelectedTicket({ ...selectedTicket, status: 'RESOLVED', note: resolutionNote });
+        
+        // Đóng dialog
+        setShowNoteDialog(false);
+        setResolutionNote('');
+        
+        alert('Cập nhật trạng thái thành công! Ticket đã hoàn thành.');
+        
+        // Đóng modal sau 1 giây
+        setTimeout(() => {
+          handleCloseDetail();
+        }, 1000);
+      } else {
+        alert('Không thể cập nhật trạng thái ticket');
+      }
+    } catch (err) {
+      console.error('❌ Error updating ticket status:', err);
+      setNoteError('Đã xảy ra lỗi khi cập nhật trạng thái ticket');
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -185,13 +250,13 @@ const StaffPage = () => {
           <div className="text-3xl font-bold text-yellow-600">{stats.inProgress}</div>
           <div className="text-sm text-yellow-600 mt-1">Đang xử lý</div>
         </div>
-        <div className="bg-green-50 rounded-xl p-6 shadow-sm border border-green-200">
-          <div className="text-3xl font-bold text-green-600">{stats.resolved}</div>
-          <div className="text-sm text-green-600 mt-1">Đã giải quyết</div>
+        <div className="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-200">
+          <div className="text-3xl font-bold text-blue-600">{stats.resolved}</div>
+          <div className="text-sm text-blue-600 mt-1">Chờ đánh giá</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-6 shadow-sm border border-gray-200">
-          <div className="text-3xl font-bold text-gray-600">{stats.closed}</div>
-          <div className="text-sm text-gray-600 mt-1">Đã đóng</div>
+        <div className="bg-emerald-50 rounded-xl p-6 shadow-sm border border-emerald-200">
+          <div className="text-3xl font-bold text-emerald-600">{stats.closed}</div>
+          <div className="text-sm text-emerald-600 mt-1">Đã hoàn thành</div>
         </div>
       </div>
 
@@ -225,12 +290,14 @@ const StaffPage = () => {
                 <span className={`px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 ${
                   selectedTicket.status === 'ASSIGNED' ? 'bg-purple-100 text-purple-800' :
                   selectedTicket.status === 'IN_PROGRESS' ? 'bg-yellow-100 text-yellow-800' :
-                  selectedTicket.status === 'RESOLVED' ? 'bg-green-100 text-green-800' :
+                  selectedTicket.status === 'RESOLVED' ? 'bg-blue-100 text-blue-800' :
+                  selectedTicket.status === 'CLOSED' ? 'bg-emerald-100 text-emerald-800' :
                   'bg-gray-100 text-gray-800'
                 }`}>
                   {selectedTicket.status === 'ASSIGNED' && '🔔 Được giao'}
                   {selectedTicket.status === 'IN_PROGRESS' && '🔧 Đang sửa chữa'}
-                  {selectedTicket.status === 'RESOLVED' && '✅ Đã hoàn thành'}
+                  {selectedTicket.status === 'RESOLVED' && '⏳ Chờ đánh giá'}
+                  {selectedTicket.status === 'CLOSED' && '✅ Đã hoàn thành'}
                 </span>
               </div>
 
@@ -319,6 +386,42 @@ const StaffPage = () => {
                   )}
                 </div>
               </div>
+
+              {/* User Feedback - Show when ticket is resolved/closed and has feedback */}
+              {(selectedTicket.status === 'RESOLVED' || selectedTicket.status === 'CLOSED') && (selectedTicket.ratingStars || selectedTicket.ratingComment) && (
+                <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    ⭐ Phản Hồi Của Người Dùng
+                  </h3>
+                  <div className="space-y-4">
+                    {selectedTicket.ratingStars && (
+                      <div className="flex items-center gap-3">
+                        <div className="text-base font-semibold text-gray-800">Đánh giá:</div>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className="text-2xl"
+                              style={{ color: star <= (selectedTicket.ratingStars || 0) ? '#fbbf24' : '#d1d5db' }}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-base font-semibold text-gray-800">({selectedTicket.ratingStars}/5)</div>
+                      </div>
+                    )}
+                    {selectedTicket.ratingComment && (
+                      <div>
+                        <div className="text-sm font-semibold text-gray-600 mb-2">💬 Nhận xét:</div>
+                        <div className="text-base text-gray-700 bg-white p-4 rounded-lg border border-yellow-100">
+                          {selectedTicket.ratingComment}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}
@@ -378,13 +481,68 @@ const StaffPage = () => {
               )}
               
               {selectedTicket.status === 'RESOLVED' && (
-                <div className="px-8 py-3 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-green-300">
+                <div className="px-8 py-3 bg-gradient-to-r from-blue-100 to-blue-50 text-blue-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-blue-300">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Chờ đánh giá</span>
+                </div>
+              )}
+              
+              {selectedTicket.status === 'CLOSED' && (
+                <div className="px-8 py-3 bg-gradient-to-r from-emerald-100 to-emerald-50 text-emerald-800 rounded-lg font-semibold flex items-center gap-2 border-2 border-emerald-300">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <span>Đã hoàn thành</span>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Resolution Note Dialog */}
+      {showNoteDialog && selectedTicket && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Ghi Chú Giải Quyết</h3>
+            <p className="text-gray-600 mb-4">
+              Vui lòng nhập ghi chú về cách giải quyết vấn đề:
+            </p>
+            
+            <textarea
+              value={resolutionNote}
+              onChange={(e) => setResolutionNote(e.target.value)}
+              placeholder="Nhập ghi chú giải quyết..."
+              className="w-full p-3 border-2 border-gray-200 rounded-lg mb-4 resize-none focus:outline-none focus:border-blue-500"
+              rows={5}
+            />
+
+            {noteError && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                ❌ {noteError}
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowNoteDialog(false);
+                  setResolutionNote('');
+                  setNoteError(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-200"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleConfirmResolution}
+                disabled={isUpdatingStatus}
+                className="px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdatingStatus ? 'Đang lưu...' : 'Xác nhận'}
+              </button>
             </div>
           </div>
         </div>

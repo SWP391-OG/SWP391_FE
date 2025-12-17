@@ -1,5 +1,4 @@
 import { useState } from 'react';
-// import type { User } from '../../types';
 import { authService } from '../../services/authService';
 import VerifyEmailPage from './verify-email-page';
 

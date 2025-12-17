@@ -124,53 +124,53 @@ export const ticketService = {
   },
 
   // Cập nhật trạng thái ticket (cho Staff) - PATCH method
-  async updateTicketStatus(ticketCode: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED'): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+  async updateTicketStatus(ticketCode: string, newStatus: 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED', resolutionNotes?: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
-      // Thử nhiều format khác nhau
-      console.log('🔍 Trying to update status with:', { ticketCode, newStatus });
+      console.log('🔍 Updating ticket status:', { ticketCode, newStatus, hasResolutionNotes: !!resolutionNotes });
       
-      // Format 1: Query parameter
+      // Prepare request body with status + resolutionNotes (if provided)
+      const requestBody: any = { status: newStatus };
+      if (resolutionNotes) {
+        requestBody.resolutionNotes = resolutionNotes;
+      }
+      
+      console.log('📤 Request body:', requestBody);
+      
+      // Try body format first (most compatible)
       try {
         const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
-          `/Ticket/${ticketCode}/status?newStatus=${newStatus}`,
-          {}
+          `/Ticket/${ticketCode}/status`,
+          requestBody
         );
-        console.log('✅ Success with query parameter format');
+        console.log('✅ Status updated successfully with body format');
         return response;
-      } catch (err1) {
-        console.log('❌ Failed with query parameter, trying body format...');
+      } catch (err1: any) {
+        console.log('❌ Body format failed, error:', err1?.message);
         
-        // Format 2: Body với key "status"
+        // Try with query parameter + body
         try {
           const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
-            `/Ticket/${ticketCode}/status`,
-            { status: newStatus }
+            `/Ticket/${ticketCode}/status?newStatus=${newStatus}`,
+            resolutionNotes ? { resolutionNotes } : {}
           );
-          console.log('✅ Success with body format (status key)');
+          console.log('✅ Status updated successfully with query parameter format');
           return response;
-        } catch (err2) {
-          console.log('❌ Failed with body format (status key), trying newStatus key...');
-          
-          // Format 3: Body với key "newStatus"
-          const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
-            `/Ticket/${ticketCode}/status`,
-            { newStatus }
-          );
-          console.log('✅ Success with body format (newStatus key)');
-          return response;
+        } catch (err2: any) {
+          console.log('❌ Query parameter format also failed, error:', err2?.message);
+          throw err1; // Throw the more detailed error
         }
       }
     } catch (error) {
-      console.error('❌ All formats failed. Error updating ticket status:', error);
+      console.error('❌ Error updating ticket status:', error);
       throw error;
     }
   },
 
-  // Cancel ticket (cho Admin) - DELETE method
+  // Cancel ticket (cho Student) - DELETE method
   async cancelTicket(ticketCode: string, note: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
       const response = await apiClient.delete<{ status: boolean; message: string; data: unknown; errors: string[] }>(
-        `/Ticket/${ticketCode}/cancel`,
+        `/Ticket/${ticketCode}`,
         { reason: note }
       );
       return response;
@@ -233,7 +233,7 @@ export const ticketService = {
       },
     };
     tickets.push(newTicket);
-    saveTickets(tickets);
+    saveTickets();
     return newTicket;
   },
 
@@ -271,7 +271,7 @@ export const ticketService = {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-    saveTickets(tickets);
+    saveTickets();
     return tickets[index];
   },
 
@@ -311,8 +311,8 @@ export const ticketService = {
 
   // Xóa ticket (nếu cần)
   delete(id: string): void {
-    const tickets = this.getAll().filter(t => t.id !== id);
-    saveTickets(tickets);
+    this.getAll().filter(t => t.id !== id);
+    saveTickets();
   },
 
   // Cập nhật feedback cho ticket - PATCH method

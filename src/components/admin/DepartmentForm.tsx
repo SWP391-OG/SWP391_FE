@@ -58,14 +58,8 @@ const DepartmentForm = ({
               value={deptFormData.deptCode}
               onChange={(e) => onFormDataChange({ ...deptFormData, deptCode: e.target.value.toUpperCase() })}
               placeholder="VD: IT, MAINTAIN, FACILITY"
-              disabled={!!editingDept}
-              className={`w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all ${
-                editingDept ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
-            {editingDept && (
-              <p className="mt-1 text-xs text-gray-500">Mã bộ phận không thể thay đổi khi chỉnh sửa</p>
-            )}
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">

@@ -10,6 +10,7 @@ interface TicketDetailModalProps {
   isStudentView?: boolean; // Phân biệt student view để ẩn SLA tracking
   onEdit?: (ticket: Ticket) => void; // Handler để edit ticket (chỉ cho student)
   onUpdateFeedback?: (ticketId: string, ratingStars: number, ratingComment: string) => void; // Handler để update feedback
+  onCancelTicket?: (ticketId: string, reason: string) => Promise<void>; // Handler để cancel ticket (chỉ cho student)
 }
 
 const TicketDetailModal = ({ 
@@ -19,7 +20,8 @@ const TicketDetailModal = ({
   showEscalateButton = false,
   isStudentView = false,
   onEdit,
-  onUpdateFeedback
+  onUpdateFeedback,
+  onCancelTicket
 }: TicketDetailModalProps) => {
   // Parse images from ticket (handles both imageUrl string and images array)
   const ticketImages = parseTicketImages(ticket);
@@ -30,10 +32,17 @@ const TicketDetailModal = ({
   const [isEditingFeedback, setIsEditingFeedback] = useState(false);
   const [isSavingFeedback, setIsSavingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   // State để lưu feedback đã submit để hiển thị ngay lập tức
   const [submittedRating, setSubmittedRating] = useState<{stars: number; comment: string} | null>(
     ticket.ratingStars ? { stars: ticket.ratingStars, comment: ticket.ratingComment || '' } : null
   );
+
+  // State for cancel dialog
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   // Hiển thị rating: ưu tiên submittedRating, fallback về ticket props
   const displayRating = submittedRating || (ticket.ratingStars ? { stars: ticket.ratingStars, comment: ticket.ratingComment || '' } : null);
@@ -108,8 +117,8 @@ const TicketDetailModal = ({
               {ticket.status === 'open' && '🔵 Mới tạo'}
               {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '🟢 Đã giải quyết'}
-              {ticket.status === 'closed' && '⚫ Đã đóng'}
+              {ticket.status === 'resolved' && '� chờ đánh giá'}
+              {ticket.status === 'closed' && '✅ Đã hoàn thành'}
               {ticket.status === 'cancelled' && '🔴 Đã hủy'}
             </span>
           </div>
@@ -193,18 +202,12 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
                 </div>
               )}
-              {ticket.note && (
-                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-gray-50'}`}>
-                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-gray-500'}`}>
+              {(ticket.note || ticket.notes) && (
+                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-emerald-700'}`}>
                     {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
                   </div>
-                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-gray-800'}`}>{ticket.note}</div>
-                </div>
-              )}
-              {ticket.notes && (
-                <div className="bg-gray-50 p-4 rounded-lg col-span-2">
-                  <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">📝 Ghi chú</div>
-                  <div className="text-base text-gray-800 font-medium">{ticket.notes}</div>
+                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-emerald-900'}`}>{ticket.note || ticket.notes}</div>
                 </div>
               )}
               {ticket.resolvedAt && (
@@ -313,17 +316,6 @@ const TicketDetailModal = ({
                       </div>
                     </div>
                   )}
-                  <button
-                    onClick={() => {
-                      setIsEditingFeedback(true);
-                      setRatingStars(displayRating.stars);
-                      setRatingComment(displayRating.comment);
-                      setFeedbackError(null);
-                    }}
-                    className="px-4 py-2 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-all duration-200"
-                  >
-                    ✏️ Chỉnh sửa đánh giá
-                  </button>
                 </div>
               ) : (
                 <div className="bg-gradient-to-br from-yellow-50 to-white border-2 border-yellow-200 rounded-xl p-6">
@@ -373,12 +365,14 @@ const TicketDetailModal = ({
                             await onUpdateFeedback(ticket.id, ratingStars, ratingComment);
                           }
                           
-                          // Update local state
+                          // Update local state - this will trigger displayRating to update
+                          // and the feedback will be visible immediately
                           setSubmittedRating({ stars: ratingStars, comment: ratingComment });
                           setIsEditingFeedback(false);
                           
-                          // Show success message
-                          alert('✅ Cảm ơn bạn đã đánh giá!');
+                          // Show success message briefly
+                          setFeedbackSuccess(true);
+                          setTimeout(() => setFeedbackSuccess(false), 2000);
                           
                         } catch (error) {
                           const errorMsg = error instanceof Error ? error.message : 'Lưu feedback thất bại';
@@ -411,6 +405,11 @@ const TicketDetailModal = ({
                   {feedbackError && (
                     <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
                       ❌ {feedbackError}
+                    </div>
+                  )}
+                  {feedbackSuccess && (
+                    <div className="mt-4 p-3 bg-green-100 border border-green-300 rounded-lg text-green-700 text-sm animate-pulse">
+                      ✅ Cảm ơn bạn đã đánh giá! Phản hồi đã được lưu.
                     </div>
                   )}
                 </div>
@@ -449,6 +448,30 @@ const TicketDetailModal = ({
                   Chỉnh sửa Ticket
                 </button>
               )}
+
+              {/* Cancel button - chỉ hiển thị khi status = 'open' và là student view */}
+              {isStudentView && ticket.status === 'open' && onCancelTicket && (
+                <button
+                  onClick={() => setShowCancelDialog(true)}
+                  className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Hủy Ticket
+                </button>
+              )}
               
               {/* Escalate button (only for staff) */}
               {showEscalateButton && onEscalate && ticket.status !== 'resolved' && ticket.status !== 'closed' && (
@@ -481,6 +504,75 @@ const TicketDetailModal = ({
             </div>
           </div>
         </div>
+
+        {/* Cancel Dialog */}
+        {showCancelDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4">Hủy Ticket</h3>
+              <p className="text-gray-600 mb-4">
+                Vui lòng nhập lý do tại sao bạn muốn hủy ticket này:
+              </p>
+              
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder="Nhập lý do hủy ticket..."
+                className="w-full p-3 border-2 border-gray-200 rounded-lg mb-4 resize-none focus:outline-none focus:border-blue-500"
+                rows={4}
+              />
+
+              {cancelError && (
+                <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                  ❌ {cancelError}
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowCancelDialog(false);
+                    setCancelReason('');
+                    setCancelError(null);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all duration-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!cancelReason.trim()) {
+                      setCancelError('Vui lòng nhập lý do hủy ticket');
+                      return;
+                    }
+
+                    try {
+                      setIsCancelling(true);
+                      setCancelError(null);
+                      
+                      if (onCancelTicket) {
+                        await onCancelTicket(ticket.id, cancelReason);
+                      }
+                      
+                      setShowCancelDialog(false);
+                      setCancelReason('');
+                      onClose();
+                    } catch (error) {
+                      const errorMsg = error instanceof Error ? error.message : 'Hủy ticket thất bại';
+                      setCancelError(errorMsg);
+                    } finally {
+                      setIsCancelling(false);
+                    }
+                  }}
+                  disabled={isCancelling}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isCancelling ? 'Đang hủy...' : 'Xác nhận hủy'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -12,7 +12,6 @@ interface ReportsPageProps {
 const ReportsPage = ({
   tickets,
   categories,
-  // departments,
   users,
   adminDepartments,
 }: ReportsPageProps) => {
@@ -194,9 +193,9 @@ const ReportsPage = ({
             <div className="text-sm text-blue-600 font-medium mb-1">Tổng số tickets</div>
             <div className="text-2xl font-bold text-blue-900">{slaReport.totalTickets}</div>
           </div>
-          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="text-sm text-green-600 font-medium mb-1">Đã giải quyết</div>
-            <div className="text-2xl font-bold text-green-900">{slaReport.resolvedTickets}</div>
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="text-sm text-blue-600 font-medium mb-1">chờ đánh giá</div>
+            <div className="text-2xl font-bold text-blue-900">{slaReport.resolvedTickets}</div>
           </div>
           <div className="bg-red-50 rounded-lg p-4 border border-red-200">
             <div className="text-sm text-red-600 font-medium mb-1">Quá hạn</div>
@@ -283,8 +282,8 @@ const ReportsPage = ({
                 'open': { label: 'Mở', color: 'bg-blue-100 text-blue-800 border-blue-300' },
                 'acknowledged': { label: 'Đã xác nhận', color: 'bg-purple-100 text-purple-800 border-purple-300' },
                 'in-progress': { label: 'Đang xử lý', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                'resolved': { label: 'Đã giải quyết', color: 'bg-green-100 text-green-800 border-green-300' },
-                'closed': { label: 'Đã đóng', color: 'bg-gray-100 text-gray-800 border-gray-300' },
+                'resolved': { label: 'chờ đánh giá', color: 'bg-blue-100 text-blue-800 border-blue-300' },
+                'closed': { label: 'Đã hoàn thành', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
                 'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-300' },
               };
               const { label, color } = statusLabels[status] || { label: status, color: 'bg-gray-100 text-gray-800 border-gray-300' };
@@ -313,7 +312,7 @@ const ReportsPage = ({
                 <tr className="bg-gray-50 border-b border-gray-200">
                   <th className="text-left p-3 text-sm font-semibold text-gray-700">Staff</th>
                   <th className="text-center p-3 text-sm font-semibold text-gray-700">Tổng tickets</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Đã giải quyết</th>
+                  <th className="text-center p-3 text-sm font-semibold text-blue-700">chờ đánh giá</th>
                   <th className="text-center p-3 text-sm font-semibold text-gray-700">Đúng hạn</th>
                   <th className="text-center p-3 text-sm font-semibold text-gray-700">Trễ hạn</th>
                   <th className="text-center p-3 text-sm font-semibold text-gray-700">Tỷ lệ đúng hạn</th>

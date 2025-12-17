@@ -90,8 +90,8 @@ export const locationService = {
 
       console.log('✅ Location created successfully');
       
-      // Note: Status update after creation is skipped because we don't have locationId yet
-      // Status should be set via separate API call if needed
+      // Note: Status update would require the newly created location ID from API response
+      // which is not provided in the current response, so status cannot be updated here
       
       // Return newly created location
       // Note: We don't have locationId yet, so we use code as id

@@ -245,6 +245,7 @@ function App() {
                 
                 if (response.status) {
                   // Update local state after successful API call
+                  // This will make the UI update immediately without needing refresh
                   setTickets(prev => prev.map(t => {
                     if (t.id === ticketId) {
                       return {
@@ -256,13 +257,13 @@ function App() {
                     }
                     return t;
                   }));
-                  alert('Phản hồi đã được cập nhật thành công!');
+                  // Don't show alert - feedback section will update immediately
                 } else {
-                  alert('Không thể cập nhật phản hồi: ' + response.message);
+                  throw new Error(response.message || 'Failed to update feedback');
                 }
               } catch (error) {
                 console.error('Error updating feedback:', error);
-                alert('Lỗi khi cập nhật phản hồi. Vui lòng thử lại.');
+                throw error; // Re-throw so modal can handle and show error
               }
             }}
           />

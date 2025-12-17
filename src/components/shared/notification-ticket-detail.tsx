@@ -14,8 +14,6 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
   const locationName = (ticket as any).locationName || (ticket as any).location || 'N/A';
   const createdAt = ticket.createdAt || new Date().toISOString();
   const resolveDeadline = (ticket as any).resolveDeadline || (ticket as any).deadlineAt;
-  // const categoryName = (ticket as any).categoryName || 'N/A';
-  // const requesterName = (ticket as any).requesterName || (ticket as any).createdByName || 'N/A';
   const status = ((ticket as any).status || 'open').toLowerCase();
 
   const formatDateTime = (dateString: string) => {
@@ -41,9 +39,9 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
       case 'assigned':
         return { text: 'Trung bình', bg: 'bg-yellow-100', icon: '🟡' };
       case 'resolved':
-        return { text: 'Đã giải quyết', bg: 'bg-emerald-100',  icon: '🟢' };
+        return { text: 'chờ đánh giá', bg: 'bg-blue-100',  icon: '🔵' };
       case 'closed':
-        return { text: 'Đã đóng', bg: 'bg-gray-100',  icon: '⚫' };
+        return { text: 'Đã hoàn thành', bg: 'bg-emerald-100',  icon: '✅' };
       default:
         return { text: 'Mở', bg: 'bg-gray-100', icon: '⚪' };
     }

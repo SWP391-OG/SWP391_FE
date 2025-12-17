@@ -49,8 +49,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
   const filteredCategories = searchQuery
     ? categories.filter(cat => 
         cat.categoryName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        cat.categoryCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        false // Category.description không tồn tại trong interface
+        cat.categoryCode.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : categories;
 

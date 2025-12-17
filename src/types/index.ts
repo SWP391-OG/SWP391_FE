@@ -162,6 +162,7 @@ export interface DepartmentRequestDto {
 export interface DepartmentUpdateDto {
   deptCode?: string;         // Mã bộ phận (optional) - có thể sửa theo Swagger
   deptName?: string;         // Tên bộ phận (optional)
+  status?: 'ACTIVE' | 'INACTIVE'; // Trạng thái (optional) - có thể cập nhật khi chỉnh sửa
 }
 
 export interface DepartmentStatusUpdateDto {

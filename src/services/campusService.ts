@@ -95,22 +95,16 @@ export const campusService = {
    */
   async getLocationsByCampus(campusCode: string): Promise<Location[]> {
     try {
-      const response = await apiClient.get<LocationApiResponse>(`/Campus/${campusCode}/locations`);
+      const response = await apiClient.get<LocationApiResponse>(`/Location/get-by/${campusCode}`);
       console.log('📍 Raw API response for locations:', response);
       
       if (response.status && response.data) {
         console.log('📍 All locations from API:', response.data);
+        console.log('📍 Number of locations returned:', response.data.length);
         
-        // Filter only active locations - check for various status formats
-        const filtered = response.data.filter(loc => {
-          const normalizedStatus = (loc.status || '').toUpperCase();
-          const isActive = normalizedStatus === 'ACTIVE';
-          console.log(`📍 Location ${loc.locationName}: status="${loc.status}" => active=${isActive}`);
-          return isActive;
-        });
-        
-        console.log('📍 Filtered active locations:', filtered);
-        return filtered;
+        // Return all locations without filtering
+        // Show all locations to user, don't filter by status
+        return response.data;
       }
       return [];
     } catch (error) {

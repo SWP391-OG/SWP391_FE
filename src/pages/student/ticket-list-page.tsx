@@ -123,15 +123,21 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   };
 
   // Status labels
-  const statusLabels: Record<string, string> = {
-    open: 'Mới tạo',
-    assigned: 'Đã được giao việc',
-    acknowledged: 'Mới tạo',
-    created: 'Mới tạo',
-    'in-progress': 'Đang xử lý',
-    resolved: 'Đã giải quyết',
-    closed: 'Đã đóng',
-    cancelled: 'Đã hủy',
+  const getStatusLabel = (status: string) => {
+    // For closed tickets, always show "Đã hoàn thành"
+    if (status === 'closed') {
+      return 'Đã hoàn thành';
+    }
+    const statusLabelsMap: Record<string, string> = {
+      open: 'Mới tạo',
+      assigned: 'Đã được giao việc',
+      acknowledged: 'Mới tạo',
+      created: 'Mới tạo',
+      'in-progress': 'Đang xử lý',
+      resolved: 'chờ đánh giá',
+      cancelled: 'Đã hủy',
+    };
+    return statusLabelsMap[status] || status;
   };
 
   // Calculate stats
@@ -301,7 +307,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                     <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                     <div className="flex gap-4 flex-wrap items-center">
                       <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                        {statusLabels[ticket.status] || ticket.status}
+                        {getStatusLabel(ticket.status)}
                       </span>
                       {ticket.categoryId && (
                         <span className="flex items-center gap-2 text-sm text-gray-500">
