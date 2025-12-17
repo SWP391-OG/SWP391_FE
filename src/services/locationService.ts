@@ -233,7 +233,7 @@ export const locationService = {
       console.log(`📍 Updating location status: ID ${locationId} (type: ${typeof locationId}) -> ${status}`);
       
       const requestData: LocationStatusUpdateDto = {
-        id: locationId, // Sử dụng id (int32) theo Swagger
+        locationId: locationId, // Sử dụng id (int32) theo Swagger
         status: status === 'active' ? 'ACTIVE' : 'INACTIVE',
       };
       

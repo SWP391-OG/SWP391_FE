@@ -166,7 +166,7 @@ export interface DepartmentUpdateDto {
 }
 
 export interface DepartmentStatusUpdateDto {
-  id: number;                // ID định danh (int32) - REQUIRED
+  departmentId: number;                // ID định danh (int32) - REQUIRED
   status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
@@ -219,7 +219,7 @@ export interface LocationRequestDto {
 }
 
 export interface LocationStatusUpdateDto {
-  id: number; // ID định danh (int32) - REQUIRED từ Swagger
+  locationId: number; // ID định danh (int32) - REQUIRED từ Swagger
   status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
@@ -269,7 +269,7 @@ export interface CategoryUpdateDto {
 }
 
 export interface CategoryStatusUpdateDto {
-  id: number;                    // ID định danh (int32) - REQUIRED
+  categoryId: number;                    // ID định danh (int32) - REQUIRED
   status: 'ACTIVE' | 'INACTIVE' | 'Active' | 'Inactive';
 }
 
