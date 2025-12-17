@@ -1,5 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, subDays, startOfMonth } from 'date-fns';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 import type { Ticket, Category, Department, User, TicketFromApi } from '../../types';
 
 interface ReportsPageProps {
@@ -10,23 +13,55 @@ interface ReportsPageProps {
   adminDepartments: Department[];
 }
 
+type DateFilterType = 'all' | '7days' | 'month' | 'custom';
+
 const ReportsPage = ({
   tickets,
   categories,
   departments,
   adminDepartments,
 }: ReportsPageProps) => {
+  // State for date filtering - Default to 7 days
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('7days');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 7));
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   // Debug logging
   console.log('📊 ReportsPage Data:', {
     ticketsCount: tickets.length,
     categoriesCount: categories.length,
     departmentsCount: departments.length,
     adminDepartmentsCount: adminDepartments.length,
-    ticketsSample: tickets.slice(0, 2),
-    categoriesSample: categories.slice(0, 2),
   });
+  
   // Filter tickets by admin's departments
   const adminDepartmentIds = adminDepartments.map(d => d.id);
+
+  // Calculate date range for filtering
+  const getDateRange = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    let startDate = new Date(0); // Default to very old date
+
+    if (dateFilter === '7days') {
+      startDate = subDays(today, 7);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (dateFilter === 'month') {
+      startDate = startOfMonth(today);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+      startDate = new Date(customStartDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDateObj = new Date(customEndDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      return { startDate, endDate: endDateObj };
+    }
+
+    return { startDate, endDate: today };
+  }, [dateFilter, customStartDate, customEndDate]);
+
   const adminTickets = useMemo(() => {
     return tickets.filter(ticket => {
       // Handle both API tickets and local tickets
@@ -37,9 +72,22 @@ const ReportsPage = ({
         (c.categoryCode === categoryCode) ||
         (c.categoryName === ('categoryName' in ticket ? ticket.categoryName : ''))
       );
-      return category && adminDepartmentIds.includes(category.departmentId);
+      if (!category || !adminDepartmentIds.includes(category.departmentId)) {
+        return false;
+      }
+
+      // Filter by date
+      const createdAtStr = (ticket as any).createdAt;
+      if (createdAtStr) {
+        const ticketDate = new Date(createdAtStr);
+        if (ticketDate < getDateRange.startDate || ticketDate > getDateRange.endDate) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [tickets, categories, adminDepartmentIds]);
+  }, [tickets, categories, adminDepartmentIds, getDateRange]);
 
   // Total tickets statistics
   const totalTicketsCount = useMemo(() => {
@@ -62,6 +110,21 @@ const ReportsPage = ({
     const completedPercentage = totalTicketsCount > 0 ? Math.round((completedTickets / totalTicketsCount) * 100) : 0;
     const cancelledPercentage = totalTicketsCount > 0 ? Math.round((cancelledTickets / totalTicketsCount) * 100) : 0;
 
+    // Build status data - Include ALL statuses (even with 0 tickets) with fixed order
+    const statusData = [
+      { name: 'Đã Hoàn thành', value: completedTickets, color: '#10b981', key: 'completed' },
+      { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
+      { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
+      { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
+      { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
+    ]; // Show all statuses always
+
+    // Build pie chart data with only non-zero values
+    const pieDataFiltered = statusData.filter(s => s.value > 0);
+    const pieChartData = pieDataFiltered.length > 0 
+      ? pieDataFiltered 
+      : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb', key: 'empty' }];
+
     return {
       totalTickets: totalTicketsCount,
       completedTickets,
@@ -73,11 +136,9 @@ const ReportsPage = ({
       acknowledgedTickets,
       completedPercentage,
       cancelledPercentage,
-      pieData: [
-        { name: `Hoàn thành (${completedPercentage}%)`, value: completedPercentage, count: completedTickets },
-        { name: `Hủy (${cancelledPercentage}%)`, value: cancelledPercentage, count: cancelledTickets },
-        { name: `Khác (${100 - completedPercentage - cancelledPercentage}%)`, value: 100 - completedPercentage - cancelledPercentage, count: totalTicketsCount - completedTickets - cancelledTickets },
-      ]
+      statusData,
+      pieData: pieChartData,
+      pieDataFiltered
     };
   }, [adminTickets, totalTicketsCount]);
 
@@ -155,11 +216,107 @@ const ReportsPage = ({
       .sort((a, b) => b.count - a.count);
   }, [adminTickets, categories, departments]);
 
-  const COLORS = ['#10b981', '#ef4444', '#9ca3af']; // Green for completed, Red for cancelled, Gray for others
-
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-gray-900 mb-6">Báo cáo Quản lý Tickets</h2>
+
+      {/* Date Filter Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lọc theo thời gian</h3>
+        <div className="space-y-4">
+          {/* Quick Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setDateFilter('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setDateFilter('7days')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === '7days'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              7 ngày qua
+            </button>
+            <button
+              onClick={() => setDateFilter('month')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'month'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tháng này
+            </button>
+            <button
+              onClick={() => {
+                setDateFilter('custom');
+                setShowDatePicker(!showDatePicker);
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tùy chỉnh
+            </button>
+          </div>
+
+          {/* Unified Date Range Picker - Only show when custom is selected */}
+          {dateFilter === 'custom' && showDatePicker && (
+            <div className="mt-4 p-6 bg-white rounded-lg border border-gray-300">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4">Chọn khoảng ngày</h4>
+              
+              {/* Range Picker */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-center">
+                <DayPicker
+                  mode="range"
+                  selected={{
+                    from: customStartDate,
+                    to: customEndDate,
+                  }}
+                  onSelect={(range) => {
+                    if (range?.from) setCustomStartDate(range.from);
+                    if (range?.to) setCustomEndDate(range.to);
+                  }}
+                  disabled={(date) => date > new Date()}
+                  numberOfMonths={2}
+                  defaultMonth={customStartDate || subDays(new Date(), 30)}
+                  showOutsideDays={false}
+                />
+              </div>
+
+              {/* Selected Range Display */}
+              {customStartDate && customEndDate && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Khoảng thời gian:</span> {format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}
+                  </p>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setShowDatePicker(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  ✓ Xong
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Total Tickets Statistics - All Statuses */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -203,55 +360,75 @@ const ReportsPage = ({
         </div>
       </div>
 
-      {/* Pie Chart - Cancelled vs Completed */}
+      {/* Pie Chart - All Statuses */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Tỷ lệ Tickets Hủy & Hoàn thành</h3>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Tỷ lệ Tickets theo Trạng thái</h3>
         <div className="flex flex-col items-center">
-          {ticketStatusReport.totalTickets > 0 ? (
+          {ticketStatusReport.pieDataFiltered && ticketStatusReport.pieDataFiltered.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
-                    data={ticketStatusReport.pieData}
+                    data={ticketStatusReport.pieDataFiltered.map(item => ({
+                      name: item.name,
+                      value: item.value,
+                    }))}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name }) => `${name}`}
+                    label={({ name, value }: any) => {
+                      const total = ticketStatusReport.totalTickets;
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return `${name} (${value} - ${percentage}%)`;
+                    }}
                     outerRadius={100}
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {ticketStatusReport.pieData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {ticketStatusReport.pieDataFiltered.map((item, index) => (
+                      <Cell key={`cell-${index}`} fill={item.color} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value) => `${value}%`}
+                    formatter={(value: any) => {
+                      const total = ticketStatusReport.totalTickets;
+                      const percentage = total > 0 ? Math.round((Number(value) / total) * 100) : 0;
+                      return `${value} tickets (${percentage}%)`;
+                    }}
                     contentStyle={{ backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="mt-6 grid grid-cols-3 gap-4 w-full max-w-2xl">
-                <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
-                  <div className="text-sm text-green-600 font-medium mb-2">Hoàn thành</div>
-                  <div className="text-2xl font-bold text-green-900">{ticketStatusReport.completedPercentage}%</div>
-                  <div className="text-xs text-green-500 mt-1">({ticketStatusReport.completedTickets} tickets)</div>
-                </div>
-                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
-                  <div className="text-sm text-red-600 font-medium mb-2">Hủy</div>
-                  <div className="text-2xl font-bold text-red-900">{ticketStatusReport.cancelledPercentage}%</div>
-                  <div className="text-xs text-red-500 mt-1">({ticketStatusReport.cancelledTickets} tickets)</div>
-                </div>
-                <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-sm text-gray-600 font-medium mb-2">Khác</div>
-                  <div className="text-2xl font-bold text-gray-900">{100 - ticketStatusReport.completedPercentage - ticketStatusReport.cancelledPercentage}%</div>
-                  <div className="text-xs text-gray-500 mt-1">({ticketStatusReport.totalTickets - ticketStatusReport.completedTickets - ticketStatusReport.cancelledTickets} tickets)</div>
-                </div>
+
+              {/* Status Details Grid - Show ALL 5 statuses including zeros */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
+                {ticketStatusReport.statusData.map((item, index) => {
+                  const percentage = ticketStatusReport.totalTickets > 0
+                    ? Math.round((item.value / ticketStatusReport.totalTickets) * 100)
+                    : 0;
+                  return (
+                    <div 
+                      key={index} 
+                      className="p-4 rounded-lg border-l-4 transition hover:shadow-md" 
+                      style={{ borderColor: item.color, backgroundColor: item.color + '15' }}
+                    >
+                      <div className="text-xs font-medium" style={{ color: item.color }}>
+                        {item.name}
+                      </div>
+                      <div className="text-3xl font-bold mt-2" style={{ color: item.color }}>
+                        {item.value}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {percentage}%
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
             <div className="text-center py-12 text-gray-500">
-              Chưa có dữ liệu tickets
+              Chưa có dữ liệu tickets trong khoảng thời gian này
             </div>
           )}
         </div>

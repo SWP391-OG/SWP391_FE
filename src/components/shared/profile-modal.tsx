@@ -5,9 +5,10 @@ import { userService } from '../../services/userService';
 interface ProfileModalProps {
   onClose: () => void;
   onUpdate?: () => void;
+  onNavigateHome?: () => void;
 }
 
-const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
+const ProfileModal = ({ onClose, onUpdate, onNavigateHome }: ProfileModalProps) => {
   const [profile, setProfile] = useState<UserProfileDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -17,6 +18,7 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
     phoneNumber: '',
   });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [saving, setSaving] = useState(false);
 
   // Fetch profile khi modal mở
@@ -54,6 +56,7 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
       [e.target.name]: e.target.value,
     });
     setError('');
+    setSuccess('');
   };
 
   const validateForm = () => {
@@ -84,6 +87,7 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
 
   const handleSave = async () => {
     setError('');
+    setSuccess('');
 
     if (!validateForm()) {
       return;
@@ -100,10 +104,20 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
       if (updated) {
         setProfile(updated);
         setIsEditing(false);
-        alert('✅ Cập nhật thông tin thành công!');
+        setSuccess('User profile updated successfully');
+        
+        // Call onUpdate callback if provided
         if (onUpdate) {
           onUpdate();
         }
+
+        // Auto close modal and navigate home after 1.5 seconds
+        setTimeout(() => {
+          if (onNavigateHome) {
+            onNavigateHome();
+          }
+          onClose();
+        }, 1500);
       }
     } catch (err) {
       console.error('Error updating profile:', err);
@@ -122,6 +136,7 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
       });
     }
     setError('');
+    setSuccess('');
     setIsEditing(false);
   };
 
@@ -173,6 +188,14 @@ const ProfileModal = ({ onClose, onUpdate }: ProfileModalProps) => {
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
                   {error}
+                </div>
+              )}
+
+              {/* Success Message */}
+              {success && (
+                <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                  <span className="text-lg">✓</span>
+                  {success}
                 </div>
               )}
 
