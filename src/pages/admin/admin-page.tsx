@@ -760,13 +760,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
           {/* Reports */}
           {activeTab === 'reports' && (
-            <ReportsPage
-              tickets={apiTickets}
-              categories={categories}
-              departments={departments}
-              users={users}
-              adminDepartments={adminDepartments}
-            />
+            <div className="h-full overflow-y-auto">
+              <ReportsPage
+                tickets={apiTickets}
+                categories={categories}
+                departments={departments}
+                users={users}
+                adminDepartments={adminDepartments}
+              />
+            </div>
           )}
       </div>
 
