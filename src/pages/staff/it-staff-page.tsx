@@ -114,7 +114,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
               <tbody>
                 {tickets.map((ticket) => {
                   // Normalize status to lowercase with dashes
-                  const normalizedStatus = (ticket.status || 'open').toLowerCase().replace(/_/g, '-');
+                  
                   const statusInfo = {
                     open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     'NEW': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
@@ -220,7 +220,6 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                             value={ticket.status}
                             onChange={(e) => {
                               const newStatus = e.target.value as Ticket['status'];
-                              const normalizedStatus = (newStatus || 'open').toLowerCase().replace(/_/g, '-');
                               const newStatusText = {
                                 open: 'Mở',
                                 'NEW': 'Mới tạo',
