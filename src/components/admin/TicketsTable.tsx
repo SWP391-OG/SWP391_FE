@@ -15,10 +15,6 @@ interface TicketsTableProps {
   // Pagination props
   pageNumber?: number;
   pageSize?: number;
-  totalPages?: number;
-  totalCount?: number;
-  hasPrevious?: boolean;
-  hasNext?: boolean;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 }
@@ -38,10 +34,6 @@ const TicketsTable = ({
   onFilterStatusChange,
   pageNumber = 1,
   pageSize = 10,
-  totalPages = 1,
-  totalCount = 0,
-  hasPrevious = false,
-  hasNext = false,
   onPageChange,
   onPageSizeChange,
 }: TicketsTableProps) => {
