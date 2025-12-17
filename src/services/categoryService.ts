@@ -56,14 +56,42 @@ export const categoryService = {
 
   /**
    * Lấy category theo code
+   * GET /api/Category/{categoryCode} - theo Swagger
    */
   async getByCode(categoryCode: string): Promise<Category | null> {
     try {
-      const allCategories = await this.getAll();
-      return allCategories.find(cat => cat.categoryCode === categoryCode) || null;
+      console.log('📋 Fetching category by code:', categoryCode);
+      
+      interface CategoryByCodeResponse {
+        status: boolean;
+        message: string;
+        data: CategoryDto;
+        errors: string[];
+      }
+      
+      const response = await apiClient.get<CategoryByCodeResponse>(`/Category/${categoryCode}`);
+      
+      if (!response.status || !response.data) {
+        console.warn('⚠️ Category not found by code:', categoryCode);
+        return null;
+      }
+      
+      console.log('✅ Category found by code:', response.data);
+      return mapDtoToCategory(response.data);
     } catch (error) {
       console.error('❌ Error finding category by code:', error);
-      return null;
+      // Nếu 404, trả về null thay vì throw error
+      if (error instanceof Error && error.message.includes('404')) {
+        return null;
+      }
+      // Fallback: thử tìm từ getAll()
+      try {
+        const allCategories = await this.getAll();
+        return allCategories.find(cat => cat.categoryCode === categoryCode) || null;
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        return null;
+      }
     }
   },
 
@@ -101,19 +129,23 @@ export const categoryService = {
       interface CategoryCreateResponse {
         status: boolean;
         message: string;
-        data: CategoryDto;
+        data: CategoryDto; // Theo Swagger: POST trả về ApiResponse<CategoryDto> với status 201
         errors: string[];
       }
       
       const response = await apiClient.post<CategoryCreateResponse>('/Category', requestData);
       
-      console.log('📋 API Response:', response);
+      console.log('📋 API Response:', JSON.stringify(response, null, 2));
       
-      if (!response.status || !response.data) {
+      if (!response.status) {
         const errorMsg = response.message || 'Failed to create category';
         const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
         console.error('❌ Failed to create category:', { response, errorMsg, errorDetails });
         throw new Error(`${errorMsg}${errorDetails}`);
+      }
+
+      if (!response.data) {
+        throw new Error('Response không chứa dữ liệu category. Vui lòng thử lại.');
       }
 
       console.log('✅ Category created:', response.data);
@@ -152,17 +184,37 @@ export const categoryService = {
 
   /**
    * Cập nhật category
-   * PUT /api/Category/{categoryId} - có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
+   * PUT /api/Category/{categoryId} - theo Swagger nhận CategoryRequestDto (tất cả fields required)
    */
   async update(categoryId: number, updates: CategoryUpdateDto): Promise<Category> {
     try {
       console.log('📋 Updating category:', categoryId, updates);
       console.log('📋 Request URL:', `${API_BASE_URL}/Category/${categoryId}`);
       
-      // Tạo request data: có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
-      const requestData: CategoryUpdateDto = {
-        categoryCode: updates.categoryCode?.trim(),
-        categoryName: updates.categoryName?.trim(),
+      // Validate: theo Swagger, PUT nhận CategoryRequestDto (tất cả fields required)
+      const categoryCode = updates.categoryCode?.trim();
+      const categoryName = updates.categoryName?.trim();
+      
+      if (!categoryCode || categoryCode.length === 0) {
+        throw new Error('Mã category (categoryCode) là bắt buộc khi cập nhật');
+      }
+      
+      if (!categoryName || categoryName.length === 0) {
+        throw new Error('Tên category (categoryName) là bắt buộc khi cập nhật');
+      }
+      
+      if (!updates.departmentId || updates.departmentId <= 0) {
+        throw new Error('Bộ phận (departmentId) là bắt buộc khi cập nhật');
+      }
+      
+      if (!updates.slaResolveHours || updates.slaResolveHours <= 0) {
+        throw new Error('SLA (slaResolveHours) là bắt buộc và phải lớn hơn 0 khi cập nhật');
+      }
+      
+      // Tạo request data theo Swagger: CategoryRequestDto (tất cả fields required)
+      const requestData: CategoryRequestDto = {
+        categoryCode: categoryCode,
+        categoryName: categoryName,
         departmentId: updates.departmentId,
         slaResolveHours: updates.slaResolveHours,
         // status KHÔNG gửi khi update (dùng updateStatus riêng)
@@ -171,7 +223,7 @@ export const categoryService = {
       interface CategoryUpdateResponse {
         status: boolean;
         message: string;
-        data: CategoryDto;
+        data: CategoryDto | null; // Theo Swagger: PUT trả về ApiResponse<Object>, data có thể null
         errors: string[];
       }
       
@@ -180,17 +232,51 @@ export const categoryService = {
         requestData
       );
       
-      console.log('📋 API Response:', response);
+      console.log('📋 API Response:', JSON.stringify(response, null, 2));
       
-      if (!response.status || !response.data) {
+      if (!response.status) {
         const errorMsg = response.message || 'Failed to update category';
         const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
         console.error('❌ Failed to update category:', { response, errorMsg, errorDetails });
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      console.log('✅ Category updated:', response.data);
-      return mapDtoToCategory(response.data);
+      // Xử lý response: data có thể null theo Swagger (ApiResponse<Object>)
+      if (response.data) {
+        console.log('✅ Category updated:', response.data);
+        return mapDtoToCategory(response.data);
+      } else {
+        // Nếu data null nhưng status = true, reload từ API
+        console.log('🔄 Response data is null, reloading category from API...');
+        try {
+          // Thử reload bằng categoryCode từ updates hoặc getAll()
+          const allCategories = await this.getAll();
+          let found = null;
+          
+          // Tìm theo categoryCode nếu có trong updates
+          if (updates.categoryCode) {
+            found = allCategories.find(cat => cat.categoryCode === updates.categoryCode);
+          }
+          
+          // Nếu không tìm thấy, tìm theo categoryId
+          if (!found) {
+            found = allCategories.find(cat => {
+              const catId = typeof cat.id === 'number' ? cat.id : parseInt(String(cat.id), 10);
+              return catId === categoryId;
+            });
+          }
+          
+          if (found) {
+            console.log('✅ Category found after reload:', found);
+            return found;
+          } else {
+            throw new Error('Không thể lấy dữ liệu category sau khi cập nhật. Vui lòng reload trang.');
+          }
+        } catch (reloadError) {
+          console.error('❌ Error reloading category:', reloadError);
+          throw new Error('Cập nhật có thể đã thành công nhưng không thể lấy dữ liệu mới. Vui lòng reload trang để xem kết quả.');
+        }
+      }
     } catch (error) {
       console.error('❌ Error updating category:', error);
       
@@ -228,18 +314,40 @@ export const categoryService = {
    */
   async updateStatus(categoryId: number, status: 'ACTIVE' | 'INACTIVE'): Promise<void> {
     try {
+      // Validate categoryId
+      if (!categoryId || isNaN(categoryId) || categoryId <= 0) {
+        throw new Error(`Invalid categoryId: ${categoryId}. CategoryId must be a positive integer (int32).`);
+      }
+      
       console.log('📋 Updating category status:', categoryId, status);
       console.log('📋 Request URL:', `${API_BASE_URL}/Category/status`);
       
+      // Ensure categoryId is a valid integer
+      const validatedCategoryId = Math.floor(Number(categoryId));
+      if (isNaN(validatedCategoryId) || validatedCategoryId <= 0) {
+        throw new Error(`Invalid categoryId: ${categoryId}. CategoryId must be a positive integer (int32).`);
+      }
+      
       const requestData: CategoryStatusUpdateDto = {
-        id: categoryId,
+        id: validatedCategoryId,
         status: status,
       };
+      
+      console.log('📋 Request body:', JSON.stringify(requestData, null, 2));
+      console.log('📋 Request data validation:', {
+        originalCategoryId: categoryId,
+        validatedCategoryId: validatedCategoryId,
+        id: requestData.id,
+        idType: typeof requestData.id,
+        idIsInteger: Number.isInteger(requestData.id),
+        status: requestData.status,
+        statusType: typeof requestData.status
+      });
       
       interface CategoryStatusUpdateResponse {
         status: boolean;
         message: string;
-        data: null;
+        data: null | object; // Theo Swagger: PATCH trả về ApiResponse<Object>
         errors: string[];
       }
       
@@ -248,7 +356,7 @@ export const categoryService = {
         requestData
       );
       
-      console.log('📋 API Response:', response);
+      console.log('📋 API Response:', JSON.stringify(response, null, 2));
       
       if (!response.status) {
         const errorMsg = response.message || 'Failed to update category status';
@@ -257,7 +365,7 @@ export const categoryService = {
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      console.log('✅ Category status updated:', categoryId, status);
+      console.log('✅ Category status updated successfully:', categoryId, status);
     } catch (error) {
       console.error('❌ Error updating category status:', error);
       
@@ -301,7 +409,7 @@ export const categoryService = {
       interface CategoryDeleteResponse {
         status: boolean;
         message: string;
-        data: null;
+        data: null | object; // Theo Swagger: DELETE trả về ApiResponse<Object>
         errors: string[];
       }
       
@@ -309,7 +417,7 @@ export const categoryService = {
         `/Category/${categoryId}`
       );
       
-      console.log('📋 API Response:', response);
+      console.log('📋 API Response:', JSON.stringify(response, null, 2));
       
       if (!response.status) {
         const errorMsg = response.message || 'Failed to delete category';
@@ -318,7 +426,7 @@ export const categoryService = {
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      console.log('✅ Category deleted:', categoryId);
+      console.log('✅ Category deleted successfully:', categoryId);
     } catch (error) {
       console.error('❌ Error deleting category:', error);
       

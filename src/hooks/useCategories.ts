@@ -39,37 +39,78 @@ export const useCategories = () => {
 
   // Cập nhật category
   const updateCategory = async (categoryId: number, updates: CategoryUpdateDto) => {
-    try {
-      const updated = await categoryService.update(categoryId, updates);
-      setCategories(categories.map(c => {
-        // Match by id (number) or categoryCode (backward compatibility)
+    setLoading(true);
+    
+    // Optimistic update: update UI immediately
+    const previousCategories = categories;
+    setCategories(prevCategories =>
+      prevCategories.map(c => {
         const idMatch = typeof c.id === 'number' && c.id === categoryId;
         const codeMatch = typeof c.id === 'string' && c.id === categoryId.toString();
-        return (idMatch || codeMatch) ? updated : c;
-      }));
+        if (idMatch || codeMatch) {
+          return {
+            ...c,
+            ...(updates.categoryCode && { categoryCode: updates.categoryCode }),
+            ...(updates.categoryName && { categoryName: updates.categoryName }),
+            ...(updates.departmentId && { departmentId: updates.departmentId }),
+            ...(updates.slaResolveHours && { slaResolveHours: updates.slaResolveHours }),
+          };
+        }
+        return c;
+      })
+    );
+    
+    try {
+      const updated = await categoryService.update(categoryId, updates);
+      
+      // Add a small delay to ensure backend has committed the changes before reload
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reload to get the latest data from backend (includes any server-side updates)
+      await loadCategories();
       return updated;
     } catch (error) {
       console.error('Error updating category:', error);
+      // Rollback optimistic update on error
+      setCategories(previousCategories);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
   // Cập nhật trạng thái category
   const updateCategoryStatus = async (categoryId: number, status: 'ACTIVE' | 'INACTIVE') => {
-    try {
-      await categoryService.updateStatus(categoryId, status);
-      setCategories(categories.map(c => {
-        // Match by id (number) or categoryCode (backward compatibility)
+    setLoading(true);
+    
+    // Optimistic update: update UI immediately
+    const previousCategories = categories;
+    setCategories(prevCategories =>
+      prevCategories.map(c => {
         const idMatch = typeof c.id === 'number' && c.id === categoryId;
         const codeMatch = typeof c.id === 'string' && c.id === categoryId.toString();
         if (idMatch || codeMatch) {
           return { ...c, status };
         }
         return c;
-      }));
+      })
+    );
+    
+    try {
+      await categoryService.updateStatus(categoryId, status);
+      
+      // Add a small delay to ensure backend has committed the changes before reload
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reload to get the latest data from backend
+      await loadCategories();
     } catch (error) {
       console.error('Error updating category status:', error);
+      // Rollback optimistic update on error
+      setCategories(previousCategories);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

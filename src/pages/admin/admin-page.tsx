@@ -33,9 +33,9 @@ interface AdminPageProps {
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
   const { tickets, assignTicket, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
-  const { categories, createCategory, updateCategory, updateCategoryStatus, deleteCategory, loadCategories } = useCategories();
-  const { departments, createDepartment, updateDepartment, updateDepartmentStatus, deleteDepartment, loadDepartments } = useDepartments();
-  const { locations, loading: locationsLoading, createLocation, updateLocation, deleteLocation, loadLocations } = useLocations();
+  const { categories, createCategory, updateCategory, updateCategoryStatus, loadCategories } = useCategories();
+  const { departments, createDepartment, updateDepartment, updateDepartmentStatus, loadDepartments } = useDepartments();
+  const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
   const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
@@ -750,8 +750,22 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
                 console.log('📋 Updating category:', { categoryId, editingCategory, categoryFormData });
 
+                // Update status trước nếu có thay đổi (để tránh vấn đề với categoryId sau khi update)
+                const oldStatus = editingCategory.status;
+                const newStatus = categoryFormData.status;
+                if (oldStatus !== newStatus) {
+                  console.log('📋 Updating category status BEFORE update:', { categoryId, oldStatus, newStatus });
+                  try {
+                    await updateCategoryStatus(categoryId, newStatus);
+                    console.log('✅ Status updated successfully before category update');
+                  } catch (statusError) {
+                    console.error('❌ Failed to update status before category update:', statusError);
+                    // Vẫn tiếp tục update category vì status có thể update sau
+                  }
+                }
+
                 // Update: có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
-                await updateCategory(categoryId, {
+                const updatedCategory = await updateCategory(categoryId, {
                   categoryCode: categoryFormData.categoryCode,
                   categoryName: categoryFormData.categoryName,
                   departmentId: categoryFormData.departmentId,
@@ -759,12 +773,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   // status không gửi trong update, dùng updateStatus riêng
                 });
 
-                // Update status riêng nếu có thay đổi
-                const oldStatus = editingCategory.status;
-                const newStatus = categoryFormData.status;
-                if (oldStatus !== newStatus) {
-                  console.log('📋 Updating category status:', { categoryId, oldStatus, newStatus });
-                  await updateCategoryStatus(categoryId, newStatus);
+                // Nếu status chưa được update ở trên, update sau khi update category
+                // (nhưng thường thì đã update ở trên rồi)
+                if (oldStatus === newStatus && updatedCategory) {
+                  console.log('📋 Status unchanged, no need to update status');
                 }
               } else {
                 // Create: chỉ gửi categoryCode, categoryName, departmentId, slaResolveHours (không gửi status)
@@ -803,46 +815,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
           }}
-          onDelete={editingCategory ? async () => {
-            try {
-              // Lấy categoryId từ editingCategory
-              let categoryId: number;
-              if (typeof editingCategory.id === 'number') {
-                categoryId = editingCategory.id;
-              } else if (typeof editingCategory.id === 'string') {
-                const parsed = parseInt(editingCategory.id, 10);
-                if (isNaN(parsed) || parsed <= 0) {
-                  // Fallback: tìm categoryId từ list bằng categoryCode
-                  const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
-                  if (found && typeof found.id === 'number') {
-                    categoryId = found.id;
-                  } else {
-                    throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
-                  }
-                } else {
-                  categoryId = parsed;
-                }
-              } else {
-                // Fallback: tìm categoryId từ list bằng categoryCode
-                const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
-                if (found && typeof found.id === 'number') {
-                  categoryId = found.id;
-                } else {
-                  throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
-                }
-              }
-
-              console.log('📋 Deleting category:', { categoryId, editingCategory });
-              await deleteCategory(categoryId);
-              await loadCategories();
-            } catch (error) {
-              console.error('Error deleting category:', error);
-              const errorMessage = error instanceof Error 
-                ? error.message 
-                : 'Có lỗi xảy ra khi xóa category';
-              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingCategory(null);
@@ -936,28 +908,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
           }}
-          onDelete={editingDept ? async () => {
-            try {
-              // Lấy departmentId (int32) từ editingDept
-              const departmentId = typeof editingDept.id === 'number' 
-                ? editingDept.id 
-                : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
-              
-              if (!departmentId || isNaN(departmentId)) {
-                alert('Không thể xác định ID bộ phận cần xóa. Vui lòng thử lại.');
-                return;
-              }
-              
-              await deleteDepartment(departmentId);
-              await loadDepartments();
-            } catch (error) {
-              console.error('❌ Error deleting department:', error);
-              const errorMessage = error instanceof Error 
-                ? error.message 
-                : 'Có lỗi xảy ra khi xóa bộ phận';
-              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingDept(null);
@@ -1101,66 +1051,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           }}
-          onDelete={editingLocation ? async () => {
-            try {
-              // Debug: Log để kiểm tra
-              console.log('📍 [DELETE] editingLocation:', editingLocation);
-              console.log('📍 [DELETE] editingLocation.id:', editingLocation.id, 'type:', typeof editingLocation.id);
-              
-              // Lấy locationId (int32) từ editingLocation
-              let locationId: number | null = null;
-              
-              if (typeof editingLocation.id === 'number') {
-                locationId = editingLocation.id;
-              } else if (typeof editingLocation.id === 'string') {
-                // Nếu là string, thử parse
-                const parsed = parseInt(editingLocation.id, 10);
-                if (!isNaN(parsed)) {
-                  locationId = parsed;
-                } else {
-                  // Nếu không parse được, có thể id là locationCode
-                  // Thử tìm location từ list để lấy id thực
-                  const foundLocation = locations.find(l => 
-                    l.code === editingLocation.code || 
-                    l.id === editingLocation.id
-                  );
-                  if (foundLocation && typeof foundLocation.id === 'number') {
-                    locationId = foundLocation.id;
-                    console.log('📍 [DELETE] Found location from list, using id:', locationId);
-                  }
-                }
-              }
-              
-              console.log('📍 [DELETE] Final locationId:', locationId, 'isNaN:', isNaN(locationId || 0));
-              
-              if (!locationId || isNaN(locationId)) {
-                console.error('❌ [DELETE] Invalid location ID:', {
-                  id: editingLocation.id,
-                  type: typeof editingLocation.id,
-                  code: editingLocation.code,
-                  location: editingLocation
-                });
-                alert(
-                  `❌ Không thể xác định ID địa điểm cần xóa.\n\n` +
-                  `ID hiện tại: ${editingLocation.id}\n` +
-                  `Loại: ${typeof editingLocation.id}\n` +
-                  `Mã địa điểm: ${editingLocation.code}\n\n` +
-                  `Vui lòng kiểm tra console (F12) để xem chi tiết.`
-                );
-                return;
-              }
-              
-              console.log('📍 [DELETE] Deleting location with ID:', locationId);
-              await deleteLocation(locationId);
-              await loadLocations(); // Reload list sau khi xóa
-              setIsFormOpen(false);
-              setEditingLocation(null);
-            } catch (error) {
-              console.error('Error deleting location:', error);
-              alert('Có lỗi xảy ra khi xóa: ' + (error instanceof Error ? error.message : 'Unknown error'));
-              // Don't close form if error
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingLocation(null);
@@ -1181,18 +1071,21 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 // Update existing staff
                 const userId = typeof editingStaff.id === 'number' ? editingStaff.id : parseInt(editingStaff.id.toString(), 10);
                 await updateUser(userId, {
+                  userCode: staffFormData.userCode, // Theo Swagger có thể sửa userCode
                   fullName: staffFormData.fullName,
+                  email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
               } else {
                 // Create new staff
+                // Trong StaffForm, field "username" có label "Tên đăng nhập (Email) *", nên dùng username làm email
                 await createUser({
-                  userCode: staffFormData.username, // Use username as userCode
+                  userCode: staffFormData.userCode || staffFormData.username, // Use userCode hoặc username
                   fullName: staffFormData.fullName,
                   password: staffFormData.password,
-                  email: staffFormData.email,
+                  email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined, // Optional
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,

@@ -56,13 +56,40 @@ export const useLocations = () => {
   const updateLocation = async (locationId: number, updates: { code?: string; name?: string; status?: 'active' | 'inactive'; campusId?: number }) => {
     setLoading(true);
     setError(null);
+    
+    // Optimistic update: update UI immediately
+    const previousLocations = locations;
+    setLocations(prevLocations => 
+      prevLocations.map(loc => {
+        const locId = typeof loc.id === 'number' ? loc.id : parseInt(String(loc.id), 10);
+        if (locId === locationId) {
+          return { 
+            ...loc, 
+            ...(updates.code && { code: updates.code }),
+            ...(updates.name && { name: updates.name }),
+            ...(updates.status && { status: updates.status }),
+            ...(updates.campusId && { campusId: updates.campusId }),
+          };
+        }
+        return loc;
+      })
+    );
+    
     try {
       const updated = await locationService.update(locationId, updates);
-      await loadLocations(); // Reload list
+      
+      // Add a small delay to ensure backend has committed the changes before reload
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reload to get the latest data from backend (includes any server-side updates)
+      await loadLocations();
       return updated;
     } catch (err) {
       console.error('Error updating location:', err);
       setError(err instanceof Error ? err.message : 'Failed to update location');
+      
+      // Rollback optimistic update on error
+      setLocations(previousLocations);
       throw err;
     } finally {
       setLoading(false);
@@ -76,12 +103,33 @@ export const useLocations = () => {
   const updateLocationStatus = async (locationId: number, status: 'active' | 'inactive') => {
     setLoading(true);
     setError(null);
+    
+    // Optimistic update: update UI immediately
+    const previousLocations = locations;
+    setLocations(prevLocations => 
+      prevLocations.map(loc => {
+        const locId = typeof loc.id === 'number' ? loc.id : parseInt(String(loc.id), 10);
+        if (locId === locationId) {
+          return { ...loc, status };
+        }
+        return loc;
+      })
+    );
+    
     try {
       await locationService.updateStatus(locationId, status);
-      await loadLocations(); // Reload list
+      
+      // Add a small delay to ensure backend has committed the changes before reload
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Reload to get the latest data from backend
+      await loadLocations();
     } catch (err) {
       console.error('Error updating status:', err);
       setError(err instanceof Error ? err.message : 'Failed to update status');
+      
+      // Rollback optimistic update on error
+      setLocations(previousLocations);
       throw err;
     } finally {
       setLoading(false);
@@ -95,12 +143,54 @@ export const useLocations = () => {
   const deleteLocation = async (locationId: number) => {
     setLoading(true);
     setError(null);
+    
+    // Lưu lại location ban đầu để có thể restore nếu có lỗi
+    const locationToDelete = locations.find(loc => {
+      const locId = typeof loc.id === 'number' ? loc.id : parseInt(String(loc.id), 10);
+      return locId === locationId;
+    });
+    
     try {
+      // Xóa location khỏi state ngay lập tức (optimistic update)
+      // Điều này đảm bảo location biến mất ngay lập tức khỏi UI
+      setLocations(prevLocations => {
+        const filtered = prevLocations.filter(loc => {
+          const locId = typeof loc.id === 'number' ? loc.id : parseInt(String(loc.id), 10);
+          return locId !== locationId;
+        });
+        console.log(`📍 Removed location ${locationId} from state. Remaining: ${filtered.length}`);
+        return filtered;
+      });
+      
+      // Gọi API để xóa location từ backend
       await locationService.delete(locationId);
-      await loadLocations(); // Reload list
+      
+      console.log('✅ Location deleted successfully from backend');
+      
+      // Không reload sau khi delete thành công để tránh location bị soft delete quay lại
+      // Nếu backend làm hard delete, location đã bị xóa vĩnh viễn
+      // Nếu backend làm soft delete, location vẫn còn nhưng đã bị xóa khỏi UI rồi
+      
     } catch (err) {
-      console.error('Error deleting location:', err);
+      console.error('❌ Error deleting location:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete location');
+      
+      // Nếu có lỗi, restore location lại vào state
+      if (locationToDelete) {
+        setLocations(prevLocations => {
+          // Kiểm tra xem location đã có trong list chưa
+          const exists = prevLocations.some(loc => {
+            const locId = typeof loc.id === 'number' ? loc.id : parseInt(String(loc.id), 10);
+            return locId === locationId;
+          });
+          if (!exists) {
+            console.log(`📍 Restoring location ${locationId} to state`);
+            return [...prevLocations, locationToDelete];
+          }
+          return prevLocations;
+        });
+      }
+      
       throw err;
     } finally {
       setLoading(false);

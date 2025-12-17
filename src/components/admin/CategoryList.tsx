@@ -65,8 +65,15 @@ const CategoryList = ({
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredCategories.map((cat) => {
-                // departmentId từ API là number, cần convert sang string để so sánh
-                const deptName = departments.find(d => d.id === cat.departmentId?.toString())?.name || `Department ${cat.departmentId}`;
+                // Tìm department theo departmentId (có thể là number hoặc string)
+                const department = departments.find(d => {
+                  const dId = typeof d.id === 'number' ? d.id : parseInt(String(d.id), 10);
+                  const catDeptId = typeof cat.departmentId === 'number' ? cat.departmentId : parseInt(String(cat.departmentId), 10);
+                  return dId === catDeptId;
+                });
+                
+                // Lấy tên bộ phận: ưu tiên deptName, sau đó name, cuối cùng fallback
+                const deptName = department?.deptName || department?.name || (cat.departmentId ? `Bộ phận ID: ${cat.departmentId}` : '-');
 
                 return (
                   <tr key={cat.categoryCode} className="hover:bg-gray-50 transition-colors">

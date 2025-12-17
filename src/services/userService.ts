@@ -116,6 +116,7 @@ export const userService = {
   /**
    * Tạo user mới
    * POST /api/User
+   * Theo Swagger: Request body UserCreateDto, Response 201 với ApiResponse<UserDto>
    */
   async create(userData: {
     userCode: string;
@@ -129,29 +130,80 @@ export const userService = {
     try {
       console.log('👥 Creating user...', userData);
       
+      // Validate required fields
+      if (!userData.userCode || !userData.userCode.trim()) {
+        throw new Error('Mã người dùng (userCode) là bắt buộc');
+      }
+      if (!userData.fullName || !userData.fullName.trim()) {
+        throw new Error('Họ và tên (fullName) là bắt buộc');
+      }
+      if (!userData.password || !userData.password.trim()) {
+        throw new Error('Mật khẩu (password) là bắt buộc');
+      }
+      if (!userData.email || !userData.email.trim()) {
+        throw new Error('Email là bắt buộc');
+      }
+      if (!userData.role) {
+        throw new Error('Vai trò (role) là bắt buộc');
+      }
+      
+      // Map role to roleId
+      const roleId = ROLE_TO_ID_MAP[userData.role];
+      if (!roleId) {
+        throw new Error(`Vai trò không hợp lệ: ${userData.role}`);
+      }
+      
+      // Theo Swagger: UserCreateDto có thể khác với UserRequestDto
+      // Nhưng hiện tại dùng UserRequestDto, nếu backend expect field khác thì cần điều chỉnh
       const requestData: UserRequestDto = {
-        userCode: userData.userCode,
-        fullName: userData.fullName,
-        passwordHash: userData.password, // Backend sẽ hash
-        email: userData.email,
-        phoneNumber: userData.phoneNumber,
-        roleId: ROLE_TO_ID_MAP[userData.role],
+        userCode: userData.userCode.trim(),
+        fullName: userData.fullName.trim(),
+        passwordHash: userData.password, // Backend sẽ hash password
+        email: userData.email.trim(),
+        phoneNumber: userData.phoneNumber?.trim(),
+        roleId: roleId,
         departmentId: userData.departmentId,
-        status: 'ACTIVE',
+        status: 'ACTIVE', // Default status khi tạo mới
       };
       
+      console.log('👥 Request body:', JSON.stringify(requestData, null, 2));
+      
+      // Theo Swagger: Response 201 với ApiResponse<UserDto>
       const response = await apiClient.post<UserSingleApiResponse>('/User', requestData);
       
+      console.log('👥 API Response:', JSON.stringify(response, null, 2));
+      
       if (!response.status) {
-        console.error('❌ Failed to create user:', response);
-        throw new Error(response.message || 'Failed to create user');
+        const errorMsg = response.message || 'Failed to create user';
+        const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
+        console.error('❌ Failed to create user:', { response, errorMsg, errorDetails });
+        throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      console.log('✅ User created successfully');
+      if (!response.data) {
+        console.error('❌ Response data is null:', response);
+        throw new Error('Backend trả về dữ liệu rỗng. Vui lòng thử lại.');
+      }
+
+      console.log('✅ User created successfully:', response.data);
       
       return this.mapDtoToUser(response.data);
     } catch (error) {
       console.error('❌ Error creating user:', error);
+      
+      // Improve error messages
+      if (error instanceof Error) {
+        if (error.message.includes('400') || error.message.includes('Bad Request')) {
+          throw new Error(`Dữ liệu không hợp lệ: ${error.message}. Vui lòng kiểm tra lại thông tin nhập vào.`);
+        }
+        if (error.message.includes('403') || error.message.includes('Forbidden')) {
+          throw new Error('Bạn không có quyền tạo user. Chỉ admin mới có thể tạo user.');
+        }
+        if (error.message.includes('409') || error.message.includes('Conflict')) {
+          throw new Error('Email hoặc mã người dùng đã tồn tại. Vui lòng sử dụng email/mã khác.');
+        }
+      }
+      
       throw error;
     }
   },

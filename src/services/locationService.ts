@@ -23,8 +23,21 @@ export const locationService = {
         return [];
       }
 
-      // Backend trả về array trực tiếp trong response.data
-      const items: LocationDto[] = Array.isArray(response.data) ? response.data : [];
+      // Theo Swagger: response.data có thể là array hoặc pagination object
+      let items: LocationDto[] = [];
+      
+      if (Array.isArray(response.data)) {
+        // Nếu là array trực tiếp
+        items = response.data;
+        console.log('📍 Response data is array:', items.length);
+      } else if (typeof response.data === 'object' && 'items' in response.data) {
+        // Nếu là pagination object (theo Swagger)
+        items = response.data.items || [];
+        console.log('📍 Response data is pagination object:', items.length, 'total:', response.data.totalCount);
+      } else {
+        console.warn('⚠️ Unknown response.data format:', response.data);
+        items = [];
+      }
       
       // Map backend data sang frontend format
       const locations: Location[] = items.map(this.mapDtoToLocation);
@@ -139,24 +152,66 @@ export const locationService = {
       }
 
       console.log('✅ Location updated successfully');
+      console.log('📍 PUT response:', JSON.stringify(response, null, 2));
+      
+      // Theo Swagger: PUT trả về ApiResponse<PaginatedResponse<LocationDto>>
+      // Thử extract updated location từ response nếu có
+      let updatedLocation: Location | null = null;
+      
+      if (response.data) {
+        let items: LocationDto[] = [];
+        if (Array.isArray(response.data)) {
+          items = response.data;
+        } else if (typeof response.data === 'object' && 'items' in response.data) {
+          items = response.data.items || [];
+        }
+        
+        if (items.length > 0) {
+          const updatedLocationDto = items.find(item => item.id === locationId);
+          if (updatedLocationDto) {
+            updatedLocation = this.mapDtoToLocation(updatedLocationDto);
+            console.log('📍 Found updated location in PUT response:', updatedLocation);
+          }
+        }
+      }
       
       // If status needs to be updated, do it separately via PATCH
       if (updates.status) {
-        await this.updateStatus(locationId, updates.status);
+        console.log(`📍 Updating status separately: ${updates.status}`);
+        try {
+          await this.updateStatus(locationId, updates.status);
+          console.log('✅ Status updated successfully');
+          // Add a small delay to ensure backend has committed the changes
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (statusError) {
+          console.error('❌ Failed to update status:', statusError);
+          // Vẫn tiếp tục vì location đã được update thành công
+        }
       }
       
-      // Reload để lấy data mới nhất từ API
+      // Nếu đã có updatedLocation từ response, return luôn
+      if (updatedLocation) {
+        return updatedLocation;
+      }
+      
+      // Nếu không có, reload để lấy data mới nhất từ API
+      console.log('📍 Reloading locations to get updated data...');
       const allLocations = await this.getAll();
-      const updatedLocation = allLocations.find(l => 
-        (typeof l.id === 'number' && l.id === locationId) || 
-        (typeof l.id === 'string' && parseInt(l.id, 10) === locationId)
-      );
+      const reloadedLocation = allLocations.find(l => {
+        const locId = typeof l.id === 'number' ? l.id : parseInt(String(l.id), 10);
+        return locId === locationId;
+      });
       
-      if (!updatedLocation) {
-        throw new Error('Failed to retrieve updated location');
+      if (!reloadedLocation) {
+        console.error('❌ Updated location not found after reload:', {
+          locationId,
+          allLocationsCount: allLocations.length
+        });
+        throw new Error(`Failed to retrieve updated location (ID: ${locationId}) after update`);
       }
       
-      return updatedLocation;
+      console.log('✅ Updated location retrieved from reload:', reloadedLocation);
+      return reloadedLocation;
     } catch (error) {
       console.error('❌ Error updating location:', error);
       throw error;
@@ -170,37 +225,59 @@ export const locationService = {
    */
   async updateStatus(locationId: number, status: 'active' | 'inactive'): Promise<void> {
     try {
-      console.log(`📍 Updating location status: ID ${locationId} -> ${status}`);
+      // Validate locationId
+      if (!locationId || isNaN(locationId) || locationId <= 0) {
+        throw new Error(`Invalid locationId: ${locationId}. LocationId must be a positive integer (int32).`);
+      }
+      
+      console.log(`📍 Updating location status: ID ${locationId} (type: ${typeof locationId}) -> ${status}`);
       
       const requestData: LocationStatusUpdateDto = {
-        id: locationId, // Sử dụng id (int32) thay vì locationCode
+        id: locationId, // Sử dụng id (int32) theo Swagger
         status: status === 'active' ? 'ACTIVE' : 'INACTIVE',
       };
       
-      console.log('📍 PATCH /Location/status', requestData);
+      console.log('📍 PATCH /Location/status request body:', JSON.stringify(requestData, null, 2));
+      console.log('📍 Request data validation:', {
+        id: requestData.id,
+        idType: typeof requestData.id,
+        idIsInteger: Number.isInteger(requestData.id),
+        status: requestData.status
+      });
       
       const response = await apiClient.patch<LocationApiResponse>('/Location/status', requestData);
       
+      console.log('📍 UpdateStatus API Response:', JSON.stringify(response, null, 2));
+      
       if (!response.status) {
-        throw new Error(response.message || 'Failed to update status');
+        const errorMessage = response.message || 'Failed to update location status';
+        console.error('❌ UpdateStatus failed:', {
+          locationId,
+          status,
+          requestData,
+          response
+        });
+        throw new Error(errorMessage);
       }
 
-      console.log('✅ Status updated successfully');
+      console.log('✅ Location status updated successfully');
     } catch (error) {
-      console.error('❌ Error updating status:', error);
+      console.error('❌ Error updating location status:', {
+        locationId,
+        status,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       throw error;
     }
   },
 
   /**
-   * Xóa location
-   * DELETE /api/Location/{locationId}?locationId={locationId}
+   * Xóa location (hard delete)
+   * DELETE /api/Location/{locationId}
    * Theo Swagger:
-   * - Path parameter: locationId (string) - REQUIRED
-   * - Query parameter: locationId (integer, int32) - optional
+   * - Path parameter: locationId (integer, int32) - REQUIRED
    * - Response: 200 OK với ApiResponse<PaginatedResponse<LocationDto>>
-   * 
-   * Giải pháp: Dùng cả path (string) và query (integer) để đảm bảo backend nhận đúng
    */
   async delete(locationId: number): Promise<void> {
     try {
@@ -210,55 +287,40 @@ export const locationService = {
       }
       
       console.log(`📍 Deleting location ID: ${locationId} (type: ${typeof locationId})`);
+      console.log(`📍 DELETE /Location/${locationId}`);
       
-      // Theo Swagger: Path parameter là REQUIRED (string), Query parameter là optional (integer)
-      // Giải pháp: Dùng cả 2 để đảm bảo backend nhận đúng
-      // URL: /api/Location/{locationId}?locationId={locationId}
-      // Ví dụ: /api/Location/15?locationId=15
-      const endpoint = `/Location/${locationId}?locationId=${locationId}`;
-      console.log(`📍 DELETE ${endpoint}`);
+      // Theo Swagger: chỉ cần path parameter locationId (integer, int32)
+      const endpoint = `/Location/${locationId}`;
       
-      const response = await apiClient.delete<LocationApiResponse>(endpoint);
-      
-      console.log('📍 DELETE response:', response);
-      
-      // Xử lý response theo Swagger: 200 OK với ApiResponse<PaginatedResponse<LocationDto>>
-      if (typeof response === 'object' && response !== null) {
-        // Kiểm tra nếu là empty object (có thể là 204 No Content được handleResponse xử lý)
-        if (Object.keys(response).length === 0) {
-          console.log('✅ Location deleted successfully (204 No Content)');
-          return;
-        }
-        
-        // Kiểm tra structure LocationApiResponse
-        if ('status' in response) {
-          const apiResponse = response as LocationApiResponse;
-          
-          if (!apiResponse.status) {
-            const errorMsg = apiResponse.message || 'Failed to delete location';
-            const errors = apiResponse.errors && apiResponse.errors.length > 0 
-              ? `\nErrors: ${apiResponse.errors.join(', ')}`
-              : '';
-            throw new Error(`${errorMsg}${errors}`);
-          }
-          
-          // Log thông tin response (có thể có pagination data)
-          if (apiResponse.data) {
-            if (Array.isArray(apiResponse.data)) {
-              console.log(`✅ Location deleted successfully. Remaining locations: ${apiResponse.data.length}`);
-            } else if (typeof apiResponse.data === 'object' && 'items' in apiResponse.data) {
-              const paginatedData = apiResponse.data as { items: LocationDto[]; totalCount: number };
-              console.log(`✅ Location deleted successfully. Remaining locations: ${paginatedData.items.length} (total: ${paginatedData.totalCount})`);
-            }
-          }
-          
-          console.log('✅ Location deleted successfully:', apiResponse.message || 'Success');
-          return;
-        }
+      interface LocationDeleteResponse {
+        status: boolean;
+        message: string;
+        data: LocationDto[] | {  // Backend trả về PaginatedResponse<LocationDto>
+          pageNumber: number;
+          pageSize: number;
+          totalCount: number;
+          totalPages: number;
+          hasPrevious: boolean;
+          hasNext: boolean;
+          items: LocationDto[];
+        } | null;
+        errors: string[];
       }
       
-      // Nếu không có structure rõ ràng, coi như thành công (vì handleResponse đã xử lý lỗi rồi)
-      console.log('✅ Location deleted successfully (no explicit status check)');
+      const response = await apiClient.delete<LocationDeleteResponse>(endpoint);
+      
+      console.log('📍 DELETE response:', JSON.stringify(response, null, 2));
+      
+      if (!response.status) {
+        const errorMsg = response.message || 'Failed to delete location';
+        const errorDetails = response.errors?.length ? `: ${response.errors.join(', ')}` : '';
+        console.error('❌ Failed to delete location:', { response, errorMsg, errorDetails });
+        throw new Error(`${errorMsg}${errorDetails}`);
+      }
+      
+      // Response thành công - location đã được xóa
+      console.log('✅ Location deleted successfully:', response.message || 'Success');
+      
     } catch (error) {
       console.error('❌ Error deleting location:', error);
       console.error('❌ Error details:', {
@@ -277,13 +339,22 @@ export const locationService = {
           throw new Error(`Không tìm thấy địa điểm với ID ${locationId}. Có thể địa điểm đã bị xóa hoặc không tồn tại.`);
         }
         if (error.message.includes('400') || error.message.includes('Bad Request')) {
-          throw new Error(`Lỗi xóa địa điểm: ${error.message}\n\nLưu ý: API yêu cầu locationId (số nguyên int32). Kiểm tra xem locationId có đúng không.`);
+          throw new Error(`Lỗi xóa địa điểm: ${error.message}\n\nLưu ý: API yêu cầu locationId (số nguyên int32). Kiểm tra xem locationId có đúng không hoặc địa điểm có đang được sử dụng không.`);
         }
         if (error.message.includes('401')) {
           throw new Error('Unauthorized - Vui lòng đăng nhập lại.');
         }
         if (error.message.includes('403')) {
           throw new Error('Forbidden - Bạn không có quyền xóa địa điểm này.');
+        }
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng hoặc backend API có đang chạy không.');
+        }
+        if (error.message.includes('timeout')) {
+          throw new Error('Request timeout. Vui lòng thử lại sau.');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Lỗi server. Vui lòng thử lại sau hoặc liên hệ quản trị viên.');
         }
       }
       
