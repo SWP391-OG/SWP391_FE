@@ -308,7 +308,18 @@ export const ticketService = {
       notes: ticket.notes ? `${ticket.notes}\n[Hủy bởi Admin]: ${reason}` : `[Hủy bởi Admin]: ${reason}`,
     });
   },
-
+   async cancelTicketAsAdmin(ticketCode: string, note: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
+    try {
+      const response = await apiClient.delete<{ status: boolean; message: string; data: unknown; errors: string[] }>(
+        `/Ticket/${ticketCode}/cancel`,
+        { reason: note }
+      );
+      return response;
+    } catch (error) {
+      console.error('Error cancelling ticket as admin:', error);
+      throw error;
+    }
+  },
   // Xóa ticket (nếu cần)
   delete(id: string): void {
     this.getAll().filter(t => t.id !== id);
