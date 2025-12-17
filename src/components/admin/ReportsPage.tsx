@@ -114,6 +114,7 @@ const ReportsPage = ({
     const statusData = [
       { name: 'Đã Hoàn thành', value: completedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
+      { name: 'Đang xử lí', value: inProgressTickets, color: '#06b6d4', key: 'inProgress' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
       { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
       { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
@@ -321,7 +322,7 @@ const ReportsPage = ({
       {/* Total Tickets Statistics - All Statuses */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Thống kê Tổng số Tickets</h3>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
           {/* Tổng số Tickets */}
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div className="text-xs text-blue-600 font-medium mb-1">Tổng số Tickets</div>
@@ -338,6 +339,12 @@ const ReportsPage = ({
           <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
             <div className="text-xs text-purple-600 font-medium mb-1">Chờ đánh giá</div>
             <div className="text-3xl font-bold text-purple-900">{ticketStatusReport.pendingReviewTickets}</div>
+          </div>
+
+          {/* Đang xử lí */}
+          <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+            <div className="text-xs text-cyan-600 font-medium mb-1">Đang xử lí</div>
+            <div className="text-3xl font-bold text-cyan-900">{ticketStatusReport.inProgressTickets}</div>
           </div>
 
           {/* Đã được giao */}
@@ -400,8 +407,8 @@ const ReportsPage = ({
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Status Details Grid - Show ALL 5 statuses including zeros */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
+              {/* Status Details Grid - Show ALL 6 statuses including zeros */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-6 gap-3 w-full">
                 {ticketStatusReport.statusData.map((item, index) => {
                   const percentage = ticketStatusReport.totalTickets > 0
                     ? Math.round((item.value / ticketStatusReport.totalTickets) * 100)
