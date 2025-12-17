@@ -235,15 +235,15 @@ export const locationService = {
       console.log(`📍 Updating location status: ID ${locationId} (type: ${typeof locationId}) -> ${status}`);
       
       const requestData: LocationStatusUpdateDto = {
-        id: locationId, // Sử dụng id (int32) theo Swagger
+        locationId: locationId, // Sử dụng id (int32) theo Swagger
         status: status === 'active' ? 'ACTIVE' : 'INACTIVE',
       };
       
       console.log('📍 PATCH /Location/status request body:', JSON.stringify(requestData, null, 2));
       console.log('📍 Request data validation:', {
-        id: requestData.id,
-        idType: typeof requestData.id,
-        idIsInteger: Number.isInteger(requestData.id),
+        id: requestData.locationId,
+        idType: typeof requestData.locationId,
+        idIsInteger: Number.isInteger(requestData.locationId),
         status: requestData.status
       });
       
