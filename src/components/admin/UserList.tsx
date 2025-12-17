@@ -45,7 +45,7 @@ const UserList = ({
   const hasNext = pageNumber < totalPages;
 
   return (
-    <>
+    <div className="flex flex-col h-full min-h-0">
       <div className="mb-6">
         <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Người dùng
@@ -63,7 +63,9 @@ const UserList = ({
         />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      {/* Table - Scrollable area */}
+      <div className="flex-1 overflow-auto min-h-0 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -167,21 +169,24 @@ const UserList = ({
           </table>
         </div>
       </div>
+      </div>
       
-      {/* Pagination */}
+      {/* Pagination - Always at bottom */}
       {totalPages > 0 && onPageChange && onPageSizeChange && (
-        <Pagination
-          pageNumber={pageNumber}
-          pageSize={pageSize}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          hasPrevious={hasPrevious}
-          hasNext={hasNext}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
+        <div className="mt-auto">
+          <Pagination
+            pageNumber={pageNumber}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 

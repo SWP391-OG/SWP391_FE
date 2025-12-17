@@ -373,12 +373,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
 
   return (
-    <div className="min-h-screen max-w-[1400px] mx-auto p-8">
-
-      {/* Dashboard Layout */}
-      <div className="flex gap-8 items-start">{/* Sidebar */}
-        {/* Sidebar */}
-        <div className="w-72 bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+    <div className="h-screen flex overflow-hidden">
+      {/* Sidebar - Fixed to left */}
+      <div className="w-72 bg-white rounded-r-lg rounded-br-none p-6 shadow-sm border border-gray-200 border-l-0 border-b-0 h-full overflow-y-auto">
           <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">
             Quản lý hệ thống
           </h3>
@@ -498,11 +495,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           </nav>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      {/* Main Content */}
+      <div className="flex-1 bg-white rounded-lg rounded-tl-none rounded-bl-none rounded-tr-none rounded-br-none p-6 shadow-sm border border-gray-200 border-t-0 border-l-0 border-r-0 border-b-0 max-w-full flex flex-col h-full overflow-hidden">
           {/* Tickets Management */}
           {activeTab === 'tickets' && (
-            <>
+            <div className="flex flex-col h-full min-h-0">
               {loadingTickets && (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -537,7 +534,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   onPageSizeChange={handleTicketPageSizeChange}
                 />
               )}
-            </>
+            </div>
           )}
 
           {/* Category Management */}
@@ -771,8 +768,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               adminDepartments={adminDepartments}
             />
           )}
-
-        </div>
       </div>
 
       {/* Category Form Modal */}

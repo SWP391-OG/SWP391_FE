@@ -72,7 +72,7 @@ const CategoryList = ({
   const hasNext = pageNumber < totalPages;
 
   return (
-    <>
+    <div className="flex flex-col h-full min-h-0">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Category
@@ -105,7 +105,9 @@ const CategoryList = ({
         </select>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      {/* Table - Scrollable area */}
+      <div className="flex-1 overflow-auto min-h-0 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -199,21 +201,24 @@ const CategoryList = ({
           </table>
         </div>
       </div>
+      </div>
 
-      {/* Pagination */}
+      {/* Pagination - Always at bottom */}
       {totalPages > 0 && onPageChange && onPageSizeChange && (
-        <Pagination
-          pageNumber={pageNumber}
-          pageSize={pageSize}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          hasPrevious={hasPrevious}
-          hasNext={hasNext}
-          onPageChange={onPageChange}
-          onPageSizeChange={onPageSizeChange}
-        />
+        <div className="mt-auto">
+          <Pagination
+            pageNumber={pageNumber}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
+        </div>
       )}
-    </>
+    </div>
   );
 };
 
