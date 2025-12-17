@@ -1,342 +1,520 @@
-import { useMemo } from 'react';
-import type { Ticket, Category, Department, User } from '../../types';
+import { useMemo, useState } from 'react';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, subDays, startOfMonth } from 'date-fns';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
+import type { Ticket, Category, Department, User, TicketFromApi } from '../../types';
 
 interface ReportsPageProps {
-  tickets: Ticket[];
+  tickets: (Ticket | TicketFromApi)[];
   categories: Category[];
   departments: Department[];
   users: User[];
   adminDepartments: Department[];
 }
 
+type DateFilterType = 'all' | '7days' | 'month' | 'custom';
+
 const ReportsPage = ({
   tickets,
   categories,
-  users,
+  departments,
   adminDepartments,
 }: ReportsPageProps) => {
+  // State for date filtering - Default to 7 days
+  const [dateFilter, setDateFilter] = useState<DateFilterType>('7days');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 7));
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Debug logging
+  console.log('📊 ReportsPage Data:', {
+    ticketsCount: tickets.length,
+    categoriesCount: categories.length,
+    departmentsCount: departments.length,
+    adminDepartmentsCount: adminDepartments.length,
+  });
+  
   // Filter tickets by admin's departments
   const adminDepartmentIds = adminDepartments.map(d => d.id);
+
+  // Calculate date range for filtering
+  const getDateRange = useMemo(() => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    
+    let startDate = new Date(0); // Default to very old date
+
+    if (dateFilter === '7days') {
+      startDate = subDays(today, 7);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (dateFilter === 'month') {
+      startDate = startOfMonth(today);
+      startDate.setHours(0, 0, 0, 0);
+    } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+      startDate = new Date(customStartDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDateObj = new Date(customEndDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      return { startDate, endDate: endDateObj };
+    }
+
+    return { startDate, endDate: today };
+  }, [dateFilter, customStartDate, customEndDate]);
+
   const adminTickets = useMemo(() => {
     return tickets.filter(ticket => {
-      const category = categories.find(c => c.id === ticket.categoryId);
-      return category && adminDepartmentIds.includes(category.departmentId);
+      // Handle both API tickets and local tickets
+      const categoryCode = 'categoryCode' in ticket ? ticket.categoryCode : ticket.categoryId;
+      const category = categories.find(c => 
+        (typeof c.id === 'number' && typeof categoryCode === 'number' && c.id === categoryCode) ||
+        (typeof c.id === 'string' && typeof categoryCode === 'string' && c.id === categoryCode) ||
+        (c.categoryCode === categoryCode) ||
+        (c.categoryName === ('categoryName' in ticket ? ticket.categoryName : ''))
+      );
+      if (!category || !adminDepartmentIds.includes(category.departmentId)) {
+        return false;
+      }
+
+      // Filter by date
+      const createdAtStr = (ticket as any).createdAt;
+      if (createdAtStr) {
+        const ticketDate = new Date(createdAtStr);
+        if (ticketDate < getDateRange.startDate || ticketDate > getDateRange.endDate) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [tickets, categories, adminDepartmentIds]);
+  }, [tickets, categories, adminDepartmentIds, getDateRange]);
 
-  // SLA Report Calculations
-  const slaReport = useMemo(() => {
-    const totalTickets = adminTickets.length;
-    const resolvedTickets = adminTickets.filter(t => 
-      t.status === 'resolved' || t.status === 'closed'
-    );
-    const overdueTickets = adminTickets.filter(t => 
-      t.slaTracking?.isOverdue && (t.status !== 'resolved' && t.status !== 'closed')
-    );
-    const onTimeTickets = resolvedTickets.filter(t => 
-      t.slaTracking?.resolvedAt && 
-      new Date(t.slaTracking.resolvedAt) <= new Date(t.slaTracking.deadline)
-    );
-    const lateTickets = resolvedTickets.filter(t => 
-      t.slaTracking?.resolvedAt && 
-      new Date(t.slaTracking.resolvedAt) > new Date(t.slaTracking.deadline)
-    );
-
-    // Calculate average resolution time
-    const resolutionTimes = resolvedTickets
-      .map(t => t.slaTracking?.resolutionTime)
-      .filter((time): time is number => time !== undefined);
-    const avgResolutionTime = resolutionTimes.length > 0
-      ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length)
-      : 0;
-
-    // Calculate average response time
-    const responseTimes = adminTickets
-      .map(t => t.slaTracking?.responseTime)
-      .filter((time): time is number => time !== undefined);
-    const avgResponseTime = responseTimes.length > 0
-      ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
-      : 0;
-
-    const onTimeRate = resolvedTickets.length > 0
-      ? Math.round((onTimeTickets.length / resolvedTickets.length) * 100)
-      : 0;
-
-    return {
-      totalTickets,
-      resolvedTickets: resolvedTickets.length,
-      overdueTickets: overdueTickets.length,
-      onTimeTickets: onTimeTickets.length,
-      lateTickets: lateTickets.length,
-      onTimeRate,
-      avgResolutionTime, // in minutes
-      avgResponseTime, // in minutes
-    };
+  // Total tickets statistics
+  const totalTicketsCount = useMemo(() => {
+    return adminTickets.length;
   }, [adminTickets]);
 
-  // Ticket Volume Report
-  const ticketVolumeReport = useMemo(() => {
-    // By Category
-    const byCategory: Record<string, number> = {};
-    adminTickets.forEach(ticket => {
-      const category = categories.find(c => c.id === ticket.categoryId);
-      const categoryName = category?.categoryName || 'Không xác định';
-      byCategory[categoryName] = (byCategory[categoryName] || 0) + 1;
-    });
+  // Cancelled and Completed tickets statistics - ALL STATUSES
+  const ticketStatusReport = useMemo(() => {
+    // Count by all statuses
+    const completedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
+    const resolvedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'resolved').length;
+    const pendingReviewTickets = resolvedTickets; // resolved = chờ đánh giá
+    const assignedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'assigned').length;
+    const newTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'new' || String(t.status).toLowerCase() === 'open').length;
+    const cancelledTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'cancelled').length;
+    const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
+    const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
 
-    // By Priority
-    const byPriority: Record<string, number> = {
-      'urgent': 0,
-      'high': 0,
-      'medium': 0,
-      'low': 0,
-    };
-    adminTickets.forEach(ticket => {
-      if (ticket.priority) {
-        byPriority[ticket.priority] = (byPriority[ticket.priority] || 0) + 1;
-      }
-    });
+    // Calculate percentages
+    const completedPercentage = totalTicketsCount > 0 ? Math.round((completedTickets / totalTicketsCount) * 100) : 0;
+    const cancelledPercentage = totalTicketsCount > 0 ? Math.round((cancelledTickets / totalTicketsCount) * 100) : 0;
 
-    // By Status
-    const byStatus: Record<string, number> = {
-      'open': 0,
-      'acknowledged': 0,
-      'in-progress': 0,
-      'resolved': 0,
-      'closed': 0,
-      'cancelled': 0,
-    };
-    adminTickets.forEach(ticket => {
-      byStatus[ticket.status] = (byStatus[ticket.status] || 0) + 1;
-    });
+    // Build status data - Include ALL statuses (even with 0 tickets) with fixed order
+    const statusData = [
+      { name: 'Đã Hoàn thành', value: completedTickets, color: '#10b981', key: 'completed' },
+      { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
+      { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
+      { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
+      { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
+    ]; // Show all statuses always
+
+    // Build pie chart data with only non-zero values
+    const pieDataFiltered = statusData.filter(s => s.value > 0);
+    const pieChartData = pieDataFiltered.length > 0 
+      ? pieDataFiltered 
+      : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb', key: 'empty' }];
 
     return {
-      byCategory,
-      byPriority,
-      byStatus,
+      totalTickets: totalTicketsCount,
+      completedTickets,
+      pendingReviewTickets,
+      assignedTickets,
+      newTickets,
+      cancelledTickets,
+      inProgressTickets,
+      acknowledgedTickets,
+      completedPercentage,
+      cancelledPercentage,
+      statusData,
+      pieData: pieChartData,
+      pieDataFiltered
     };
-  }, [adminTickets, categories]);
+  }, [adminTickets, totalTicketsCount]);
 
-  // Staff Performance Report
-  const staffPerformanceReport = useMemo(() => {
-    const staffMap: Record<string, {
-      staff: User;
-      totalTickets: number;
-      resolvedTickets: number;
-      onTimeTickets: number;
-      lateTickets: number;
-      avgResolutionTime: number;
-    }> = {};
+  // Category statistics - most frequent issues
+  const categoryStatistics = useMemo(() => {
+    const categoryCount: Record<string, { count: number; categoryName: string; categoryId: string | number }> = {};
 
-    // Get all staff from admin departments
-    const staffUsers = users.filter(u => 
-      u.role === 'it-staff' || u.role === 'facility-staff'
-    );
+    adminTickets.forEach(ticket => {
+      // Get category name - handle both API and local formats
+      let categoryName = '';
+      let categoryId = '';
+      
+      if ('categoryName' in ticket && 'categoryCode' in ticket) {
+        // TicketFromApi format
+        categoryName = ticket.categoryName || '';
+        categoryId = (ticket as any).categoryCode || '';
+      } else {
+        // Ticket format - need to find in categories array
+        const category = categories.find(c => c.id === (ticket as any).categoryId);
+        if (category) {
+          categoryName = category.categoryName;
+          categoryId = String(category.id);
+        }
+      }
 
-    staffUsers.forEach(staff => {
-      const staffTickets = adminTickets.filter(t => 
-        t.assignedToId === staff.id || t.assignedTo === staff.id
-      );
-      const resolvedStaffTickets = staffTickets.filter(t => 
-        t.status === 'resolved' || t.status === 'closed'
-      );
-      const onTimeStaffTickets = resolvedStaffTickets.filter(t => 
-        t.slaTracking?.resolvedAt && 
-        new Date(t.slaTracking.resolvedAt) <= new Date(t.slaTracking.deadline)
-      );
-      const lateStaffTickets = resolvedStaffTickets.filter(t => 
-        t.slaTracking?.resolvedAt && 
-        new Date(t.slaTracking.resolvedAt) > new Date(t.slaTracking.deadline)
-      );
-
-      const resolutionTimes = resolvedStaffTickets
-        .map(t => t.slaTracking?.resolutionTime)
-        .filter((time): time is number => time !== undefined);
-      const avgResolutionTime = resolutionTimes.length > 0
-        ? Math.round(resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length)
-        : 0;
-
-      if (staffTickets.length > 0) {
-        staffMap[staff.id] = {
-          staff,
-          totalTickets: staffTickets.length,
-          resolvedTickets: resolvedStaffTickets.length,
-          onTimeTickets: onTimeStaffTickets.length,
-          lateTickets: lateStaffTickets.length,
-          avgResolutionTime,
-        };
+      if (categoryName) {
+        if (!categoryCount[categoryId]) {
+          categoryCount[categoryId] = {
+            count: 0,
+            categoryName: categoryName,
+            categoryId: categoryId,
+          };
+        }
+        categoryCount[categoryId].count++;
       }
     });
 
-    return Object.values(staffMap);
-  }, [adminTickets, users]);
+    return Object.values(categoryCount)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10); // Top 10 categories
+  }, [adminTickets, categories]);
 
-  const formatTime = (minutes: number) => {
-    if (minutes < 60) return `${minutes} phút`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours < 24) return `${hours} giờ ${mins > 0 ? mins + ' phút' : ''}`;
-    const days = Math.floor(hours / 24);
-    const hrs = hours % 24;
-    return `${days} ngày ${hrs > 0 ? hrs + ' giờ' : ''}`;
-  };
+  // Department statistics - departments handling most errors
+  const departmentStatistics = useMemo(() => {
+    const departmentCount: Record<string, { count: number; departmentName: string; departmentId: string | number }> = {};
+
+    adminTickets.forEach(ticket => {
+      let category = null;
+      
+      if ('categoryName' in ticket && 'categoryCode' in ticket) {
+        // TicketFromApi format - find category by categoryCode
+        category = categories.find(c => c.categoryCode === (ticket as any).categoryCode);
+      } else {
+        // Ticket format
+        category = categories.find(c => c.id === (ticket as any).categoryId);
+      }
+
+      if (category) {
+        const dept = departments.find(d => d.id === category.departmentId);
+        if (dept) {
+          const deptId = String(dept.id);
+          if (!departmentCount[deptId]) {
+            departmentCount[deptId] = {
+              count: 0,
+              departmentName: dept.deptName || dept.name || 'Không xác định',
+              departmentId: dept.id,
+            };
+          }
+          departmentCount[deptId].count++;
+        }
+      }
+    });
+
+    return Object.values(departmentCount)
+      .sort((a, b) => b.count - a.count);
+  }, [adminTickets, categories, departments]);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Báo cáo</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">Báo cáo Quản lý Tickets</h2>
 
-      {/* SLA Report */}
+      {/* Date Filter Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Báo cáo SLA</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div className="text-sm text-blue-600 font-medium mb-1">Tổng số tickets</div>
-            <div className="text-2xl font-bold text-blue-900">{slaReport.totalTickets}</div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lọc theo thời gian</h3>
+        <div className="space-y-4">
+          {/* Quick Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setDateFilter('all')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setDateFilter('7days')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === '7days'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              7 ngày qua
+            </button>
+            <button
+              onClick={() => setDateFilter('month')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'month'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tháng này
+            </button>
+            <button
+              onClick={() => {
+                setDateFilter('custom');
+                setShowDatePicker(!showDatePicker);
+              }}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                dateFilter === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Tùy chỉnh
+            </button>
           </div>
-          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <div className="text-sm text-blue-600 font-medium mb-1">chờ đánh giá</div>
-            <div className="text-2xl font-bold text-blue-900">{slaReport.resolvedTickets}</div>
-          </div>
-          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-            <div className="text-sm text-red-600 font-medium mb-1">Quá hạn</div>
-            <div className="text-2xl font-bold text-red-900">{slaReport.overdueTickets}</div>
-          </div>
-          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-            <div className="text-sm text-purple-600 font-medium mb-1">Tỷ lệ đúng hạn</div>
-            <div className="text-2xl font-bold text-purple-900">{slaReport.onTimeRate}%</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="text-sm text-gray-600 font-medium mb-1">Thời gian xử lý trung bình</div>
-            <div className="text-xl font-bold text-gray-900">
-              {formatTime(slaReport.avgResolutionTime)}
+
+          {/* Unified Date Range Picker - Only show when custom is selected */}
+          {dateFilter === 'custom' && showDatePicker && (
+            <div className="mt-4 p-6 bg-white rounded-lg border border-gray-300">
+              <h4 className="text-sm font-semibold text-gray-700 mb-4">Chọn khoảng ngày</h4>
+              
+              {/* Range Picker */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 flex justify-center">
+                <DayPicker
+                  mode="range"
+                  selected={{
+                    from: customStartDate,
+                    to: customEndDate,
+                  }}
+                  onSelect={(range) => {
+                    if (range?.from) setCustomStartDate(range.from);
+                    if (range?.to) setCustomEndDate(range.to);
+                  }}
+                  disabled={(date) => date > new Date()}
+                  numberOfMonths={2}
+                  defaultMonth={customStartDate || subDays(new Date(), 30)}
+                  showOutsideDays={false}
+                />
+              </div>
+
+              {/* Selected Range Display */}
+              {customStartDate && customEndDate && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-700">
+                    <span className="font-semibold">Khoảng thời gian:</span> {format(customStartDate, 'dd/MM/yyyy')} - {format(customEndDate, 'dd/MM/yyyy')}
+                  </p>
+                </div>
+              )}
+
+              {/* Close Button */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => setShowDatePicker(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700"
+                >
+                  ✓ Xong
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="text-sm text-gray-600 font-medium mb-1">Thời gian phản hồi trung bình</div>
-            <div className="text-xl font-bold text-gray-900">
-              {formatTime(slaReport.avgResponseTime)}
-            </div>
-          </div>
+          )}
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-4">
+      </div>
+
+      {/* Total Tickets Statistics - All Statuses */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Thống kê Tổng số Tickets</h3>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          {/* Tổng số Tickets */}
+          <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div className="text-xs text-blue-600 font-medium mb-1">Tổng số Tickets</div>
+            <div className="text-3xl font-bold text-blue-900">{ticketStatusReport.totalTickets}</div>
+          </div>
+
+          {/* Đã Hoàn thành */}
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-            <div className="text-sm text-green-600 font-medium mb-1">Đúng hạn</div>
-            <div className="text-xl font-bold text-green-900">{slaReport.onTimeTickets}</div>
+            <div className="text-xs text-green-600 font-medium mb-1">Đã Hoàn thành</div>
+            <div className="text-3xl font-bold text-green-900">{ticketStatusReport.completedTickets}</div>
           </div>
+
+          {/* Chờ đánh giá */}
+          <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+            <div className="text-xs text-purple-600 font-medium mb-1">Chờ đánh giá</div>
+            <div className="text-3xl font-bold text-purple-900">{ticketStatusReport.pendingReviewTickets}</div>
+          </div>
+
+          {/* Đã được giao */}
+          <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+            <div className="text-xs text-yellow-600 font-medium mb-1">Đã được giao</div>
+            <div className="text-3xl font-bold text-yellow-900">{ticketStatusReport.assignedTickets}</div>
+          </div>
+
+          {/* Mới tạo */}
           <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-            <div className="text-sm text-orange-600 font-medium mb-1">Trễ hạn</div>
-            <div className="text-xl font-bold text-orange-900">{slaReport.lateTickets}</div>
+            <div className="text-xs text-orange-600 font-medium mb-1">Mới tạo</div>
+            <div className="text-3xl font-bold text-orange-900">{ticketStatusReport.newTickets}</div>
+          </div>
+
+          {/* Đã hủy */}
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+            <div className="text-xs text-red-600 font-medium mb-1">Đã hủy</div>
+            <div className="text-3xl font-bold text-red-900">{ticketStatusReport.cancelledTickets}</div>
           </div>
         </div>
       </div>
 
-      {/* Ticket Volume Report */}
+      {/* Pie Chart - All Statuses */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Báo cáo Khối lượng Tickets</h3>
-        
-        {/* By Category */}
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">Theo Danh mục</h4>
-          <div className="space-y-2">
-            {Object.entries(ticketVolumeReport.byCategory)
-              .sort(([, a], [, b]) => b - a)
-              .map(([category, count]) => (
-                <div key={category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-700 font-medium">{category}</span>
-                  <span className="text-gray-900 font-bold">{count}</span>
-                </div>
-              ))}
-          </div>
-        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Tỷ lệ Tickets theo Trạng thái</h3>
+        <div className="flex flex-col items-center">
+          {ticketStatusReport.pieDataFiltered && ticketStatusReport.pieDataFiltered.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={350}>
+                <PieChart>
+                  <Pie
+                    data={ticketStatusReport.pieDataFiltered.map(item => ({
+                      name: item.name,
+                      value: item.value,
+                    }))}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }: any) => {
+                      const total = ticketStatusReport.totalTickets;
+                      const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return `${name} (${value} - ${percentage}%)`;
+                    }}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {ticketStatusReport.pieDataFiltered.map((item, index) => (
+                      <Cell key={`cell-${index}`} fill={item.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value: any) => {
+                      const total = ticketStatusReport.totalTickets;
+                      const percentage = total > 0 ? Math.round((Number(value) / total) * 100) : 0;
+                      return `${value} tickets (${percentage}%)`;
+                    }}
+                    contentStyle={{ backgroundColor: '#f3f4f6', border: '1px solid #e5e7eb' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
 
-        {/* By Priority */}
-        <div className="mb-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">Theo Mức độ Ưu tiên</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {Object.entries(ticketVolumeReport.byPriority).map(([priority, count]) => {
-              const priorityLabels: Record<string, { label: string; color: string }> = {
-                'urgent': { label: 'Khẩn cấp', color: 'bg-red-100 text-red-800 border-red-300' },
-                'high': { label: 'Cao', color: 'bg-orange-100 text-orange-800 border-orange-300' },
-                'medium': { label: 'Trung bình', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                'low': { label: 'Thấp', color: 'bg-green-100 text-green-800 border-green-300' },
-              };
-              const { label, color } = priorityLabels[priority] || { label: priority, color: 'bg-gray-100 text-gray-800 border-gray-300' };
-              return (
-                <div key={priority} className={`p-3 rounded-lg border ${color}`}>
-                  <div className="text-sm font-medium mb-1">{label}</div>
-                  <div className="text-2xl font-bold">{count}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* By Status */}
-        <div>
-          <h4 className="text-lg font-semibold text-gray-800 mb-3">Theo Trạng thái</h4>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {Object.entries(ticketVolumeReport.byStatus).map(([status, count]) => {
-              const statusLabels: Record<string, { label: string; color: string }> = {
-                'open': { label: 'Mở', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-                'acknowledged': { label: 'Đã xác nhận', color: 'bg-purple-100 text-purple-800 border-purple-300' },
-                'in-progress': { label: 'Đang xử lý', color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-                'resolved': { label: 'chờ đánh giá', color: 'bg-blue-100 text-blue-800 border-blue-300' },
-                'closed': { label: 'Đã hoàn thành', color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
-                'cancelled': { label: 'Đã hủy', color: 'bg-red-100 text-red-800 border-red-300' },
-              };
-              const { label, color } = statusLabels[status] || { label: status, color: 'bg-gray-100 text-gray-800 border-gray-300' };
-              return (
-                <div key={status} className={`p-3 rounded-lg border ${color}`}>
-                  <div className="text-sm font-medium mb-1">{label}</div>
-                  <div className="text-2xl font-bold">{count}</div>
-                </div>
-              );
-            })}
-          </div>
+              {/* Status Details Grid - Show ALL 5 statuses including zeros */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
+                {ticketStatusReport.statusData.map((item, index) => {
+                  const percentage = ticketStatusReport.totalTickets > 0
+                    ? Math.round((item.value / ticketStatusReport.totalTickets) * 100)
+                    : 0;
+                  return (
+                    <div 
+                      key={index} 
+                      className="p-4 rounded-lg border-l-4 transition hover:shadow-md" 
+                      style={{ borderColor: item.color, backgroundColor: item.color + '15' }}
+                    >
+                      <div className="text-xs font-medium" style={{ color: item.color }}>
+                        {item.name}
+                      </div>
+                      <div className="text-3xl font-bold mt-2" style={{ color: item.color }}>
+                        {item.value}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {percentage}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              Chưa có dữ liệu tickets trong khoảng thời gian này
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Staff Performance Report */}
+      {/* Category Statistics - Top Issues */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Báo cáo Hiệu suất Staff</h3>
-        {staffPerformanceReport.length === 0 ? (
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Thống kê Loại Lỗi Phổ biến nhất</h3>
+        {categoryStatistics.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            Chưa có dữ liệu hiệu suất staff
+            Chưa có dữ liệu categories
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {categoryStatistics.map((category, index) => {
+              const percentage = totalTicketsCount > 0 
+                ? Math.round((category.count / totalTicketsCount) * 100)
+                : 0;
+              return (
+                <div key={category.categoryId} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
+                  <div className="flex items-center gap-4">
+                    <div className="text-lg font-bold text-gray-400 w-8">#{index + 1}</div>
+                    <div>
+                      <div className="text-gray-900 font-semibold">{category.categoryName}</div>
+                      <div className="text-sm text-gray-500">{category.count} tickets</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-blue-600">{percentage}%</div>
+                    <div className="w-32 bg-gray-200 rounded-full h-2 mt-2">
+                      <div 
+                        className="bg-blue-500 h-2 rounded-full" 
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Department Statistics - Most Active Departments */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Thống kê Phòng ban Xử lý Lỗi Nhiều nhất</h3>
+        {departmentStatistics.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Chưa có dữ liệu departments
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Staff</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Tổng tickets</th>
-                  <th className="text-center p-3 text-sm font-semibold text-blue-700">chờ đánh giá</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Đúng hạn</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Trễ hạn</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Tỷ lệ đúng hạn</th>
-                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Thời gian xử lý TB</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Xếp hạng</th>
+                  <th className="text-left p-3 text-sm font-semibold text-gray-700">Tên Phòng ban</th>
+                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Số lỗi xử lý</th>
+                  <th className="text-center p-3 text-sm font-semibold text-gray-700">Tỷ lệ (%)</th>
                 </tr>
               </thead>
               <tbody>
-                {staffPerformanceReport.map(({ staff, totalTickets, resolvedTickets, onTimeTickets, lateTickets, avgResolutionTime }) => {
-                  const onTimeRate = resolvedTickets > 0
-                    ? Math.round((onTimeTickets / resolvedTickets) * 100)
+                {departmentStatistics.map((dept, index) => {
+                  const percentage = totalTicketsCount > 0
+                    ? Math.round((dept.count / totalTicketsCount) * 100)
                     : 0;
                   return (
-                    <tr key={staff.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="p-3 text-gray-900 font-medium">{staff.fullName}</td>
-                      <td className="p-3 text-center text-gray-700">{totalTickets}</td>
-                      <td className="p-3 text-center text-gray-700">{resolvedTickets}</td>
-                      <td className="p-3 text-center text-green-600 font-semibold">{onTimeTickets}</td>
-                      <td className="p-3 text-center text-red-600 font-semibold">{lateTickets}</td>
+                    <tr key={dept.departmentId} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="p-3 text-center">
-                        <span className={`font-semibold ${onTimeRate >= 80 ? 'text-green-600' : onTimeRate >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {onTimeRate}%
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm">
+                          {index + 1}
                         </span>
                       </td>
-                      <td className="p-3 text-center text-gray-700 text-sm">{formatTime(avgResolutionTime)}</td>
+                      <td className="p-3 text-gray-900 font-medium">{dept.departmentName}</td>
+                      <td className="p-3 text-center text-gray-700 font-semibold">{dept.count}</td>
+                      <td className="p-3 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-green-500 h-2 rounded-full" 
+                              style={{ width: `${Math.min(percentage, 100)}%` }}
+                            />
+                          </div>
+                          <span className="font-semibold text-green-600 min-w-12">{percentage}%</span>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}

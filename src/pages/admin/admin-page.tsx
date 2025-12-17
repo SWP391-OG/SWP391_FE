@@ -5,7 +5,6 @@ import { useCategories } from '../../hooks/useCategories';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
-import { useOverdueTickets } from '../../hooks/useOverdueTickets';
 import { ticketService } from '../../services/ticketService';
 import { campusService, type Campus } from '../../services/campusService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
@@ -22,9 +21,8 @@ import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
 import ReportsPage from '../../components/admin/ReportsPage';
-import OverdueTicketsPanel from '../../components/admin/OverdueTicketsPanel';
 
-type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports' | 'overdue';
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports';
 
 interface AdminPageProps {
   currentAdminId?: string;
@@ -33,25 +31,19 @@ interface AdminPageProps {
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Hooks
   const { tickets, assignTicket, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
-  const { categories, createCategory, updateCategory, updateCategoryStatus, deleteCategory, loadCategories } = useCategories();
-  const { departments, createDepartment, updateDepartment, updateDepartmentStatus, deleteDepartment, loadDepartments } = useDepartments();
-  const { locations, loading: locationsLoading, createLocation, updateLocation, deleteLocation, loadLocations } = useLocations();
+  const { categories, createCategory, updateCategory, updateCategoryStatus, loadCategories } = useCategories();
+  const { departments, createDepartment, updateDepartment, updateDepartmentStatus, loadDepartments } = useDepartments();
+  const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
-  const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
-  const [paginationState, setPaginationState] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasPrevious: false,
-    hasNext: false,
-  });
-
+  const [ticketSearchQuery, setTicketSearchQuery] = useState('');
+  const [ticketFilterStatus, setTicketFilterStatus] = useState<string>('all');
+  const [ticketPageNumber, setTicketPageNumber] = useState(1);
+  const [ticketPageSize, setTicketPageSize] = useState(10);
   // Fetch tickets from API
   const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
@@ -60,14 +52,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
-      setPaginationState({
-        pageNumber: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: response.data.totalPages,
-        hasPrevious: response.data.hasPrevious,
-        hasNext: response.data.hasNext,
-      });
+      // Note: Using client-side pagination now, so we don't need to store paginationState
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -198,16 +183,24 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Search and filter state
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [categoryFilterStatus, setCategoryFilterStatus] = useState<string>('all');
+  const [categoryPageNumber, setCategoryPageNumber] = useState(1);
+  const [categoryPageSize, setCategoryPageSize] = useState(10);
   const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
+  const [departmentFilterStatus, setDepartmentFilterStatus] = useState<string>('all');
+  const [departmentPageNumber, setDepartmentPageNumber] = useState(1);
+  const [departmentPageSize, setDepartmentPageSize] = useState(10);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
+  const [locationFilterCampus, setLocationFilterCampus] = useState<string>('all');
+  const [locationPageNumber, setLocationPageNumber] = useState(1);
+  const [locationPageSize, setLocationPageSize] = useState(10);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [staffPageNumber, setStaffPageNumber] = useState(1);
+  const [staffPageSize, setStaffPageSize] = useState(10);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-
-  // Pagination
-  const [usersPage, setUsersPage] = useState(1);
-  const [staffPage, setStaffPage] = useState(1);
-  const itemsPerPage = 10;
+  const [userPageNumber, setUserPageNumber] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(10);
 
   // Auto-open submenu
   useEffect(() => {
@@ -310,8 +303,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return staffList;
   }, [getStaffUsers, departments]);
 
-  const totalStaffPages = Math.ceil(getStaffUsers.length / itemsPerPage);
-
   // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
     return getStudentUsers
@@ -321,8 +312,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         return bTime - aTime;
       });
   }, [getStudentUsers]);
-
-  const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Handlers
   const handleAssignTicket = (ticketId: string, staffId: string) => {
@@ -341,23 +330,71 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     cancelTicket(ticketId, reason);
   };
 
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    fetchTickets(page, paginationState.pageSize);
+  // Ticket pagination handlers (client-side pagination for filtered results)
+  const handleTicketPageChange = (page: number) => {
+    setTicketPageNumber(page);
   };
 
-  const handlePageSizeChange = (size: number) => {
-    fetchTickets(1, size); // Reset to page 1 when changing page size
+  const handleTicketPageSizeChange = (size: number) => {
+    setTicketPageSize(size);
+    setTicketPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Location pagination handlers
+  const handleLocationPageChange = (page: number) => {
+    setLocationPageNumber(page);
+  };
+
+  const handleLocationPageSizeChange = (size: number) => {
+    setLocationPageSize(size);
+    setLocationPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Category pagination handlers
+  const handleCategoryPageChange = (page: number) => {
+    setCategoryPageNumber(page);
+  };
+
+  const handleCategoryPageSizeChange = (size: number) => {
+    setCategoryPageSize(size);
+    setCategoryPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Department pagination handlers
+  const handleDepartmentPageChange = (page: number) => {
+    setDepartmentPageNumber(page);
+  };
+
+  const handleDepartmentPageSizeChange = (size: number) => {
+    setDepartmentPageSize(size);
+    setDepartmentPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Staff pagination handlers
+  const handleStaffPageChange = (page: number) => {
+    setStaffPageNumber(page);
+  };
+
+  const handleStaffPageSizeChange = (size: number) => {
+    setStaffPageSize(size);
+    setStaffPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // User pagination handlers
+  const handleUserPageChange = (page: number) => {
+    setUserPageNumber(page);
+  };
+
+  const handleUserPageSizeChange = (size: number) => {
+    setUserPageSize(size);
+    setUserPageNumber(1); // Reset to page 1 when changing page size
   };
 
 
   return (
-    <div className="min-h-screen max-w-[1400px] mx-auto p-8">
-
-      {/* Dashboard Layout */}
-      <div className="flex gap-8 items-start">{/* Sidebar */}
-        {/* Sidebar */}
-        <div className="w-72 bg-white rounded-lg p-6 shadow-sm border border-gray-200 sticky top-8">
+    <div className="h-screen flex overflow-hidden">
+      {/* Sidebar - Fixed to left */}
+      <div className="w-72 bg-white rounded-r-lg rounded-br-none p-6 shadow-sm border border-gray-200 border-l-0 border-b-0 h-full overflow-y-auto">
           <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">
             Quản lý hệ thống
           </h3>
@@ -374,21 +411,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               Quản lý Tickets
             </button>
 
-            {/* Overdue/Escalate - Critical tickets */}
-            <button
-              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                activeTab === 'overdue'
-                  ? 'bg-red-50 text-red-700 font-semibold border-l-4 border-red-600'
-                  : 'text-red-600 font-medium hover:bg-red-50 hover:text-red-700'
-              }`}
-              onClick={() => setActiveTab('overdue')}
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🔴</span>
-                <span>Tickets Quá Hạn ({overdueTickets.length})</span>
-              </span>
-            </button>
-            
             {/* Members submenu */}
             <div>
               <button
@@ -418,7 +440,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('staff');
-                      setStaffPage(1);
+                      setStaffPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -432,7 +454,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('users');
-                      setUsersPage(1);
+                      setUserPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -492,11 +514,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           </nav>
         </div>
 
-        {/* Main Content */}
-        <div className="flex-1 bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+      {/* Main Content */}
+      <div className="flex-1 bg-white rounded-lg rounded-tl-none rounded-bl-none rounded-tr-none rounded-br-none p-6 shadow-sm border border-gray-200 border-t-0 border-l-0 border-r-0 border-b-0 max-w-full flex flex-col h-full overflow-hidden">
           {/* Tickets Management */}
           {activeTab === 'tickets' && (
-            <>
+            <div className="flex flex-col h-full min-h-0">
               {loadingTickets && (
                 <div className="text-center py-8">
                   <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
@@ -515,17 +537,23 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   staffList={adminStaffList}
                   onAssignTicket={handleAssignTicket}
                   onViewTicket={setSelectedTicketForReview}
-                  pageNumber={paginationState.pageNumber}
-                  pageSize={paginationState.pageSize}
-                  totalPages={paginationState.totalPages}
-                  totalCount={paginationState.totalCount}
-                  hasPrevious={paginationState.hasPrevious}
-                  hasNext={paginationState.hasNext}
-                  onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
+                  searchQuery={ticketSearchQuery}
+                  filterStatus={ticketFilterStatus}
+                  onSearchChange={(query) => {
+                    setTicketSearchQuery(query);
+                    setTicketPageNumber(1); // Reset to page 1 when searching
+                  }}
+                  onFilterStatusChange={(status) => {
+                    setTicketFilterStatus(status);
+                    setTicketPageNumber(1); // Reset to page 1 when filtering
+                  }}
+                  pageNumber={ticketPageNumber}
+                  pageSize={ticketPageSize}
+                  onPageChange={handleTicketPageChange}
+                  onPageSizeChange={handleTicketPageSizeChange}
                 />
               )}
-            </>
+            </div>
           )}
 
           {/* Category Management */}
@@ -534,7 +562,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               categories={adminCategories}
               departments={adminDepartments}
               searchQuery={categorySearchQuery}
-              onSearchChange={setCategorySearchQuery}
+              filterStatus={categoryFilterStatus}
+              onSearchChange={(query) => {
+                setCategorySearchQuery(query);
+                setCategoryPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setCategoryFilterStatus(status);
+                setCategoryPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={categoryPageNumber}
+              pageSize={categoryPageSize}
+              onPageChange={handleCategoryPageChange}
+              onPageSizeChange={handleCategoryPageSizeChange}
               onAddClick={() => {
                 setEditingCategory(null);
                 setCategoryFormData({
@@ -571,7 +611,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             <DepartmentList
               departments={adminDepartments}
               searchQuery={departmentSearchQuery}
-              onSearchChange={setDepartmentSearchQuery}
+              filterStatus={departmentFilterStatus}
+              onSearchChange={(query) => {
+                setDepartmentSearchQuery(query);
+                setDepartmentPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setDepartmentFilterStatus(status);
+                setDepartmentPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={departmentPageNumber}
+              pageSize={departmentPageSize}
+              onPageChange={handleDepartmentPageChange}
+              onPageSizeChange={handleDepartmentPageSizeChange}
               onAddClick={() => {
                 setEditingDept(null);
                 setDeptFormData({ deptCode: '', deptName: '', status: 'ACTIVE' });
@@ -596,9 +648,24 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               loading={locationsLoading}
               searchQuery={locationSearchQuery}
               filterStatus={locationFilterStatus}
+              filterCampus={locationFilterCampus}
               campuses={campuses}
-              onSearchChange={setLocationSearchQuery}
-              onFilterStatusChange={setLocationFilterStatus}
+              onSearchChange={(query) => {
+                setLocationSearchQuery(query);
+                setLocationPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setLocationFilterStatus(status);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              onFilterCampusChange={(campus) => {
+                setLocationFilterCampus(campus);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={locationPageNumber}
+              pageSize={locationPageSize}
+              onPageChange={handleLocationPageChange}
+              onPageSizeChange={handleLocationPageSizeChange}
               onAddClick={() => {
                 setEditingLocation(null);
                 setLocationFormData({
@@ -636,11 +703,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
-              currentPage={staffPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalStaffPages}
-              onSearchChange={setStaffSearchQuery}
-              onPageChange={setStaffPage}
+              onSearchChange={(query) => {
+                setStaffSearchQuery(query);
+                setStaffPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={staffPageNumber}
+              pageSize={staffPageSize}
+              onPageChange={handleStaffPageChange}
+              onPageSizeChange={handleStaffPageSizeChange}
               onAddClick={() => {
                 setEditingStaff(null);
                 setStaffFormData({
@@ -685,11 +755,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               users={studentUsers}
               loading={usersLoading}
               searchQuery={userSearchQuery}
-              currentPage={usersPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalUsersPages}
-              onSearchChange={setUserSearchQuery}
-              onPageChange={setUsersPage}
+              onSearchChange={(query) => {
+                setUserSearchQuery(query);
+                setUserPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={userPageNumber}
+              pageSize={userPageSize}
+              onPageChange={handleUserPageChange}
+              onPageSizeChange={handleUserPageSizeChange}
               onEditClick={(user) => {
                 setEditingUser(user);
                 setUserFormData({
@@ -706,27 +779,16 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
           {/* Reports */}
           {activeTab === 'reports' && (
-            <ReportsPage
-              tickets={tickets}
-              categories={categories}
-              departments={departments}
-              users={users}
-              adminDepartments={adminDepartments}
-            />
+            <div className="h-full overflow-y-auto">
+              <ReportsPage
+                tickets={apiTickets}
+                categories={categories}
+                departments={departments}
+                users={users}
+                adminDepartments={adminDepartments}
+              />
+            </div>
           )}
-
-          {/* Overdue Tickets / Escalation Management */}
-          {activeTab === 'overdue' && (
-            <OverdueTicketsPanel
-              overdueTickets={overdueTickets}
-              loading={overdueLoading}
-              error={overdueError}
-              onEscalate={escalateTicket}
-              isEscalating={isEscalating}
-              onRefresh={refetchOverdue}
-            />
-          )}
-        </div>
       </div>
 
       {/* Category Form Modal */}
@@ -769,8 +831,22 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
                 console.log('📋 Updating category:', { categoryId, editingCategory, categoryFormData });
 
+                // Update status trước nếu có thay đổi (để tránh vấn đề với categoryId sau khi update)
+                const oldStatus = editingCategory.status;
+                const newStatus = categoryFormData.status;
+                if (oldStatus !== newStatus) {
+                  console.log('📋 Updating category status BEFORE update:', { categoryId, oldStatus, newStatus });
+                  try {
+                    await updateCategoryStatus(categoryId, newStatus);
+                    console.log('✅ Status updated successfully before category update');
+                  } catch (statusError) {
+                    console.error('❌ Failed to update status before category update:', statusError);
+                    // Vẫn tiếp tục update category vì status có thể update sau
+                  }
+                }
+
                 // Update: có thể sửa categoryCode, categoryName, departmentId, slaResolveHours
-                await updateCategory(categoryId, {
+                const updatedCategory = await updateCategory(categoryId, {
                   categoryCode: categoryFormData.categoryCode,
                   categoryName: categoryFormData.categoryName,
                   departmentId: categoryFormData.departmentId,
@@ -778,12 +854,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   // status không gửi trong update, dùng updateStatus riêng
                 });
 
-                // Update status riêng nếu có thay đổi
-                const oldStatus = editingCategory.status;
-                const newStatus = categoryFormData.status;
-                if (oldStatus !== newStatus) {
-                  console.log('📋 Updating category status:', { categoryId, oldStatus, newStatus });
-                  await updateCategoryStatus(categoryId, newStatus);
+                // Nếu status chưa được update ở trên, update sau khi update category
+                // (nhưng thường thì đã update ở trên rồi)
+                if (oldStatus === newStatus && updatedCategory) {
+                  console.log('📋 Status unchanged, no need to update status');
                 }
               } else {
                 // Create: chỉ gửi categoryCode, categoryName, departmentId, slaResolveHours (không gửi status)
@@ -822,46 +896,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
           }}
-          onDelete={editingCategory ? async () => {
-            try {
-              // Lấy categoryId từ editingCategory
-              let categoryId: number;
-              if (typeof editingCategory.id === 'number') {
-                categoryId = editingCategory.id;
-              } else if (typeof editingCategory.id === 'string') {
-                const parsed = parseInt(editingCategory.id, 10);
-                if (isNaN(parsed) || parsed <= 0) {
-                  // Fallback: tìm categoryId từ list bằng categoryCode
-                  const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
-                  if (found && typeof found.id === 'number') {
-                    categoryId = found.id;
-                  } else {
-                    throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
-                  }
-                } else {
-                  categoryId = parsed;
-                }
-              } else {
-                // Fallback: tìm categoryId từ list bằng categoryCode
-                const found = categories.find(c => c.categoryCode === editingCategory.categoryCode);
-                if (found && typeof found.id === 'number') {
-                  categoryId = found.id;
-                } else {
-                  throw new Error('Không tìm thấy categoryId. Vui lòng reload trang và thử lại.');
-                }
-              }
-
-              console.log('📋 Deleting category:', { categoryId, editingCategory });
-              await deleteCategory(categoryId);
-              await loadCategories();
-            } catch (error) {
-              console.error('Error deleting category:', error);
-              const errorMessage = error instanceof Error 
-                ? error.message 
-                : 'Có lỗi xảy ra khi xóa category';
-              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingCategory(null);
@@ -955,28 +989,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
             }
           }}
-          onDelete={editingDept ? async () => {
-            try {
-              // Lấy departmentId (int32) từ editingDept
-              const departmentId = typeof editingDept.id === 'number' 
-                ? editingDept.id 
-                : (typeof editingDept.id === 'string' ? parseInt(editingDept.id, 10) : null);
-              
-              if (!departmentId || isNaN(departmentId)) {
-                alert('Không thể xác định ID bộ phận cần xóa. Vui lòng thử lại.');
-                return;
-              }
-              
-              await deleteDepartment(departmentId);
-              await loadDepartments();
-            } catch (error) {
-              console.error('❌ Error deleting department:', error);
-              const errorMessage = error instanceof Error 
-                ? error.message 
-                : 'Có lỗi xảy ra khi xóa bộ phận';
-              alert(`❌ Lỗi: ${errorMessage}\n\nVui lòng:\n1. Kiểm tra console (F12) để xem chi tiết\n2. Kiểm tra backend API có đang chạy không\n3. Kiểm tra backend có hỗ trợ endpoint này không`);
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingDept(null);
@@ -1120,66 +1132,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
             }
           }}
-          onDelete={editingLocation ? async () => {
-            try {
-              // Debug: Log để kiểm tra
-              console.log('📍 [DELETE] editingLocation:', editingLocation);
-              console.log('📍 [DELETE] editingLocation.id:', editingLocation.id, 'type:', typeof editingLocation.id);
-              
-              // Lấy locationId (int32) từ editingLocation
-              let locationId: number | null = null;
-              
-              if (typeof editingLocation.id === 'number') {
-                locationId = editingLocation.id;
-              } else if (typeof editingLocation.id === 'string') {
-                // Nếu là string, thử parse
-                const parsed = parseInt(editingLocation.id, 10);
-                if (!isNaN(parsed)) {
-                  locationId = parsed;
-                } else {
-                  // Nếu không parse được, có thể id là locationCode
-                  // Thử tìm location từ list để lấy id thực
-                  const foundLocation = locations.find(l => 
-                    l.code === editingLocation.code || 
-                    l.id === editingLocation.id
-                  );
-                  if (foundLocation && typeof foundLocation.id === 'number') {
-                    locationId = foundLocation.id;
-                    console.log('📍 [DELETE] Found location from list, using id:', locationId);
-                  }
-                }
-              }
-              
-              console.log('📍 [DELETE] Final locationId:', locationId, 'isNaN:', isNaN(locationId || 0));
-              
-              if (!locationId || isNaN(locationId)) {
-                console.error('❌ [DELETE] Invalid location ID:', {
-                  id: editingLocation.id,
-                  type: typeof editingLocation.id,
-                  code: editingLocation.code,
-                  location: editingLocation
-                });
-                alert(
-                  `❌ Không thể xác định ID địa điểm cần xóa.\n\n` +
-                  `ID hiện tại: ${editingLocation.id}\n` +
-                  `Loại: ${typeof editingLocation.id}\n` +
-                  `Mã địa điểm: ${editingLocation.code}\n\n` +
-                  `Vui lòng kiểm tra console (F12) để xem chi tiết.`
-                );
-                return;
-              }
-              
-              console.log('📍 [DELETE] Deleting location with ID:', locationId);
-              await deleteLocation(locationId);
-              await loadLocations(); // Reload list sau khi xóa
-              setIsFormOpen(false);
-              setEditingLocation(null);
-            } catch (error) {
-              console.error('Error deleting location:', error);
-              alert('Có lỗi xảy ra khi xóa: ' + (error instanceof Error ? error.message : 'Unknown error'));
-              // Don't close form if error
-            }
-          } : undefined}
           onClose={() => {
             setIsFormOpen(false);
             setEditingLocation(null);
@@ -1200,24 +1152,27 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 // Update existing staff
                 const userId = typeof editingStaff.id === 'number' ? editingStaff.id : parseInt(editingStaff.id.toString(), 10);
                 await updateUser(userId, {
+                  userCode: staffFormData.userCode, // Theo Swagger có thể sửa userCode
                   fullName: staffFormData.fullName,
+                  email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
               } else {
                 // Create new staff
+                // Trong StaffForm, field "username" có label "Tên đăng nhập (Email) *", nên dùng username làm email
                 await createUser({
-                  userCode: staffFormData.username, // Use username as userCode
+                  userCode: staffFormData.userCode || staffFormData.username, // Use userCode hoặc username
                   fullName: staffFormData.fullName,
                   password: staffFormData.password,
-                  email: staffFormData.email,
+                  email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined, // Optional
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
                 
-                setStaffPage(1);
+                setStaffPageNumber(1);
               }
               
               // Reload users sau khi tạo/cập nhật

@@ -24,3 +24,51 @@
     @apply font-sans;
   }
 }
+/* DayPicker Styling */
+.rdp {
+  @apply font-sans;
+  --rdp-cell-size: 40px;
+  --rdp-accent-color: #2563eb;
+  --rdp-background-color: #dbeafe;
+  margin: 0 auto;
+}
+
+.rdp-months {
+  @apply gap-4;
+}
+
+.rdp-month {
+  @apply w-full;
+}
+
+.rdp-head_cell {
+  @apply font-semibold text-gray-600 text-sm;
+}
+
+.rdp-cell {
+  @apply font-medium;
+}
+
+.rdp-day {
+  @apply rounded-md font-medium;
+}
+
+.rdp-day_selected:not([disabled]) {
+  @apply bg-blue-600 text-white font-bold;
+}
+
+.rdp-day_range_middle:not([disabled]) {
+  @apply bg-blue-100 text-gray-900;
+}
+
+.rdp-day_today:not([disabled]) {
+  @apply font-bold text-blue-600;
+}
+
+.rdp-day_outside {
+  @apply opacity-50;
+}
+
+.rdp-day_disabled {
+  @apply opacity-30 cursor-not-allowed;
+}

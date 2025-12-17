@@ -1,17 +1,19 @@
 import type { User, Department } from '../../types';
+import Pagination from '../shared/Pagination';
 
 interface StaffListProps {
   staffUsers: User[];
   departments: Department[];
   loading?: boolean;
   searchQuery: string;
-  currentPage: number;
-  itemsPerPage: number;
-  totalPages: number;
   onSearchChange: (query: string) => void;
-  onPageChange: (page: number) => void;
   onAddClick: () => void;
   onEditClick: (staff: User) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const StaffList = ({
@@ -19,13 +21,13 @@ const StaffList = ({
   departments,
   loading = false,
   searchQuery,
-  currentPage,
-  itemsPerPage,
-  totalPages,
   onSearchChange,
-  onPageChange,
   onAddClick,
   onEditClick,
+  pageNumber = 1,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
 }: StaffListProps) => {
   const filteredStaff = staffUsers.filter((staff: User) => {
     if (!searchQuery) return true;
@@ -47,14 +49,18 @@ const StaffList = ({
       deptName.toLowerCase().includes(query)
     );
   });
-  
-  const paginatedFilteredStaff = filteredStaff.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+
+  // Calculate pagination
+  const totalCount = filteredStaff.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFilteredStaff = filteredStaff.slice(startIndex, endIndex);
+  const hasPrevious = pageNumber > 1;
+  const hasNext = pageNumber < totalPages;
 
   return (
-    <>
+    <div className="flex flex-col h-full min-h-0">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-2xl font-bold text-gray-800">
           Danh sách Staff
@@ -78,7 +84,9 @@ const StaffList = ({
         />
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+      {/* Table - Scrollable area */}
+      <div className="flex-1 overflow-auto min-h-0 mb-6">
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -106,7 +114,7 @@ const StaffList = ({
                     <td className="px-4 py-4"><div className="h-8 bg-gray-200 rounded w-16"></div></td>
                   </tr>
                 ))
-              ) : filteredStaff.length === 0 ? (
+              ) : paginatedFilteredStaff.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-8 py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center gap-2">
@@ -193,38 +201,24 @@ const StaffList = ({
           </table>
         </div>
       </div>
+      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-6">
-          <button
-            onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
-              currentPage === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
-            }`}
-          >
-            Trước
-          </button>
-          <span className="px-4 py-2 text-sm text-gray-700">
-            Trang {currentPage} / {totalPages}
-          </span>
-          <button
-            onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className={`px-4 py-2 border border-gray-300 rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 ${
-              currentPage === totalPages
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-gray-700 hover:bg-gray-50 cursor-pointer'
-            }`}
-          >
-            Sau
-          </button>
+      {/* Pagination - Always at bottom */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <div className="mt-auto">
+          <Pagination
+            pageNumber={pageNumber}
+            pageSize={pageSize}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </div>
       )}
-    </>
+    </div>
   );
 };
 

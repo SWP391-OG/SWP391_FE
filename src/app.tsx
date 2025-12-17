@@ -211,6 +211,11 @@ function App() {
                 // Profile đã được cập nhật, có thể refresh data nếu cần
                 console.log('✅ Profile updated successfully');
               }}
+              onNavigateHome={() => {
+                // The home page is already displaying, just close the modal
+                // and let the page refresh with new data
+                setShowProfileModal(false);
+              }}
             />
           )}
 

@@ -14,7 +14,6 @@ interface LocationFormProps {
   campuses?: Campus[];
   onFormDataChange: (data: LocationFormProps['locationFormData']) => void;
   onSubmit: () => void;
-  onDelete?: () => void;
   onClose: () => void;
 }
 
@@ -24,7 +23,6 @@ const LocationForm = ({
   campuses = [],
   onFormDataChange,
   onSubmit,
-  onDelete,
   onClose,
 }: LocationFormProps) => {
   return (
@@ -130,25 +128,6 @@ const LocationForm = ({
             >
               Hủy
             </button>
-            {editingLocation && onDelete && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirm('Bạn có chắc chắn muốn xóa địa điểm này?')) {
-                    try {
-                      await onDelete();
-                      onClose();
-                    } catch (error) {
-                      console.error('Error deleting location:', error);
-                      // Don't close if error
-                    }
-                  }
-                }}
-                className="px-6 py-3 bg-white text-red-600 border border-red-600 rounded-lg font-semibold cursor-pointer hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-              >
-                Xóa
-              </button>
-            )}
             <button
               type="submit"
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white border-none rounded-lg font-semibold cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
