@@ -181,18 +181,23 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   // Search and filter state
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [categoryFilterStatus, setCategoryFilterStatus] = useState<string>('all');
+  const [categoryPageNumber, setCategoryPageNumber] = useState(1);
+  const [categoryPageSize, setCategoryPageSize] = useState(10);
   const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
   const [departmentFilterStatus, setDepartmentFilterStatus] = useState<string>('all');
+  const [departmentPageNumber, setDepartmentPageNumber] = useState(1);
+  const [departmentPageSize, setDepartmentPageSize] = useState(10);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
   const [locationFilterCampus, setLocationFilterCampus] = useState<string>('all');
+  const [locationPageNumber, setLocationPageNumber] = useState(1);
+  const [locationPageSize, setLocationPageSize] = useState(10);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [staffPageNumber, setStaffPageNumber] = useState(1);
+  const [staffPageSize, setStaffPageSize] = useState(10);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-
-  // Pagination
-  const [usersPage, setUsersPage] = useState(1);
-  const [staffPage, setStaffPage] = useState(1);
-  const itemsPerPage = 10;
+  const [userPageNumber, setUserPageNumber] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(10);
 
   // Auto-open submenu
   useEffect(() => {
@@ -291,8 +296,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return staffList;
   }, [getStaffUsers, departments]);
 
-  const totalStaffPages = Math.ceil(getStaffUsers.length / itemsPerPage);
-
   // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
     return getStudentUsers
@@ -302,8 +305,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         return bTime - aTime;
       });
   }, [getStudentUsers]);
-
-  const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Handlers
   const handleAssignTicket = (ticketId: string, staffId: string) => {
@@ -329,6 +330,56 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   const handlePageSizeChange = (size: number) => {
     fetchTickets(1, size); // Reset to page 1 when changing page size
+  };
+
+  // Location pagination handlers
+  const handleLocationPageChange = (page: number) => {
+    setLocationPageNumber(page);
+  };
+
+  const handleLocationPageSizeChange = (size: number) => {
+    setLocationPageSize(size);
+    setLocationPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Category pagination handlers
+  const handleCategoryPageChange = (page: number) => {
+    setCategoryPageNumber(page);
+  };
+
+  const handleCategoryPageSizeChange = (size: number) => {
+    setCategoryPageSize(size);
+    setCategoryPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Department pagination handlers
+  const handleDepartmentPageChange = (page: number) => {
+    setDepartmentPageNumber(page);
+  };
+
+  const handleDepartmentPageSizeChange = (size: number) => {
+    setDepartmentPageSize(size);
+    setDepartmentPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Staff pagination handlers
+  const handleStaffPageChange = (page: number) => {
+    setStaffPageNumber(page);
+  };
+
+  const handleStaffPageSizeChange = (size: number) => {
+    setStaffPageSize(size);
+    setStaffPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // User pagination handlers
+  const handleUserPageChange = (page: number) => {
+    setUserPageNumber(page);
+  };
+
+  const handleUserPageSizeChange = (size: number) => {
+    setUserPageSize(size);
+    setUserPageNumber(1); // Reset to page 1 when changing page size
   };
 
 
@@ -384,7 +435,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('staff');
-                      setStaffPage(1);
+                      setStaffPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -398,7 +449,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('users');
-                      setUsersPage(1);
+                      setUserPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -501,8 +552,18 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={adminDepartments}
               searchQuery={categorySearchQuery}
               filterStatus={categoryFilterStatus}
-              onSearchChange={setCategorySearchQuery}
-              onFilterStatusChange={setCategoryFilterStatus}
+              onSearchChange={(query) => {
+                setCategorySearchQuery(query);
+                setCategoryPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setCategoryFilterStatus(status);
+                setCategoryPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={categoryPageNumber}
+              pageSize={categoryPageSize}
+              onPageChange={handleCategoryPageChange}
+              onPageSizeChange={handleCategoryPageSizeChange}
               onAddClick={() => {
                 setEditingCategory(null);
                 setCategoryFormData({
@@ -540,8 +601,18 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={adminDepartments}
               searchQuery={departmentSearchQuery}
               filterStatus={departmentFilterStatus}
-              onSearchChange={setDepartmentSearchQuery}
-              onFilterStatusChange={setDepartmentFilterStatus}
+              onSearchChange={(query) => {
+                setDepartmentSearchQuery(query);
+                setDepartmentPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setDepartmentFilterStatus(status);
+                setDepartmentPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={departmentPageNumber}
+              pageSize={departmentPageSize}
+              onPageChange={handleDepartmentPageChange}
+              onPageSizeChange={handleDepartmentPageSizeChange}
               onAddClick={() => {
                 setEditingDept(null);
                 setDeptFormData({ deptCode: '', deptName: '', status: 'ACTIVE' });
@@ -568,9 +639,22 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               filterStatus={locationFilterStatus}
               filterCampus={locationFilterCampus}
               campuses={campuses}
-              onSearchChange={setLocationSearchQuery}
-              onFilterStatusChange={setLocationFilterStatus}
-              onFilterCampusChange={setLocationFilterCampus}
+              onSearchChange={(query) => {
+                setLocationSearchQuery(query);
+                setLocationPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setLocationFilterStatus(status);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              onFilterCampusChange={(campus) => {
+                setLocationFilterCampus(campus);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={locationPageNumber}
+              pageSize={locationPageSize}
+              onPageChange={handleLocationPageChange}
+              onPageSizeChange={handleLocationPageSizeChange}
               onAddClick={() => {
                 setEditingLocation(null);
                 setLocationFormData({
@@ -608,11 +692,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
-              currentPage={staffPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalStaffPages}
-              onSearchChange={setStaffSearchQuery}
-              onPageChange={setStaffPage}
+              onSearchChange={(query) => {
+                setStaffSearchQuery(query);
+                setStaffPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={staffPageNumber}
+              pageSize={staffPageSize}
+              onPageChange={handleStaffPageChange}
+              onPageSizeChange={handleStaffPageSizeChange}
               onAddClick={() => {
                 setEditingStaff(null);
                 setStaffFormData({
@@ -657,11 +744,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               users={studentUsers}
               loading={usersLoading}
               searchQuery={userSearchQuery}
-              currentPage={usersPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalUsersPages}
-              onSearchChange={setUserSearchQuery}
-              onPageChange={setUsersPage}
+              onSearchChange={(query) => {
+                setUserSearchQuery(query);
+                setUserPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={userPageNumber}
+              pageSize={userPageSize}
+              onPageChange={handleUserPageChange}
+              onPageSizeChange={handleUserPageSizeChange}
               onEditClick={(user) => {
                 setEditingUser(user);
                 setUserFormData({
@@ -1071,7 +1161,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
                 
-                setStaffPage(1);
+                setStaffPageNumber(1);
               }
               
               // Reload users sau khi tạo/cập nhật

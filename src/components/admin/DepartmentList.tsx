@@ -1,4 +1,5 @@
 import type { Department } from '../../types';
+import Pagination from '../shared/Pagination';
 
 interface DepartmentListProps {
   departments: Department[];
@@ -8,6 +9,11 @@ interface DepartmentListProps {
   onFilterStatusChange: (status: string) => void;
   onAddClick: () => void;
   onEditClick: (department: Department) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const DepartmentList = ({
@@ -18,6 +24,10 @@ const DepartmentList = ({
   onFilterStatusChange,
   onAddClick,
   onEditClick,
+  pageNumber = 1,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
 }: DepartmentListProps) => {
   const filteredDepartments = departments.filter((dept) => {
     // Filter by status
@@ -39,6 +49,15 @@ const DepartmentList = ({
     }
     return true;
   });
+
+  // Calculate pagination
+  const totalCount = filteredDepartments.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedDepartments = filteredDepartments.slice(startIndex, endIndex);
+  const hasPrevious = pageNumber > 1;
+  const hasNext = pageNumber < totalPages;
 
   return (
     <>
@@ -87,7 +106,20 @@ const DepartmentList = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredDepartments.map((dept) => (
+              {paginatedDepartments.length === 0 ? (
+                // Empty state
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <p className="text-sm">Không tìm thấy bộ phận nào</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedDepartments.map((dept) => (
                 <tr key={dept.deptCode} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-4 text-sm text-gray-600 font-medium">
                     {dept.deptCode}
@@ -131,11 +163,26 @@ const DepartmentList = ({
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <Pagination
+          pageNumber={pageNumber}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 };

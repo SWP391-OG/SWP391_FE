@@ -1,6 +1,7 @@
 import type { Location } from '../../types';
 
 import type { Campus } from '../../services/campusService';
+import Pagination from '../shared/Pagination';
 
 interface LocationListProps {
   locations: Location[];
@@ -14,6 +15,11 @@ interface LocationListProps {
   onFilterCampusChange: (campus: string) => void;
   onAddClick: () => void;
   onEditClick: (location: Location) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const LocationList = ({
@@ -28,6 +34,10 @@ const LocationList = ({
   onFilterCampusChange,
   onAddClick,
   onEditClick,
+  pageNumber = 1,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
 }: LocationListProps) => {
   const filteredLocations = locations.filter((location) => {
     // Filter by status
@@ -81,6 +91,15 @@ const LocationList = ({
     }
     return true;
   });
+
+  // Calculate pagination
+  const totalCount = filteredLocations.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedLocations = filteredLocations.slice(startIndex, endIndex);
+  const hasPrevious = pageNumber > 1;
+  const hasNext = pageNumber < totalPages;
 
   return (
     <>
@@ -152,7 +171,7 @@ const LocationList = ({
                     <td className="px-4 py-4"><div className="h-8 bg-gray-200 rounded w-16"></div></td>
                   </tr>
                 ))
-              ) : filteredLocations.length === 0 ? (
+              ) : paginatedLocations.length === 0 ? (
                 // Empty state
                 <tr>
                   <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
@@ -165,7 +184,7 @@ const LocationList = ({
                   </td>
                 </tr>
               ) : (
-                filteredLocations.map((location) => {
+                paginatedLocations.map((location) => {
                   const statusInfo = {
                     active: { bg: 'bg-green-100', text: 'text-green-800', label: 'Hoạt động' },
                     inactive: { bg: 'bg-red-100', text: 'text-red-800', label: 'Không hoạt động' },
@@ -229,6 +248,20 @@ const LocationList = ({
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <Pagination
+          pageNumber={pageNumber}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 };

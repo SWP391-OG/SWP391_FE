@@ -1,4 +1,5 @@
 import type { Category, Department } from '../../types';
+import Pagination from '../shared/Pagination';
 
 interface CategoryListProps {
   categories: Category[];
@@ -9,6 +10,11 @@ interface CategoryListProps {
   onFilterStatusChange: (status: string) => void;
   onAddClick: () => void;
   onEditClick: (category: Category) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const CategoryList = ({
@@ -20,6 +26,10 @@ const CategoryList = ({
   onFilterStatusChange,
   onAddClick,
   onEditClick,
+  pageNumber = 1,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
 }: CategoryListProps) => {
   const filteredCategories = categories.filter((cat) => {
     // Filter by status
@@ -51,6 +61,15 @@ const CategoryList = ({
     }
     return true;
   });
+
+  // Calculate pagination
+  const totalCount = filteredCategories.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedCategories = filteredCategories.slice(startIndex, endIndex);
+  const hasPrevious = pageNumber > 1;
+  const hasNext = pageNumber < totalPages;
 
   return (
     <>
@@ -100,7 +119,20 @@ const CategoryList = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCategories.map((cat) => {
+              {paginatedCategories.length === 0 ? (
+                // Empty state
+                <tr>
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <p className="text-sm">Không tìm thấy category nào</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedCategories.map((cat) => {
                 // Tìm department theo departmentId (có thể là number hoặc string)
                 const department = departments.find(d => {
                   const dId = typeof d.id === 'number' ? d.id : parseInt(String(d.id), 10);
@@ -161,11 +193,26 @@ const CategoryList = ({
                     </td>
                   </tr>
                 );
-              })}
+              })
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <Pagination
+          pageNumber={pageNumber}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 };
