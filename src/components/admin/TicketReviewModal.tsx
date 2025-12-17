@@ -215,7 +215,7 @@ const TicketReviewModal = ({
 
     setIsCancelling(true);
     try {
-      const response = await ticketService.cancelTicket(ticket.ticketCode, cancelNote);
+      const response = await ticketService.cancelTicketAsAdmin(ticket.ticketCode, cancelNote);
       console.log('✅ Cancel ticket response:', response);
       
       if (response.status) {
