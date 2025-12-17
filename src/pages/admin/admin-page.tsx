@@ -40,15 +40,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
-  const [paginationState, setPaginationState] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasPrevious: false,
-    hasNext: false,
-  });
-
+  const [ticketSearchQuery, setTicketSearchQuery] = useState('');
+  const [ticketFilterStatus, setTicketFilterStatus] = useState<string>('all');
+  const [ticketPageNumber, setTicketPageNumber] = useState(1);
+  const [ticketPageSize, setTicketPageSize] = useState(10);
   // Fetch tickets from API
   const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
@@ -57,14 +52,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
-      setPaginationState({
-        pageNumber: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: response.data.totalPages,
-        hasPrevious: response.data.hasPrevious,
-        hasNext: response.data.hasNext,
-      });
+      // Note: Using client-side pagination now, so we don't need to store paginationState
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -323,13 +311,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     cancelTicket(ticketId, reason);
   };
 
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    fetchTickets(page, paginationState.pageSize);
+  // Ticket pagination handlers (client-side pagination for filtered results)
+  const handleTicketPageChange = (page: number) => {
+    setTicketPageNumber(page);
   };
 
-  const handlePageSizeChange = (size: number) => {
-    fetchTickets(1, size); // Reset to page 1 when changing page size
+  const handleTicketPageSizeChange = (size: number) => {
+    setTicketPageSize(size);
+    setTicketPageNumber(1); // Reset to page 1 when changing page size
   };
 
   // Location pagination handlers
@@ -532,14 +521,20 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   staffList={adminStaffList}
                   onAssignTicket={handleAssignTicket}
                   onViewTicket={setSelectedTicketForReview}
-                  pageNumber={paginationState.pageNumber}
-                  pageSize={paginationState.pageSize}
-                  totalPages={paginationState.totalPages}
-                  totalCount={paginationState.totalCount}
-                  hasPrevious={paginationState.hasPrevious}
-                  hasNext={paginationState.hasNext}
-                  onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
+                  searchQuery={ticketSearchQuery}
+                  filterStatus={ticketFilterStatus}
+                  onSearchChange={(query) => {
+                    setTicketSearchQuery(query);
+                    setTicketPageNumber(1); // Reset to page 1 when searching
+                  }}
+                  onFilterStatusChange={(status) => {
+                    setTicketFilterStatus(status);
+                    setTicketPageNumber(1); // Reset to page 1 when filtering
+                  }}
+                  pageNumber={ticketPageNumber}
+                  pageSize={ticketPageSize}
+                  onPageChange={handleTicketPageChange}
+                  onPageSizeChange={handleTicketPageSizeChange}
                 />
               )}
             </>
