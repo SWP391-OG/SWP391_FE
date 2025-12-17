@@ -5,7 +5,6 @@ import { useCategories } from '../../hooks/useCategories';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
-import { useOverdueTickets } from '../../hooks/useOverdueTickets';
 import { ticketService } from '../../services/ticketService';
 import { campusService, type Campus } from '../../services/campusService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
@@ -22,9 +21,8 @@ import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
 import ReportsPage from '../../components/admin/ReportsPage';
-import OverdueTicketsPanel from '../../components/admin/OverdueTicketsPanel';
 
-type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports' | 'overdue';
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports';
 
 interface AdminPageProps {
   currentAdminId?: string;
@@ -37,7 +35,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { departments, createDepartment, updateDepartment, updateDepartmentStatus, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
-  const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
@@ -183,9 +180,12 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Search and filter state
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [categoryFilterStatus, setCategoryFilterStatus] = useState<string>('all');
   const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
+  const [departmentFilterStatus, setDepartmentFilterStatus] = useState<string>('all');
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
+  const [locationFilterCampus, setLocationFilterCampus] = useState<string>('all');
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
   const [userSearchQuery, setUserSearchQuery] = useState('');
 
@@ -355,21 +355,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               Quản lý Tickets
             </button>
 
-            {/* Overdue/Escalate - Critical tickets */}
-            <button
-              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                activeTab === 'overdue'
-                  ? 'bg-red-50 text-red-700 font-semibold border-l-4 border-red-600'
-                  : 'text-red-600 font-medium hover:bg-red-50 hover:text-red-700'
-              }`}
-              onClick={() => setActiveTab('overdue')}
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🔴</span>
-                <span>Tickets Quá Hạn ({overdueTickets.length})</span>
-              </span>
-            </button>
-            
             {/* Members submenu */}
             <div>
               <button
@@ -515,7 +500,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               categories={adminCategories}
               departments={adminDepartments}
               searchQuery={categorySearchQuery}
+              filterStatus={categoryFilterStatus}
               onSearchChange={setCategorySearchQuery}
+              onFilterStatusChange={setCategoryFilterStatus}
               onAddClick={() => {
                 setEditingCategory(null);
                 setCategoryFormData({
@@ -552,7 +539,9 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             <DepartmentList
               departments={adminDepartments}
               searchQuery={departmentSearchQuery}
+              filterStatus={departmentFilterStatus}
               onSearchChange={setDepartmentSearchQuery}
+              onFilterStatusChange={setDepartmentFilterStatus}
               onAddClick={() => {
                 setEditingDept(null);
                 setDeptFormData({ deptCode: '', deptName: '', status: 'ACTIVE' });
@@ -577,9 +566,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               loading={locationsLoading}
               searchQuery={locationSearchQuery}
               filterStatus={locationFilterStatus}
+              filterCampus={locationFilterCampus}
               campuses={campuses}
               onSearchChange={setLocationSearchQuery}
               onFilterStatusChange={setLocationFilterStatus}
+              onFilterCampusChange={setLocationFilterCampus}
               onAddClick={() => {
                 setEditingLocation(null);
                 setLocationFormData({
@@ -696,17 +687,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Overdue Tickets / Escalation Management */}
-          {activeTab === 'overdue' && (
-            <OverdueTicketsPanel
-              overdueTickets={overdueTickets}
-              loading={overdueLoading}
-              error={overdueError}
-              onEscalate={escalateTicket}
-              isEscalating={isEscalating}
-              onRefresh={refetchOverdue}
-            />
-          )}
         </div>
       </div>
 

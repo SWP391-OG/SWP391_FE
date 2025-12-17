@@ -7,9 +7,11 @@ interface LocationListProps {
   loading?: boolean;
   searchQuery: string;
   filterStatus: string;
+  filterCampus: string;
   campuses?: Campus[];
   onSearchChange: (query: string) => void;
   onFilterStatusChange: (status: string) => void;
+  onFilterCampusChange: (campus: string) => void;
   onAddClick: () => void;
   onEditClick: (location: Location) => void;
 }
@@ -19,21 +21,61 @@ const LocationList = ({
   loading = false,
   searchQuery,
   filterStatus,
+  filterCampus,
   campuses = [],
   onSearchChange,
   onFilterStatusChange,
+  onFilterCampusChange,
   onAddClick,
   onEditClick,
 }: LocationListProps) => {
   const filteredLocations = locations.filter((location) => {
+    // Filter by status
     if (filterStatus !== 'all' && location.status !== filterStatus) {
       return false;
     }
+    
+    // Filter by campus
+    if (filterCampus !== 'all') {
+      // Find the selected campus from campuses array
+      const selectedCampus = campuses.find(c => 
+        c.campusCode === filterCampus || 
+        c.campusId?.toString() === filterCampus
+      );
+      
+      if (selectedCampus) {
+        // Match by campusCode or campusId
+        const matchesCampus = 
+          location.campusCode === selectedCampus.campusCode ||
+          location.campusId === selectedCampus.campusId;
+        if (!matchesCampus) {
+          return false;
+        }
+      } else {
+        // Fallback: direct comparison if campus not found in array
+        const matchesCampus = 
+          location.campusCode === filterCampus ||
+          location.campusId?.toString() === filterCampus;
+        if (!matchesCampus) {
+          return false;
+        }
+      }
+    }
+    
+    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesCode = location.code?.toLowerCase().includes(query);
       const matchesName = location.name?.toLowerCase().includes(query);
-      if (!matchesCode && !matchesName) {
+      // Also search by campus name
+      const campusName = location.campusName 
+        || campuses.find(c => 
+            c.campusCode === location.campusCode || 
+            c.campusId === location.campusId
+          )?.campusName
+        || '';
+      const matchesCampusName = campusName.toLowerCase().includes(query);
+      if (!matchesCode && !matchesName && !matchesCampusName) {
         return false;
       }
     }
@@ -58,11 +100,23 @@ const LocationList = ({
       <div className="flex gap-4 mb-6 items-center">
         <input
           type="text"
-          placeholder="Tìm kiếm theo mã địa điểm, tên địa điểm..."
+          placeholder="Tìm kiếm theo mã địa điểm, tên địa điểm, campus..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
+        <select
+          value={filterCampus}
+          onChange={(e) => onFilterCampusChange(e.target.value)}
+          className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[180px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+        >
+          <option value="all">Tất cả Campus</option>
+          {campuses.map((campus) => (
+            <option key={campus.campusCode || campus.campusId} value={campus.campusCode || campus.campusId?.toString() || ''}>
+              {campus.campusName || campus.campusCode}
+            </option>
+          ))}
+        </select>
         <select
           value={filterStatus}
           onChange={(e) => onFilterStatusChange(e.target.value)}

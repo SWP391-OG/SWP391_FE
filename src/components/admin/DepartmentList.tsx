@@ -3,7 +3,9 @@ import type { Department } from '../../types';
 interface DepartmentListProps {
   departments: Department[];
   searchQuery: string;
+  filterStatus: string;
   onSearchChange: (query: string) => void;
+  onFilterStatusChange: (status: string) => void;
   onAddClick: () => void;
   onEditClick: (department: Department) => void;
 }
@@ -11,16 +13,31 @@ interface DepartmentListProps {
 const DepartmentList = ({
   departments,
   searchQuery,
+  filterStatus,
   onSearchChange,
+  onFilterStatusChange,
   onAddClick,
   onEditClick,
 }: DepartmentListProps) => {
   const filteredDepartments = departments.filter((dept) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    const matchesCode = dept.deptCode?.toLowerCase().includes(query);
-    const matchesName = dept.deptName?.toLowerCase().includes(query);
-    return matchesCode || matchesName;
+    // Filter by status
+    if (filterStatus !== 'all') {
+      const deptStatus = dept.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+      if (deptStatus !== filterStatus) {
+        return false;
+      }
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesCode = dept.deptCode?.toLowerCase().includes(query);
+      const matchesName = dept.deptName?.toLowerCase().includes(query);
+      if (!matchesCode && !matchesName) {
+        return false;
+      }
+    }
+    return true;
   });
 
   return (
@@ -37,15 +54,24 @@ const DepartmentList = ({
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search and Filter */}
+      <div className="flex gap-4 mb-6 items-center">
         <input
           type="text"
           placeholder="Tìm kiếm theo mã hoặc tên bộ phận..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
+        <select
+          value={filterStatus}
+          onChange={(e) => onFilterStatusChange(e.target.value)}
+          className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[150px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+        >
+          <option value="all">Tất cả</option>
+          <option value="ACTIVE">Hoạt động</option>
+          <option value="INACTIVE">Không hoạt động</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">

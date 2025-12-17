@@ -4,7 +4,9 @@ interface CategoryListProps {
   categories: Category[];
   departments: Department[];
   searchQuery: string;
+  filterStatus: string;
   onSearchChange: (query: string) => void;
+  onFilterStatusChange: (status: string) => void;
   onAddClick: () => void;
   onEditClick: (category: Category) => void;
 }
@@ -13,16 +15,41 @@ const CategoryList = ({
   categories,
   departments,
   searchQuery,
+  filterStatus,
   onSearchChange,
+  onFilterStatusChange,
   onAddClick,
   onEditClick,
 }: CategoryListProps) => {
   const filteredCategories = categories.filter((cat) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    const matchesCode = cat.categoryCode?.toLowerCase().includes(query);
-    const matchesName = cat.categoryName?.toLowerCase().includes(query);
-    return matchesCode || matchesName;
+    // Filter by status
+    if (filterStatus !== 'all') {
+      const catStatus = cat.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+      if (catStatus !== filterStatus) {
+        return false;
+      }
+    }
+    
+    // Filter by search query (code, name, or department name)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesCode = cat.categoryCode?.toLowerCase().includes(query);
+      const matchesName = cat.categoryName?.toLowerCase().includes(query);
+      
+      // Search by department name
+      const department = departments.find(d => {
+        const dId = typeof d.id === 'number' ? d.id : parseInt(String(d.id), 10);
+        const catDeptId = typeof cat.departmentId === 'number' ? cat.departmentId : parseInt(String(cat.departmentId), 10);
+        return dId === catDeptId;
+      });
+      const deptName = department?.deptName || department?.name || '';
+      const matchesDepartment = deptName.toLowerCase().includes(query);
+      
+      if (!matchesCode && !matchesName && !matchesDepartment) {
+        return false;
+      }
+    }
+    return true;
   });
 
   return (
@@ -39,15 +66,24 @@ const CategoryList = ({
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search and Filter */}
+      <div className="flex gap-4 mb-6 items-center">
         <input
           type="text"
-          placeholder="Tìm kiếm theo mã category, tên category..."
+          placeholder="Tìm kiếm theo mã category, tên category, bộ phận..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
+        <select
+          value={filterStatus}
+          onChange={(e) => onFilterStatusChange(e.target.value)}
+          className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[150px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+        >
+          <option value="all">Tất cả</option>
+          <option value="ACTIVE">Hoạt động</option>
+          <option value="INACTIVE">Không hoạt động</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
