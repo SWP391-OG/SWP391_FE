@@ -5,7 +5,6 @@ import { useCategories } from '../../hooks/useCategories';
 import { useDepartments } from '../../hooks/useDepartments';
 import { useLocations } from '../../hooks/useLocations';
 import { useUsers } from '../../hooks/useUsers';
-import { useOverdueTickets } from '../../hooks/useOverdueTickets';
 import { ticketService } from '../../services/ticketService';
 import { campusService, type Campus } from '../../services/campusService';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
@@ -22,9 +21,8 @@ import UserForm from '../../components/admin/UserForm';
 import UserList from '../../components/admin/UserList';
 import TicketsTable from '../../components/admin/TicketsTable';
 import ReportsPage from '../../components/admin/ReportsPage';
-import OverdueTicketsPanel from '../../components/admin/OverdueTicketsPanel';
 
-type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports' | 'overdue';
+type AdminTab = 'categories' | 'departments' | 'locations' | 'tickets' | 'staff' | 'users' | 'reports';
 
 interface AdminPageProps {
   currentAdminId?: string;
@@ -37,21 +35,15 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { departments, createDepartment, updateDepartment, updateDepartmentStatus, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
-  const { overdueTickets, loading: overdueLoading, error: overdueError, refetch: refetchOverdue, escalateTicket, isEscalating } = useOverdueTickets();
 
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
-  const [paginationState, setPaginationState] = useState({
-    pageNumber: 1,
-    pageSize: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasPrevious: false,
-    hasNext: false,
-  });
-
+  const [ticketSearchQuery, setTicketSearchQuery] = useState('');
+  const [ticketFilterStatus, setTicketFilterStatus] = useState<string>('all');
+  const [ticketPageNumber, setTicketPageNumber] = useState(1);
+  const [ticketPageSize, setTicketPageSize] = useState(10);
   // Fetch tickets from API
   const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
@@ -60,14 +52,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
-      setPaginationState({
-        pageNumber: response.data.pageNumber,
-        pageSize: response.data.pageSize,
-        totalCount: response.data.totalCount,
-        totalPages: response.data.totalPages,
-        hasPrevious: response.data.hasPrevious,
-        hasNext: response.data.hasNext,
-      });
+      // Note: Using client-side pagination now, so we don't need to store paginationState
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -183,16 +168,24 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   // Search and filter state
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
+  const [categoryFilterStatus, setCategoryFilterStatus] = useState<string>('all');
+  const [categoryPageNumber, setCategoryPageNumber] = useState(1);
+  const [categoryPageSize, setCategoryPageSize] = useState(10);
   const [departmentSearchQuery, setDepartmentSearchQuery] = useState('');
+  const [departmentFilterStatus, setDepartmentFilterStatus] = useState<string>('all');
+  const [departmentPageNumber, setDepartmentPageNumber] = useState(1);
+  const [departmentPageSize, setDepartmentPageSize] = useState(10);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
   const [locationFilterStatus, setLocationFilterStatus] = useState<string>('all');
+  const [locationFilterCampus, setLocationFilterCampus] = useState<string>('all');
+  const [locationPageNumber, setLocationPageNumber] = useState(1);
+  const [locationPageSize, setLocationPageSize] = useState(10);
   const [staffSearchQuery, setStaffSearchQuery] = useState('');
+  const [staffPageNumber, setStaffPageNumber] = useState(1);
+  const [staffPageSize, setStaffPageSize] = useState(10);
   const [userSearchQuery, setUserSearchQuery] = useState('');
-
-  // Pagination
-  const [usersPage, setUsersPage] = useState(1);
-  const [staffPage, setStaffPage] = useState(1);
-  const itemsPerPage = 10;
+  const [userPageNumber, setUserPageNumber] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(10);
 
   // Auto-open submenu
   useEffect(() => {
@@ -291,8 +284,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return staffList;
   }, [getStaffUsers, departments]);
 
-  const totalStaffPages = Math.ceil(getStaffUsers.length / itemsPerPage);
-
   // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
   const studentUsers = useMemo(() => {
     return getStudentUsers
@@ -302,8 +293,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         return bTime - aTime;
       });
   }, [getStudentUsers]);
-
-  const totalUsersPages = Math.ceil(studentUsers.length / itemsPerPage);
 
   // Handlers
   const handleAssignTicket = (ticketId: string, staffId: string) => {
@@ -322,13 +311,64 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     cancelTicket(ticketId, reason);
   };
 
-  // Pagination handlers
-  const handlePageChange = (page: number) => {
-    fetchTickets(page, paginationState.pageSize);
+  // Ticket pagination handlers (client-side pagination for filtered results)
+  const handleTicketPageChange = (page: number) => {
+    setTicketPageNumber(page);
   };
 
-  const handlePageSizeChange = (size: number) => {
-    fetchTickets(1, size); // Reset to page 1 when changing page size
+  const handleTicketPageSizeChange = (size: number) => {
+    setTicketPageSize(size);
+    setTicketPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Location pagination handlers
+  const handleLocationPageChange = (page: number) => {
+    setLocationPageNumber(page);
+  };
+
+  const handleLocationPageSizeChange = (size: number) => {
+    setLocationPageSize(size);
+    setLocationPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Category pagination handlers
+  const handleCategoryPageChange = (page: number) => {
+    setCategoryPageNumber(page);
+  };
+
+  const handleCategoryPageSizeChange = (size: number) => {
+    setCategoryPageSize(size);
+    setCategoryPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Department pagination handlers
+  const handleDepartmentPageChange = (page: number) => {
+    setDepartmentPageNumber(page);
+  };
+
+  const handleDepartmentPageSizeChange = (size: number) => {
+    setDepartmentPageSize(size);
+    setDepartmentPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // Staff pagination handlers
+  const handleStaffPageChange = (page: number) => {
+    setStaffPageNumber(page);
+  };
+
+  const handleStaffPageSizeChange = (size: number) => {
+    setStaffPageSize(size);
+    setStaffPageNumber(1); // Reset to page 1 when changing page size
+  };
+
+  // User pagination handlers
+  const handleUserPageChange = (page: number) => {
+    setUserPageNumber(page);
+  };
+
+  const handleUserPageSizeChange = (size: number) => {
+    setUserPageSize(size);
+    setUserPageNumber(1); // Reset to page 1 when changing page size
   };
 
 
@@ -355,21 +395,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               Quản lý Tickets
             </button>
 
-            {/* Overdue/Escalate - Critical tickets */}
-            <button
-              className={`py-2.5 px-4 rounded-md cursor-pointer text-sm text-left transition-all duration-200 ${
-                activeTab === 'overdue'
-                  ? 'bg-red-50 text-red-700 font-semibold border-l-4 border-red-600'
-                  : 'text-red-600 font-medium hover:bg-red-50 hover:text-red-700'
-              }`}
-              onClick={() => setActiveTab('overdue')}
-            >
-              <span className="flex items-center gap-2">
-                <span className="text-lg">🔴</span>
-                <span>Tickets Quá Hạn ({overdueTickets.length})</span>
-              </span>
-            </button>
-            
             {/* Members submenu */}
             <div>
               <button
@@ -399,7 +424,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('staff');
-                      setStaffPage(1);
+                      setStaffPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -413,7 +438,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                     }`}
                     onClick={() => {
                       setActiveTab('users');
-                      setUsersPage(1);
+                      setUserPageNumber(1);
                       setShowMembersSubmenu(true);
                     }}
                   >
@@ -496,14 +521,20 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   staffList={adminStaffList}
                   onAssignTicket={handleAssignTicket}
                   onViewTicket={setSelectedTicketForReview}
-                  pageNumber={paginationState.pageNumber}
-                  pageSize={paginationState.pageSize}
-                  totalPages={paginationState.totalPages}
-                  totalCount={paginationState.totalCount}
-                  hasPrevious={paginationState.hasPrevious}
-                  hasNext={paginationState.hasNext}
-                  onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
+                  searchQuery={ticketSearchQuery}
+                  filterStatus={ticketFilterStatus}
+                  onSearchChange={(query) => {
+                    setTicketSearchQuery(query);
+                    setTicketPageNumber(1); // Reset to page 1 when searching
+                  }}
+                  onFilterStatusChange={(status) => {
+                    setTicketFilterStatus(status);
+                    setTicketPageNumber(1); // Reset to page 1 when filtering
+                  }}
+                  pageNumber={ticketPageNumber}
+                  pageSize={ticketPageSize}
+                  onPageChange={handleTicketPageChange}
+                  onPageSizeChange={handleTicketPageSizeChange}
                 />
               )}
             </>
@@ -515,7 +546,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               categories={adminCategories}
               departments={adminDepartments}
               searchQuery={categorySearchQuery}
-              onSearchChange={setCategorySearchQuery}
+              filterStatus={categoryFilterStatus}
+              onSearchChange={(query) => {
+                setCategorySearchQuery(query);
+                setCategoryPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setCategoryFilterStatus(status);
+                setCategoryPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={categoryPageNumber}
+              pageSize={categoryPageSize}
+              onPageChange={handleCategoryPageChange}
+              onPageSizeChange={handleCategoryPageSizeChange}
               onAddClick={() => {
                 setEditingCategory(null);
                 setCategoryFormData({
@@ -552,7 +595,19 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             <DepartmentList
               departments={adminDepartments}
               searchQuery={departmentSearchQuery}
-              onSearchChange={setDepartmentSearchQuery}
+              filterStatus={departmentFilterStatus}
+              onSearchChange={(query) => {
+                setDepartmentSearchQuery(query);
+                setDepartmentPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setDepartmentFilterStatus(status);
+                setDepartmentPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={departmentPageNumber}
+              pageSize={departmentPageSize}
+              onPageChange={handleDepartmentPageChange}
+              onPageSizeChange={handleDepartmentPageSizeChange}
               onAddClick={() => {
                 setEditingDept(null);
                 setDeptFormData({ deptCode: '', deptName: '', status: 'ACTIVE' });
@@ -577,9 +632,24 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               loading={locationsLoading}
               searchQuery={locationSearchQuery}
               filterStatus={locationFilterStatus}
+              filterCampus={locationFilterCampus}
               campuses={campuses}
-              onSearchChange={setLocationSearchQuery}
-              onFilterStatusChange={setLocationFilterStatus}
+              onSearchChange={(query) => {
+                setLocationSearchQuery(query);
+                setLocationPageNumber(1); // Reset to page 1 when searching
+              }}
+              onFilterStatusChange={(status) => {
+                setLocationFilterStatus(status);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              onFilterCampusChange={(campus) => {
+                setLocationFilterCampus(campus);
+                setLocationPageNumber(1); // Reset to page 1 when filtering
+              }}
+              pageNumber={locationPageNumber}
+              pageSize={locationPageSize}
+              onPageChange={handleLocationPageChange}
+              onPageSizeChange={handleLocationPageSizeChange}
               onAddClick={() => {
                 setEditingLocation(null);
                 setLocationFormData({
@@ -617,11 +687,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
-              currentPage={staffPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalStaffPages}
-              onSearchChange={setStaffSearchQuery}
-              onPageChange={setStaffPage}
+              onSearchChange={(query) => {
+                setStaffSearchQuery(query);
+                setStaffPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={staffPageNumber}
+              pageSize={staffPageSize}
+              onPageChange={handleStaffPageChange}
+              onPageSizeChange={handleStaffPageSizeChange}
               onAddClick={() => {
                 setEditingStaff(null);
                 setStaffFormData({
@@ -666,11 +739,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               users={studentUsers}
               loading={usersLoading}
               searchQuery={userSearchQuery}
-              currentPage={usersPage}
-              itemsPerPage={itemsPerPage}
-              totalPages={totalUsersPages}
-              onSearchChange={setUserSearchQuery}
-              onPageChange={setUsersPage}
+              onSearchChange={(query) => {
+                setUserSearchQuery(query);
+                setUserPageNumber(1); // Reset to page 1 when searching
+              }}
+              pageNumber={userPageNumber}
+              pageSize={userPageSize}
+              onPageChange={handleUserPageChange}
+              onPageSizeChange={handleUserPageSizeChange}
               onEditClick={(user) => {
                 setEditingUser(user);
                 setUserFormData({
@@ -696,17 +772,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Overdue Tickets / Escalation Management */}
-          {activeTab === 'overdue' && (
-            <OverdueTicketsPanel
-              overdueTickets={overdueTickets}
-              loading={overdueLoading}
-              error={overdueError}
-              onEscalate={escalateTicket}
-              isEscalating={isEscalating}
-              onRefresh={refetchOverdue}
-            />
-          )}
         </div>
       </div>
 
@@ -1091,7 +1156,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
                 
-                setStaffPage(1);
+                setStaffPageNumber(1);
               }
               
               // Reload users sau khi tạo/cập nhật

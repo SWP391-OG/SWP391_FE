@@ -7,6 +7,11 @@ interface TicketsTableProps {
   staffList?: unknown; // Not used but kept for compatibility
   onAssignTicket?: unknown; // Not used but kept for compatibility
   onViewTicket: (ticket: Ticket | TicketFromApi) => void;
+  // Search and filter props
+  searchQuery?: string;
+  filterStatus?: string;
+  onSearchChange?: (query: string) => void;
+  onFilterStatusChange?: (status: string) => void;
   // Pagination props
   pageNumber?: number;
   pageSize?: number;
@@ -27,6 +32,10 @@ const TicketsTable = ({
   tickets,
   locations,
   onViewTicket,
+  searchQuery = '',
+  filterStatus = 'all',
+  onSearchChange,
+  onFilterStatusChange,
   pageNumber = 1,
   pageSize = 10,
   totalPages = 1,
@@ -36,6 +45,57 @@ const TicketsTable = ({
   onPageChange,
   onPageSizeChange,
 }: TicketsTableProps) => {
+  // Filter tickets by search query and status
+  const filteredTickets = tickets.filter((ticket) => {
+    const isFromApi = isTicketFromApi(ticket);
+    const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
+    const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
+    
+    // Filter by status
+    if (filterStatus !== 'all') {
+      const ticketStatus = ticket.status.toUpperCase();
+      const filterStatusUpper = filterStatus.toUpperCase();
+      
+      // Map filter values to API status values (both uppercase and lowercase)
+      const statusMap: Record<string, string[]> = {
+        'NEW': ['NEW', 'OPEN'],
+        'ASSIGNED': ['ASSIGNED', 'ACKNOWLEDGED'],
+        'IN_PROGRESS': ['IN_PROGRESS', 'IN-PROGRESS'],
+        'RESOLVED': ['RESOLVED'],
+        'CLOSED': ['CLOSED'],
+        'CANCELLED': ['CANCELLED'],
+      };
+      
+      const matchingStatuses = statusMap[filterStatusUpper] || [filterStatusUpper];
+      if (!matchingStatuses.some(s => ticketStatus === s)) {
+        return false;
+      }
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesCode = ticketCode?.toLowerCase().includes(query);
+      const matchesTitle = ticket.title?.toLowerCase().includes(query);
+      const matchesLocation = locationName?.toLowerCase().includes(query);
+      
+      if (!matchesCode && !matchesTitle && !matchesLocation) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+
+  // Calculate pagination for filtered tickets (client-side)
+  const filteredTotalCount = filteredTickets.length;
+  const filteredTotalPages = Math.ceil(filteredTotalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
+  const filteredHasPrevious = pageNumber > 1;
+  const filteredHasNext = pageNumber < filteredTotalPages;
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('vi-VN', {
@@ -73,6 +133,36 @@ const TicketsTable = ({
         </h3>
       </div>
 
+      {/* Search and Filter */}
+      {(onSearchChange || onFilterStatusChange) && (
+        <div className="flex gap-4 mb-6 items-center">
+          {onSearchChange && (
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo mã ticket, tiêu đề, vị trí..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            />
+          )}
+          {onFilterStatusChange && (
+            <select
+              value={filterStatus}
+              onChange={(e) => onFilterStatusChange(e.target.value)}
+              className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[180px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="NEW">Mới tạo</option>
+              <option value="ASSIGNED">Đã giao việc</option>
+              <option value="IN_PROGRESS">Đang xử lý</option>
+              <option value="RESOLVED">Chờ đánh giá</option>
+              <option value="CLOSED">Đã hoàn thành</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Tickets Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
@@ -106,8 +196,23 @@ const TicketsTable = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.length > 0 ? (
-                tickets.map((ticket) => {
+              {paginatedTickets.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-8 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-sm">
+                        {searchQuery || filterStatus !== 'all' 
+                          ? 'Không tìm thấy ticket nào phù hợp với bộ lọc' 
+                          : 'Không có ticket nào'}
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedTickets.map((ticket) => {
                   const isFromApi = isTicketFromApi(ticket);
                   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
                   const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
@@ -179,12 +284,6 @@ const TicketsTable = ({
                     </tr>
                   );
                 })
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-8 py-12 text-center text-gray-500">
-                    Không có ticket nào
-                  </td>
-                </tr>
               )}
             </tbody>
           </table>
@@ -192,14 +291,14 @@ const TicketsTable = ({
       </div>
 
       {/* Pagination */}
-      {totalPages > 0 && onPageChange && onPageSizeChange && (
+      {onPageChange && onPageSizeChange && (
         <Pagination
           pageNumber={pageNumber}
           pageSize={pageSize}
-          totalPages={totalPages}
-          totalCount={totalCount}
-          hasPrevious={hasPrevious}
-          hasNext={hasNext}
+          totalPages={filteredTotalPages}
+          totalCount={filteredTotalCount}
+          hasPrevious={filteredHasPrevious}
+          hasNext={filteredHasNext}
           onPageChange={onPageChange}
           onPageSizeChange={onPageSizeChange}
         />

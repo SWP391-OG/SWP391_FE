@@ -1,27 +1,63 @@
 import type { Department } from '../../types';
+import Pagination from '../shared/Pagination';
 
 interface DepartmentListProps {
   departments: Department[];
   searchQuery: string;
+  filterStatus: string;
   onSearchChange: (query: string) => void;
+  onFilterStatusChange: (status: string) => void;
   onAddClick: () => void;
   onEditClick: (department: Department) => void;
+  // Pagination props
+  pageNumber?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
 }
 
 const DepartmentList = ({
   departments,
   searchQuery,
+  filterStatus,
   onSearchChange,
+  onFilterStatusChange,
   onAddClick,
   onEditClick,
+  pageNumber = 1,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
 }: DepartmentListProps) => {
   const filteredDepartments = departments.filter((dept) => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    const matchesCode = dept.deptCode?.toLowerCase().includes(query);
-    const matchesName = dept.deptName?.toLowerCase().includes(query);
-    return matchesCode || matchesName;
+    // Filter by status
+    if (filterStatus !== 'all') {
+      const deptStatus = dept.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
+      if (deptStatus !== filterStatus) {
+        return false;
+      }
+    }
+    
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesCode = dept.deptCode?.toLowerCase().includes(query);
+      const matchesName = dept.deptName?.toLowerCase().includes(query);
+      if (!matchesCode && !matchesName) {
+        return false;
+      }
+    }
+    return true;
   });
+
+  // Calculate pagination
+  const totalCount = filteredDepartments.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const startIndex = (pageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedDepartments = filteredDepartments.slice(startIndex, endIndex);
+  const hasPrevious = pageNumber > 1;
+  const hasNext = pageNumber < totalPages;
 
   return (
     <>
@@ -37,15 +73,24 @@ const DepartmentList = ({
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search and Filter */}
+      <div className="flex gap-4 mb-6 items-center">
         <input
           type="text"
           placeholder="Tìm kiếm theo mã hoặc tên bộ phận..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+          className="flex-1 px-3 py-2.5 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
         />
+        <select
+          value={filterStatus}
+          onChange={(e) => onFilterStatusChange(e.target.value)}
+          className="px-3 py-2.5 border border-gray-300 rounded-md text-sm cursor-pointer bg-white min-w-[150px] focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+        >
+          <option value="all">Tất cả</option>
+          <option value="ACTIVE">Hoạt động</option>
+          <option value="INACTIVE">Không hoạt động</option>
+        </select>
       </div>
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
@@ -61,7 +106,20 @@ const DepartmentList = ({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredDepartments.map((dept) => (
+              {paginatedDepartments.length === 0 ? (
+                // Empty state
+                <tr>
+                  <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                      </svg>
+                      <p className="text-sm">Không tìm thấy bộ phận nào</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                paginatedDepartments.map((dept) => (
                 <tr key={dept.deptCode} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-4 text-sm text-gray-600 font-medium">
                     {dept.deptCode}
@@ -105,11 +163,26 @@ const DepartmentList = ({
                     </button>
                   </td>
                 </tr>
-              ))}
+              ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 0 && onPageChange && onPageSizeChange && (
+        <Pagination
+          pageNumber={pageNumber}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          hasPrevious={hasPrevious}
+          hasNext={hasNext}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      )}
     </>
   );
 };
