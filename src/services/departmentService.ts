@@ -432,7 +432,7 @@ export const departmentService = {
       console.log('🏢 Updating department status:', departmentId, status);
       
       const requestData: DepartmentStatusUpdateDto = {
-        id: departmentId,
+        departmentId: departmentId,
         status: status,
       };
       

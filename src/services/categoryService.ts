@@ -329,7 +329,7 @@ export const categoryService = {
       }
       
       const requestData: CategoryStatusUpdateDto = {
-        id: validatedCategoryId,
+        categoryId: validatedCategoryId,
         status: status,
       };
       
@@ -337,9 +337,9 @@ export const categoryService = {
       console.log('📋 Request data validation:', {
         originalCategoryId: categoryId,
         validatedCategoryId: validatedCategoryId,
-        id: requestData.id,
-        idType: typeof requestData.id,
-        idIsInteger: Number.isInteger(requestData.id),
+        id: requestData.categoryId,
+        idType: typeof requestData.categoryId,
+        idIsInteger: Number.isInteger(requestData.categoryId),
         status: requestData.status,
         statusType: typeof requestData.status
       });
