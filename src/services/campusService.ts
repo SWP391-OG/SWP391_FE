@@ -95,7 +95,7 @@ export const campusService = {
    */
   async getLocationsByCampus(campusCode: string): Promise<Location[]> {
     try {
-      const response = await apiClient.get<LocationApiResponse>(`/Campus/${campusCode}/locations`);
+      const response = await apiClient.get<LocationApiResponse>(`/Location/get-by/${campusCode}`);
       console.log('📍 Raw API response for locations:', response);
       
       if (response.status && response.data) {
