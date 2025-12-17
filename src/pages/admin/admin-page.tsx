@@ -688,7 +688,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {/* Reports */}
           {activeTab === 'reports' && (
             <ReportsPage
-              tickets={tickets}
+              tickets={apiTickets}
               categories={categories}
               departments={departments}
               users={users}
