@@ -65,7 +65,9 @@ export const useUsers = () => {
     email?: string;
     phoneNumber?: string;
     role?: UserRole;
+    roleId?: number;
     departmentId?: number;
+    password?: string;
   }) => {
     setLoading(true);
     setError(null);

@@ -92,7 +92,7 @@ const StaffList = ({
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Mã người dùng</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Họ tên</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Email</th>
-                <th className="px-4 py-4 text-left font-semibold text-gray-700">Vai trò</th>
+                {/* <th className="px-4 py-4 text-left font-semibold text-gray-700">Vai trò</th> */}
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Bộ phận</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Trạng thái</th>
                 <th className="px-4 py-4 text-left font-semibold text-gray-700">Thao tác</th>
@@ -127,6 +127,11 @@ const StaffList = ({
                 </tr>
               ) : (
                 paginatedFilteredStaff.map((staff: User) => {
+                  if (!staff) {
+                    console.warn('⚠️ Null staff in list');
+                    return null;
+                  }
+                  
                   const roleInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
                     'it-staff': { text: 'IT Staff', bg: 'bg-blue-100', textColor: 'text-blue-800' },
                     'facility-staff': { text: 'Facility Staff', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
@@ -150,11 +155,11 @@ const StaffList = ({
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {staff.email}
                       </td>
-                      <td className="px-4 py-4">
+                      {/* <td className="px-4 py-4">
                         <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${roleInfo.bg} ${roleInfo.textColor}`}>
                           {roleInfo.text}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-4 text-sm text-gray-600">
                         {staff.departmentName || '-'}
                       </td>

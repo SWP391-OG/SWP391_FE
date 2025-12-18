@@ -213,7 +213,7 @@ export const userService = {
 
   /**
    * Cập nhật user
-   * PUT /api/User/{userId} - có thể sửa userCode, fullName, email, phoneNumber, departmentId, roleId
+   * PUT /api/User/{userId}
    */
   async update(userId: number, updates: {
     userCode?: string;
@@ -221,7 +221,9 @@ export const userService = {
     email?: string;
     phoneNumber?: string;
     role?: UserRole;
+    roleId?: number;
     departmentId?: number;
+    password?: string;
   }): Promise<User> {
     try {
       console.log(`👥 Updating user ${userId}...`, updates);
@@ -231,10 +233,14 @@ export const userService = {
         fullName: updates.fullName,
         email: updates.email,
         phoneNumber: updates.phoneNumber,
-        roleId: updates.role ? ROLE_TO_ID_MAP[updates.role] : undefined,
+        roleId: updates.roleId || (updates.role ? ROLE_TO_ID_MAP[updates.role] : undefined),
         departmentId: updates.departmentId,
+        // Chỉ gửi passwordHash nếu có giá trị
+        ...(updates.password && updates.password.trim() ? { passwordHash: updates.password } : {}),
         // status KHÔNG gửi trong update (dùng updateStatus riêng)
       };
+      
+      console.log(`📤 Request payload:`, requestData);
       
       const response = await apiClient.put<UserSingleApiResponse>(`/User/${userId}`, requestData);
       
@@ -243,7 +249,26 @@ export const userService = {
         throw new Error(response.message || 'Failed to update user');
       }
 
-      console.log('✅ User updated successfully');
+      console.log('✅ User updated successfully:', response.message);
+      
+      // API có thể trả về data: null, trong trường hợp đó trả về user cũ
+      if (!response.data) {
+        console.warn('⚠️ No user data in response, using existing data');
+        // Trả về user object đơn giản với data đã update
+        return {
+          id: userId,
+          userCode: updates.userCode || '',
+          username: updates.email || '',
+          password: '',
+          fullName: updates.fullName || '',
+          email: updates.email || '',
+          phoneNumber: updates.phoneNumber,
+          role: updates.role || 'student',
+          roleId: updates.roleId?.toString() || '',
+          departmentId: updates.departmentId?.toString(),
+          status: 'active',
+        };
+      }
       
       return this.mapDtoToUser(response.data);
     } catch (error) {
@@ -311,7 +336,11 @@ export const userService = {
   /**
    * Helper: Map UserDto từ API sang User format của frontend
    */
-  mapDtoToUser(dto: UserDto): User {
+  mapDtoToUser(dto: UserDto | null | undefined): User {
+    if (!dto) {
+      throw new Error('Invalid user data received from API');
+    }
+    
     return {
       id: dto.id, // Use id (int32) from API
       userCode: dto.userCode,
@@ -321,10 +350,10 @@ export const userService = {
       email: dto.email,
       phoneNumber: dto.phoneNumber || undefined,
       role: ROLE_ID_MAP[dto.roleId] || 'student',
-      roleId: dto.roleId.toString(),
+      roleId: dto.roleId?.toString() || '',
       departmentId: dto.departmentId?.toString(),
       departmentName: dto.departmentName || undefined,
-      status: dto.status.toLowerCase() as 'active' | 'inactive' | 'banned',
+      status: (dto.status?.toLowerCase() || 'active') as 'active' | 'inactive' | 'banned',
       createdAt: dto.createdAt || undefined,
     };
   },
