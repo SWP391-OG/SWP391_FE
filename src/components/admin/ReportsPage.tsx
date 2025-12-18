@@ -1,3 +1,4 @@
+// Trang báo cáo trong admin: tổng hợp số liệu tickets theo thời gian, trạng thái, category, department
 import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, startOfMonth } from 'date-fns';
@@ -5,6 +6,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import type { Ticket, Category, Department, User, TicketFromApi } from '../../types';
 
+// Props nhận dữ liệu đã được load từ AdminPage
 interface ReportsPageProps {
   tickets: (Ticket | TicketFromApi)[];
   categories: Category[];
@@ -16,6 +18,7 @@ interface ReportsPageProps {
 
 type DateFilterType = 'all' | '7days' | 'month' | 'custom';
 
+// Component chính hiển thị dashboard báo cáo
 const ReportsPage = ({
   tickets,
   categories,
@@ -23,13 +26,13 @@ const ReportsPage = ({
   adminDepartments,
   ticketTotalCount = 0,
 }: ReportsPageProps) => {
-  // State for date filtering - Default to 7 days
+  // State filter theo thời gian - mặc định 7 ngày gần nhất
   const [dateFilter, setDateFilter] = useState<DateFilterType>('7days');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 7));
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Debug logging
+  // Debug logging: log nhanh số lượng dữ liệu đầu vào
   console.log('📊 ReportsPage Data:', {
     ticketsCount: tickets.length,
     categoriesCount: categories.length,
@@ -37,10 +40,10 @@ const ReportsPage = ({
     adminDepartmentsCount: adminDepartments.length,
   });
   
-  // Filter tickets by admin's departments
+  // Lọc tickets theo các bộ phận mà admin hiện tại quản lý
   const adminDepartmentIds = adminDepartments.map(d => d.id);
 
-  // Calculate date range for filtering
+  // Tính toán khoảng thời gian (startDate, endDate) dựa trên loại filter ngày
   const getDateRange = useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -64,6 +67,7 @@ const ReportsPage = ({
     return { startDate, endDate: today };
   }, [dateFilter, customStartDate, customEndDate]);
 
+  // Danh sách ticket đã được filter theo department của admin và theo khoảng thời gian
   const adminTickets = useMemo(() => {
     return tickets.filter(ticket => {
       // Handle both API tickets and local tickets
@@ -91,15 +95,15 @@ const ReportsPage = ({
     });
   }, [tickets, categories, adminDepartmentIds, getDateRange]);
 
-  // Total tickets statistics
+  // Tổng số ticket dùng cho thống kê (ưu tiên số count từ server nếu có)
   const totalTicketsCount = useMemo(() => {
     // Use server total count if available, otherwise use filtered tickets count
     return ticketTotalCount > 0 ? ticketTotalCount : adminTickets.length;
   }, [adminTickets, ticketTotalCount]);
 
-  // Cancelled and Completed tickets statistics - ALL STATUSES (count from FILTERED tickets by date range)
+  // Thống kê theo trạng thái: đếm tất cả trạng thái từ danh sách tickets đã filter theo thời gian
   const ticketStatusReport = useMemo(() => {
-    // Debug: Log all statuses to see what we have
+    // Debug: log lại toàn bộ status để dễ kiểm tra
     const statusCounts: Record<string, number> = {};
     adminTickets.forEach(t => {
       const status = String(t.status).toLowerCase();
@@ -108,7 +112,7 @@ const ReportsPage = ({
     console.log('📊 Filtered ticket statuses (by date range):', statusCounts);
     console.log('📊 Total filtered tickets:', adminTickets.length);
     
-    // Count by all statuses from FILTERED tickets (apply date range filter)
+    // Đếm số lượng ticket cho từng trạng thái dựa trên danh sách đã filter
     const closedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
     const resolvedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'resolved').length;
     const pendingReviewTickets = resolvedTickets; // resolved = chờ đánh giá
@@ -130,11 +134,11 @@ const ReportsPage = ({
       total: totalFilteredCount
     });
 
-    // Calculate percentages based on filtered count
+    // Tính phần trăm theo tổng số ticket đã filter
     const completedPercentage = totalFilteredCount > 0 ? Math.round((closedTickets / totalFilteredCount) * 100) : 0;
     const cancelledPercentage = totalFilteredCount > 0 ? Math.round((cancelledTickets / totalFilteredCount) * 100) : 0;
 
-    // Build status data - Include ALL statuses (even with 0 tickets) with fixed order
+    // Chuẩn bị data hiển thị chi tiết từng trạng thái (kể cả khi value = 0)
     const statusData = [
       { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
@@ -144,7 +148,7 @@ const ReportsPage = ({
       { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
     ]; // Show all statuses always
 
-    // Build pie chart data with only non-zero values
+    // Data cho biểu đồ tròn: chỉ lấy các trạng thái có số lượng > 0
     const pieDataFiltered = statusData.filter(s => s.value > 0);
     const pieChartData = pieDataFiltered.length > 0 
       ? pieDataFiltered 
@@ -167,7 +171,7 @@ const ReportsPage = ({
     };
   }, [adminTickets]);
 
-  // Category statistics - most frequent issues
+  // Thống kê theo Category: loại lỗi xuất hiện nhiều nhất trong khoảng thời gian đã chọn
   const categoryStatistics = useMemo(() => {
     const categoryCount: Record<string, { count: number; categoryName: string; categoryId: string | number }> = {};
 
@@ -206,7 +210,7 @@ const ReportsPage = ({
       .slice(0, 10); // Top 10 categories
   }, [adminTickets, categories]);
 
-  // Department statistics - departments handling most errors
+  // Thống kê theo Phòng ban: phòng ban xử lý nhiều lỗi nhất
   const departmentStatistics = useMemo(() => {
     const departmentCount: Record<string, { count: number; departmentName: string; departmentId: string | number }> = {};
 

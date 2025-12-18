@@ -1,6 +1,8 @@
+// Danh sách Staff trong admin: tìm kiếm theo nhiều trường và phân trang client-side
 import type { User } from '../../types';
 import Pagination from '../shared/Pagination';
 
+// Props cho component hiển thị danh sách Staff
 interface StaffListProps {
   staffUsers: User[];
   loading?: boolean;
@@ -15,6 +17,7 @@ interface StaffListProps {
   onPageSizeChange?: (size: number) => void;
 }
 
+// Component hiển thị bảng Staff + thanh search + phân trang
 const StaffList = ({
   staffUsers,
   loading = false,
@@ -27,6 +30,7 @@ const StaffList = ({
   onPageChange,
   onPageSizeChange,
 }: StaffListProps) => {
+  // Lọc staff theo từ khóa (mã, họ tên, email, vai trò, bộ phận)
   const filteredStaff = staffUsers.filter((staff: User) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -46,7 +50,7 @@ const StaffList = ({
     );
   });
 
-  // Calculate pagination
+  // Tính toán phân trang cho danh sách staff đã lọc
   const totalCount = filteredStaff.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (pageNumber - 1) * pageSize;

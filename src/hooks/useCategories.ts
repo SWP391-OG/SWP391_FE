@@ -1,16 +1,20 @@
+// Hook quản lý state và thao tác CRUD cho Danh mục (Category) ở phía client
 import { useState, useEffect } from 'react';
 import type { Category, CategoryRequestDto, CategoryUpdateDto } from '../types';
 import { categoryService } from '../services/categoryService';
 
 export const useCategories = () => {
+  // Danh sách category đang có
   const [categories, setCategories] = useState<Category[]>([]);
+  // Trạng thái loading chung cho các thao tác với category
   const [loading, setLoading] = useState(false);
 
-  // Load categories
+  // Khi hook được mount, tự động load danh sách category từ API
   useEffect(() => {
     loadCategories();
   }, []);
 
+  // Gọi API lấy toàn bộ categories và lưu vào state
   const loadCategories = async () => {
     setLoading(true);
     try {
@@ -25,7 +29,7 @@ export const useCategories = () => {
     }
   };
 
-  // Tạo category mới
+  // Tạo category mới (gọi API rồi append vào state)
   const createCategory = async (category: CategoryRequestDto) => {
     try {
       const newCategory = await categoryService.create(category);
@@ -37,11 +41,11 @@ export const useCategories = () => {
     }
   };
 
-  // Cập nhật category
+  // Cập nhật thông tin category (code, name, departmentId, SLA)
   const updateCategory = async (categoryId: number, updates: CategoryUpdateDto) => {
     setLoading(true);
     
-    // Optimistic update: update UI immediately
+    // Optimistic update: cập nhật UI ngay lập tức trước khi API trả về
     const previousCategories = categories;
     setCategories(prevCategories =>
       prevCategories.map(c => {
@@ -66,12 +70,12 @@ export const useCategories = () => {
       // Add a small delay to ensure backend has committed the changes before reload
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Reload to get the latest data from backend (includes any server-side updates)
+      // Sau khi API thành công, reload lại từ backend để đồng bộ dữ liệu
       await loadCategories();
       return updated;
     } catch (error) {
       console.error('Error updating category:', error);
-      // Rollback optimistic update on error
+      // Nếu lỗi thì rollback về danh sách cũ
       setCategories(previousCategories);
       throw error;
     } finally {
@@ -79,11 +83,11 @@ export const useCategories = () => {
     }
   };
 
-  // Cập nhật trạng thái category
+  // Cập nhật trạng thái hoạt động / không hoạt động của category
   const updateCategoryStatus = async (categoryId: number, status: 'ACTIVE' | 'INACTIVE') => {
     setLoading(true);
     
-    // Optimistic update: update UI immediately
+    // Optimistic update: cập nhật trạng thái ngay trên UI trước
     const previousCategories = categories;
     setCategories(prevCategories =>
       prevCategories.map(c => {
@@ -102,11 +106,11 @@ export const useCategories = () => {
       // Add a small delay to ensure backend has committed the changes before reload
       await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Reload to get the latest data from backend
+      // Reload lại sau khi backend cập nhật xong
       await loadCategories();
     } catch (error) {
       console.error('Error updating category status:', error);
-      // Rollback optimistic update on error
+      // Lỗi thì trả UI về trạng thái cũ
       setCategories(previousCategories);
       throw error;
     } finally {
@@ -114,7 +118,7 @@ export const useCategories = () => {
     }
   };
 
-  // Xóa category
+  // Xóa category theo id (xóa cả trên API và cập nhật lại state)
   const deleteCategory = async (categoryId: number) => {
     try {
       await categoryService.delete(categoryId);
@@ -130,7 +134,7 @@ export const useCategories = () => {
     }
   };
 
-  // Get categories by department
+  // Lấy danh sách category theo một bộ phận cụ thể
   const getCategoriesByDepartment = async (departmentId: number) => {
     return categoryService.getByDepartment(departmentId);
   };

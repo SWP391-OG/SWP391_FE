@@ -1,7 +1,8 @@
+// Form tạo / chỉnh sửa Địa điểm trong admin
 import type { Location } from '../../types';
-
 import type { Campus } from '../../services/campusService';
 
+// Props cho LocationForm
 interface LocationFormProps {
   editingLocation: Location | null;
   locationFormData: {
@@ -17,6 +18,7 @@ interface LocationFormProps {
   onClose: () => void;
 }
 
+// Component modal cho phép admin thêm / sửa một địa điểm
 const LocationForm = ({
   editingLocation,
   locationFormData,

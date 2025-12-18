@@ -1,7 +1,9 @@
+// Bảng hiển thị danh sách Tickets trong admin (dữ liệu từ API, phân trang phía server)
 import type { Ticket, Location, TicketFromApi } from '../../types';
 import Pagination from '../shared/Pagination';
 import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// Props cho component TicketsTable - nhận sẵn dữ liệu đã phân trang từ API
 interface TicketsTableProps {
   tickets: Ticket[] | TicketFromApi[];
   locations: Location[];
@@ -24,11 +26,12 @@ interface TicketsTableProps {
   onPageSizeChange?: (size: number) => void;
 }
 
-// Helper function để check xem ticket có phải từ API không
+// Helper function để check xem ticket có phải dạng TicketFromApi (từ backend) không
 const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromApi => {
   return 'ticketCode' in ticket && 'requesterCode' in ticket;
 };
 
+// Component bảng Tickets: hỗ trợ search, filter trạng thái và điều khiển phân trang server-side
 const TicketsTable = ({
   tickets,
   locations,
@@ -46,10 +49,11 @@ const TicketsTable = ({
   onPageChange,
   onPageSizeChange,
 }: TicketsTableProps) => {
-  // Server-side pagination: tickets already come paginated from API
-  // No need for client-side filtering/pagination
+  // Phân trang phía server: danh sách tickets đã được API phân trang sẵn
+  // Không filter/paginate thêm ở phía client
   const paginatedTickets = tickets;
 
+  // Helper format ngày giờ theo chuẩn Việt Nam
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('vi-VN', {
@@ -61,6 +65,7 @@ const TicketsTable = ({
     }).format(date);
   };
 
+  // Mapping trạng thái backend -> màu sắc + nhãn tiếng Việt hiển thị trong bảng
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string; label: string }> = {
       'open': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
