@@ -1,8 +1,9 @@
+// Danh sách Địa điểm trong trang Admin: tìm kiếm, filter theo Campus / trạng thái và phân trang
 import type { Location } from '../../types';
-
 import type { Campus } from '../../services/campusService';
 import Pagination from '../shared/Pagination';
 
+// Props cho component hiển thị danh sách Địa điểm
 interface LocationListProps {
   locations: Location[];
   loading?: boolean;
@@ -22,6 +23,7 @@ interface LocationListProps {
   onPageSizeChange?: (size: number) => void;
 }
 
+// Component hiển thị bảng Địa điểm + thanh search/filter + phân trang
 const LocationList = ({
   locations,
   loading = false,
@@ -39,22 +41,23 @@ const LocationList = ({
   onPageChange,
   onPageSizeChange,
 }: LocationListProps) => {
+  // Lọc danh sách địa điểm theo trạng thái, campus và từ khóa tìm kiếm
   const filteredLocations = locations.filter((location) => {
-    // Filter by status
+    // Filter theo trạng thái (Hoạt động / Không hoạt động)
     if (filterStatus !== 'all' && location.status !== filterStatus) {
       return false;
     }
     
-    // Filter by campus
+    // Filter theo campus (theo campusCode hoặc campusId)
     if (filterCampus !== 'all') {
-      // Find the selected campus from campuses array
+      // Tìm campus đang được chọn trong danh sách campuses từ API
       const selectedCampus = campuses.find(c => 
         c.campusCode === filterCampus || 
         c.campusId?.toString() === filterCampus
       );
       
       if (selectedCampus) {
-        // Match by campusCode or campusId
+        // So khớp theo campusCode hoặc campusId
         const matchesCampus = 
           location.campusCode === selectedCampus.campusCode ||
           location.campusId === selectedCampus.campusId;
@@ -62,7 +65,7 @@ const LocationList = ({
           return false;
         }
       } else {
-        // Fallback: direct comparison if campus not found in array
+        // Fallback: so khớp trực tiếp nếu không tìm thấy trong mảng campuses
         const matchesCampus = 
           location.campusCode === filterCampus ||
           location.campusId?.toString() === filterCampus;
@@ -72,12 +75,12 @@ const LocationList = ({
       }
     }
     
-    // Filter by search query
+    // Filter theo từ khóa search (mã địa điểm, tên địa điểm, tên campus)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesCode = location.code?.toLowerCase().includes(query);
       const matchesName = location.name?.toLowerCase().includes(query);
-      // Also search by campus name
+      // Đồng thời tìm theo tên campus hiển thị cho người dùng
       const campusName = location.campusName 
         || campuses.find(c => 
             c.campusCode === location.campusCode || 
@@ -92,7 +95,7 @@ const LocationList = ({
     return true;
   });
 
-  // Calculate pagination
+  // Tính toán số trang và cắt dữ liệu cho phân trang client-side
   const totalCount = filteredLocations.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (pageNumber - 1) * pageSize;

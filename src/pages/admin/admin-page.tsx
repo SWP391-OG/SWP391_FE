@@ -1,3 +1,4 @@
+// Trang quản trị chính của Admin: quản lý Tickets, Danh mục, Bộ phận, Địa điểm, Thành viên, Người dùng và Báo cáo
 import { useState, useMemo, useEffect } from 'react';
 import type { UserRole, User, Department, Location, Category, Priority, Ticket, TicketFromApi } from '../../types';
 import { useTickets } from '../../hooks/useTickets';
@@ -29,16 +30,17 @@ interface AdminPageProps {
 }
 
 const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
-  // Hooks
+  // Hooks lấy dữ liệu và hàm thao tác cho tickets, categories, departments, locations, users
   const { tickets, assignTicket, cancelTicket, updateTicketStatus, getTicketsByUserId } = useTickets();
   const { categories, createCategory, updateCategory, updateCategoryStatus, loadCategories } = useCategories();
   const { departments, createDepartment, updateDepartment, updateDepartmentStatus, loadDepartments } = useDepartments();
   const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
 
-  // State for API tickets (server-side pagination)
+  // State cho danh sách tickets từ API (phân trang phía server)
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
-  const [allTicketsForReports, setAllTicketsForReports] = useState<TicketFromApi[]>([]); // All tickets for reports (no pagination)
+  // Tất cả tickets dùng riêng cho trang báo cáo (không phân trang)
+  const [allTicketsForReports, setAllTicketsForReports] = useState<TicketFromApi[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
   const [ticketSearchQuery, setTicketSearchQuery] = useState('');
@@ -50,7 +52,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [ticketHasNext, setTicketHasNext] = useState(false);
   const [ticketHasPrevious, setTicketHasPrevious] = useState(false);
 
-  // Fetch all tickets for reports (no pagination)
+  // Hàm gọi API lấy tất cả tickets phục vụ báo cáo (không phân trang)
   const fetchAllTicketsForReports = async () => {
     try {
       console.log('📥 Fetching all tickets for reports...');
@@ -62,7 +64,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     }
   };
 
-  // Fetch tickets from API (server-side pagination)
+  // Hàm gọi API lấy tickets với phân trang phía server cho tab Quản lý Tickets
   const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
     setTicketsError(null);
@@ -82,25 +84,26 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     }
   };
 
+  // Tự động gọi lại API tickets khi thay đổi số trang hoặc kích thước trang
   useEffect(() => {
     fetchTickets(ticketPageNumber, ticketPageSize);
   }, [ticketPageNumber, ticketPageSize]); // Fetch when page or pageSize changes
 
-  // Debug categories
+  // Debug categories (log ra console để kiểm tra dữ liệu danh mục)
   console.log('📊 Admin Page - Categories:', {
     count: categories?.length || 0,
     categories: categories,
     isArray: Array.isArray(categories)
   });
 
-  // Debug departments
+  // Debug departments (log ra console để kiểm tra dữ liệu bộ phận)
   console.log('🏢 Admin Page - Departments:', {
     count: departments?.length || 0,
     departments: departments,
     isArray: Array.isArray(departments)
   });
 
-  // Debug tickets
+  // Debug tickets (log ra console để theo dõi trạng thái tải tickets)
   console.log('🎫 Admin Page - Tickets:', {
     apiTicketsCount: apiTickets.length,
     localTicketsCount: tickets.length,
@@ -108,28 +111,28 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     ticketsError
   });
 
-  // UI State
+  // State cho UI: tab đang chọn, trạng thái mở submenu, modal, ticket được chọn
   const [activeTab, setActiveTab] = useState<AdminTab>('tickets');
   const [showMembersSubmenu, setShowMembersSubmenu] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | TicketFromApi | null>(null);
 
-  // Fetch all tickets when entering reports tab (after activeTab is defined)
+  // Khi chuyển sang tab "Báo cáo" thì load toàn bộ tickets phục vụ thống kê
   useEffect(() => {
     if (activeTab === 'reports') {
       fetchAllTicketsForReports();
     }
   }, [activeTab]);
 
-  // Form state
+  // State lưu đối tượng đang chỉnh sửa cho từng form
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [editingStaff, setEditingStaff] = useState<User | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  // Form data
+  // State lưu dữ liệu form cho Category
   const [categoryFormData, setCategoryFormData] = useState({
     categoryCode: '',
     categoryName: '',
@@ -142,12 +145,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     defaultPriority: 'medium' as Priority,
   });
 
+  // State lưu dữ liệu form cho Department
   const [deptFormData, setDeptFormData] = useState({
     deptCode: '',
     deptName: '',
     status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
   });
 
+  // State lưu dữ liệu form cho Location
   const [locationFormData, setLocationFormData] = useState({
     code: '',
     name: '',
@@ -156,7 +161,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     campusId: undefined as number | undefined,
   });
   
-  // Load campuses
+  // Load danh sách campus cho dropdown ở phần Địa điểm
   const [campuses, setCampuses] = useState<Campus[]>([]);
   useEffect(() => {
     const loadCampuses = async () => {
@@ -175,6 +180,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     loadCampuses();
   }, []);
 
+  // State lưu dữ liệu form cho Staff
   const [staffFormData, setStaffFormData] = useState({
     userCode: '',
     username: '',
@@ -186,6 +192,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     departmentId: '',
   });
 
+  // State lưu dữ liệu form cho User (học sinh / giáo viên)
   const [userFormData, setUserFormData] = useState({
     username: '',
     password: '',
@@ -194,7 +201,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     role: 'student' as UserRole,
   });
 
-  // Search and filter state
+  // State cho tìm kiếm, lọc và phân trang từng module quản lý
   const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [categoryFilterStatus, setCategoryFilterStatus] = useState<string>('all');
   const [categoryPageNumber, setCategoryPageNumber] = useState(1);
@@ -215,14 +222,14 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [userPageNumber, setUserPageNumber] = useState(1);
   const [userPageSize, setUserPageSize] = useState(10);
 
-  // Auto-open submenu
+  // Tự động mở submenu "Quản lý thành viên" khi đang ở tab staff hoặc users
   useEffect(() => {
     if (activeTab === 'staff' || activeTab === 'users') {
       setShowMembersSubmenu(true);
     }
   }, [activeTab]);
 
-  // Filter departments by adminId
+  // Filter danh sách bộ phận theo admin (tạm thời trả về tất cả do backend chưa có adminId)
   const adminDepartments = useMemo(() => {
     console.log('🔍 Filtering departments:', {
       totalDepartments: departments.length,
@@ -240,6 +247,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     */
   }, [departments, currentAdminId]);
 
+  // Map danh sách ID bộ phận (deptCode, id) để dùng filter categories
   const adminDepartmentIds = useMemo(() => {
     // Map cả deptCode và id để tương thích với cả backend mới và code cũ
     const ids = adminDepartments.flatMap(dept => [
@@ -253,7 +261,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return [...new Set(ids)]; // Remove duplicates
   }, [adminDepartments]);
 
-  // Filter categories by admin's departments
+  // Filter danh sách danh mục theo các bộ phận của admin (tạm thời trả về tất cả để test)
   const adminCategories = useMemo(() => {
     if (!Array.isArray(categories)) {
       console.warn('⚠️ categories is not an array:', categories);
@@ -279,7 +287,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     */
   }, [categories, adminDepartmentIds]);
 
-  // Debug filtered data (after useMemo declarations)
+  // Debug dữ liệu sau khi filter (danh sách bộ phận và danh mục dành cho admin)
   console.log('🏢 Admin Departments (filtered):', {
     count: adminDepartments?.length || 0,
     adminDepartments: adminDepartments
@@ -295,7 +303,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     })),
   });
 
-  // Get staff list for admin's departments - Đơn giản hóa để lấy tất cả staff từ API
+  // Lấy danh sách staff cho admin - hiện tại lấy tất cả staff từ API và map thêm thông tin bộ phận
   const adminStaffList = useMemo(() => {
     // Lấy tất cả staff users (it-staff + facility-staff) từ hook
     const staffList = getStaffUsers.map(user => {
@@ -312,7 +320,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     return staffList;
   }, [getStaffUsers, departments]);
 
-  // Filter student users - Lấy từ hook getStudentUsers (đã filter student + teacher, không có admin)
+  // Filter user là student/teacher từ hook getStudentUsers (không bao gồm admin)
   const studentUsers = useMemo(() => {
     return getStudentUsers
       .sort((a, b) => {
@@ -322,24 +330,25 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       });
   }, [getStudentUsers]);
 
-  // Handlers
+  // Handler gán ticket cho staff
   const handleAssignTicket = (ticketId: string, staffId: string) => {
     const staff = adminStaffList.find(s => s.id === staffId);
     if (!staff) return;
     assignTicket(ticketId, staffId, staff.name);
   };
 
+  // Handler duyệt ticket (chuyển trạng thái sang "assigned")
   const handleApproveTicket = (ticketId: string) => {
     // Chấp nhận ticket: chuyển từ 'open' sang 'assigned'
     updateTicketStatus(ticketId, 'assigned');
   };
 
+  // Handler từ chối ticket (chuyển sang trạng thái 'cancelled' với lý do)
   const handleRejectTicket = (ticketId: string, reason: string) => {
-    // Từ chối ticket: chuyển sang 'cancelled' với lý do
     cancelTicket(ticketId, reason);
   };
 
-  // Ticket pagination handlers (client-side pagination for filtered results)
+  // Hàm xử lý thay đổi trang cho Tickets (phân trang phía server)
   const handleTicketPageChange = (page: number) => {
     setTicketPageNumber(page);
   };
@@ -349,7 +358,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     setTicketPageNumber(1); // Reset to page 1 when changing page size
   };
 
-  // Location pagination handlers
+  // Hàm xử lý phân trang cho danh sách Địa điểm
   const handleLocationPageChange = (page: number) => {
     setLocationPageNumber(page);
   };
@@ -359,7 +368,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     setLocationPageNumber(1); // Reset to page 1 when changing page size
   };
 
-  // Category pagination handlers
+  // Hàm xử lý phân trang cho danh sách Danh mục
   const handleCategoryPageChange = (page: number) => {
     setCategoryPageNumber(page);
   };
@@ -369,7 +378,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     setCategoryPageNumber(1); // Reset to page 1 when changing page size
   };
 
-  // Department pagination handlers
+  // Hàm xử lý phân trang cho danh sách Bộ phận
   const handleDepartmentPageChange = (page: number) => {
     setDepartmentPageNumber(page);
   };
@@ -379,7 +388,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     setDepartmentPageNumber(1); // Reset to page 1 when changing page size
   };
 
-  // Staff pagination handlers
+  // Hàm xử lý phân trang cho danh sách Staff
   const handleStaffPageChange = (page: number) => {
     setStaffPageNumber(page);
   };
@@ -389,7 +398,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
     setStaffPageNumber(1); // Reset to page 1 when changing page size
   };
 
-  // User pagination handlers
+  // Hàm xử lý phân trang cho danh sách Người dùng
   const handleUserPageChange = (page: number) => {
     setUserPageNumber(page);
   };
@@ -402,7 +411,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
   return (
     <div className="h-screen flex overflow-hidden">
-      {/* Sidebar - Fixed to left */}
+      {/* Sidebar - Menu cố định bên trái cho toàn bộ chức năng admin */}
       <div className="w-72 bg-white rounded-r-lg rounded-br-none p-6 shadow-sm border border-gray-200 border-l-0 border-b-0 h-full overflow-y-auto">
           <h3 className="m-0 mb-6 text-base text-gray-900 font-semibold uppercase tracking-wide pb-4 border-b border-gray-200">
             Quản lý hệ thống
@@ -525,7 +534,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
 
       {/* Main Content */}
       <div className="flex-1 bg-white rounded-lg rounded-tl-none rounded-bl-none rounded-tr-none rounded-br-none p-6 shadow-sm border border-gray-200 border-t-0 border-l-0 border-r-0 border-b-0 max-w-full flex flex-col h-full overflow-hidden">
-          {/* Tickets Management */}
+          {/* Khu vực quản lý Tickets */}
           {activeTab === 'tickets' && (
             <div className="flex flex-col h-full min-h-0">
               {loadingTickets && (
@@ -569,7 +578,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             </div>
           )}
 
-          {/* Category Management */}
+          {/* Khu vực quản lý Danh mục */}
           {activeTab === 'categories' && (
             <CategoryList
               categories={adminCategories}
@@ -619,7 +628,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               }}
             />
           )}
-          {/* Department Management */}
+          {/* Khu vực quản lý Bộ phận */}
           {activeTab === 'departments' && (
             <DepartmentList
               departments={adminDepartments}
@@ -654,7 +663,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Location Management */}
+          {/* Khu vực quản lý Địa điểm */}
           {activeTab === 'locations' && (
             <LocationList
               locations={locations}
@@ -709,7 +718,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Staff Management */}
+          {/* Khu vực quản lý Staff */}
           {activeTab === 'staff' && (
             <StaffList
               staffUsers={getStaffUsers}
@@ -761,7 +770,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Users Management */}
+          {/* Khu vực quản lý Người dùng (student / teacher) */}
           {activeTab === 'users' && (
             <UserList
               users={studentUsers}
@@ -789,7 +798,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
             />
           )}
 
-          {/* Reports */}
+          {/* Khu vực Báo cáo thống kê */}
           {activeTab === 'reports' && (
             <div className="h-full overflow-y-auto">
               <ReportsPage
@@ -804,7 +813,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           )}
       </div>
 
-      {/* Category Form Modal */}
+      {/* Modal form tạo / chỉnh sửa Danh mục (Category) */}
       {isFormOpen && activeTab === 'categories' && (
         <CategoryForm
           editingCategory={editingCategory}
@@ -916,7 +925,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         />
       )}
 
-      {/* Department Form Modal */}
+      {/* Modal form tạo / chỉnh sửa Bộ phận (Department) */}
       {isFormOpen && activeTab === 'departments' && (
         <DepartmentForm
           editingDept={editingDept}
@@ -1009,7 +1018,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         />
       )}
 
-      {/* Location Form Modal */}
+      {/* Modal form tạo / chỉnh sửa Địa điểm (Location) */}
       {isFormOpen && activeTab === 'locations' && (
         <LocationForm
           editingLocation={editingLocation}
@@ -1032,7 +1041,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 
                 const newCode = locationFormData.code.trim();
                 
-                // Get campusId from selected campus
+                // Get campusId từ campus đang chọn
                 let campusId: number | undefined;
                 if (locationFormData.campusCode) {
                   const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
@@ -1079,7 +1088,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   return;
                 }   
                 
-                // Get campusId from selected campusCode
+                // Get campusId từ campusCode được chọn
                 const selectedCampus = campuses.find(c => c.campusCode === locationFormData.campusCode);
                 if (!selectedCampus) {
                   alert('Không tìm thấy Campus đã chọn. Vui lòng thử lại.');
@@ -1152,7 +1161,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         />
       )}
 
-      {/* Staff Form Modal */}
+      {/* Modal form tạo / chỉnh sửa Staff */}
       {isFormOpen && activeTab === 'staff' && (
         <StaffForm
           editingStaff={editingStaff}
@@ -1253,7 +1262,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
         />
       )}
 
-      {/* User Form Modal */}
+      {/* Modal form tạo / chỉnh sửa User (student/teacher) */}
       {isFormOpen && activeTab === 'users' && (
         <UserForm
           editingUser={editingUser}

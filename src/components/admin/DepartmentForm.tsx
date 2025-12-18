@@ -1,5 +1,7 @@
+// Form tạo / chỉnh sửa Bộ phận trong trang Admin
 import type { Department } from '../../types';
 
+// Props cho form Bộ phận
 interface DepartmentFormProps {
   editingDept: Department | null;
   deptFormData: {
@@ -12,6 +14,7 @@ interface DepartmentFormProps {
   onClose: () => void;
 }
 
+// Component form hiển thị trong modal để thêm / sửa Bộ phận
 const DepartmentForm = ({
   editingDept,
   deptFormData,

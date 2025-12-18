@@ -1,5 +1,7 @@
+// Form tạo / chỉnh sửa Category trong trang Admin
 import type { Category, Priority, Department } from '../../types';
 
+// Props cho form Category
 interface CategoryFormProps {
   editingCategory: Category | null;
   categoryFormData: {
@@ -19,6 +21,7 @@ interface CategoryFormProps {
   onClose: () => void;
 }
 
+// Component form hiển thị trong modal để thêm / sửa Category
 const CategoryForm = ({
   editingCategory,
   categoryFormData,
@@ -27,7 +30,7 @@ const CategoryForm = ({
   onSubmit,
   onClose,
 }: CategoryFormProps) => {
-  // Debug: Log departments để kiểm tra
+  // Debug: Log danh sách bộ phận để kiểm tra dữ liệu truyền vào form
   console.log('📋 CategoryForm - adminDepartments:', {
     count: adminDepartments?.length || 0,
     departments: adminDepartments?.map(d => ({

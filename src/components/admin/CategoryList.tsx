@@ -1,6 +1,8 @@
+// Danh sách Category trong trang Admin: hỗ trợ tìm kiếm, filter trạng thái và phân trang
 import type { Category, Department } from '../../types';
 import Pagination from '../shared/Pagination';
 
+// Props cho component hiển thị danh sách Category
 interface CategoryListProps {
   categories: Category[];
   departments: Department[];
@@ -17,6 +19,7 @@ interface CategoryListProps {
   onPageSizeChange?: (size: number) => void;
 }
 
+// Component hiển thị bảng Category + thanh search/filter + phân trang
 const CategoryList = ({
   categories,
   departments,
@@ -31,8 +34,9 @@ const CategoryList = ({
   onPageChange,
   onPageSizeChange,
 }: CategoryListProps) => {
+  // Lọc danh sách category theo trạng thái và từ khóa tìm kiếm
   const filteredCategories = categories.filter((cat) => {
-    // Filter by status
+    // Filter theo trạng thái (Hoạt động / Không hoạt động)
     if (filterStatus !== 'all') {
       const catStatus = cat.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
       if (catStatus !== filterStatus) {
@@ -40,13 +44,13 @@ const CategoryList = ({
       }
     }
     
-    // Filter by search query (code, name, or department name)
+    // Filter theo từ khóa search (mã category, tên category hoặc tên bộ phận)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesCode = cat.categoryCode?.toLowerCase().includes(query);
       const matchesName = cat.categoryName?.toLowerCase().includes(query);
       
-      // Search by department name
+      // Tìm kiếm theo tên bộ phận chứa category
       const department = departments.find(d => {
         const dId = typeof d.id === 'number' ? d.id : parseInt(String(d.id), 10);
         const catDeptId = typeof cat.departmentId === 'number' ? cat.departmentId : parseInt(String(cat.departmentId), 10);
@@ -62,7 +66,7 @@ const CategoryList = ({
     return true;
   });
 
-  // Calculate pagination
+  // Tính toán số trang và cắt dữ liệu cho phân trang client-side
   const totalCount = filteredCategories.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (pageNumber - 1) * pageSize;
