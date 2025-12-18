@@ -700,7 +700,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'staff' && (
             <StaffList
               staffUsers={getStaffUsers}
-              departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
               onSearchChange={(query) => {
@@ -1157,8 +1156,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
+                  roleId: undefined,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
+                  password: staffFormData.password || undefined, // Optional password update
                 });
+                alert('✅ Cập nhật staff thành công!');
               } else {
                 // Create new staff
                 // Trong StaffForm, field "username" có label "Tên đăng nhập (Email) *", nên dùng username làm email
@@ -1171,6 +1173,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
+                alert('✅ Thêm staff mới thành công!');
                 
                 setStaffPageNumber(1);
               }
@@ -1222,6 +1225,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
               const newStatus = editingStaff.status === 'active' ? 'inactive' : 'active';
               await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
+              setIsFormOpen(false);
+              setEditingStaff(null);
             } catch (error) {
               console.error('Error toggling staff status:', error);
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));
@@ -1299,9 +1304,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                 }
               }
 
-              const newStatus = editingUser.status === 'active' ? 'banned' : 'active';
+              const newStatus = editingUser.status === 'active' ? 'inactive' : 'active';
               await updateUserStatus(userId, newStatus);
               await loadUsers(); // Reload sau khi update
+              setIsFormOpen(false);
+              setEditingUser(null);
             } catch (error) {
               console.error('Error toggling user ban status:', error);
               alert('Có lỗi xảy ra: ' + (error instanceof Error ? error.message : 'Unknown error'));

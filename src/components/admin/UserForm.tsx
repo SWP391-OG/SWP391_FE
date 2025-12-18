@@ -86,7 +86,7 @@ const UserForm = ({
                   Mã người dùng
                 </label>
                 <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
-                  {editingUser.id}
+                  {editingUser.userCode}
                 </div>
               </div>
               <div className="mb-6">
@@ -110,7 +110,7 @@ const UserForm = ({
                   Trạng thái
                 </label>
                 <div className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-600">
-                  {editingUser.status === 'active' ? 'Hoạt động' : editingUser.status === 'banned' ? 'Đã khóa' : editingUser.status}
+                  {editingUser.status === 'active' ? 'Hoạt động' : 'Dừng hoạt động'}
                 </div>
               </div>
             </>
@@ -138,14 +138,13 @@ const UserForm = ({
               </div>
               <div className="mb-6">
                 <label className="block mb-2 font-semibold text-gray-700 text-sm">
-                  Mật khẩu *
+                  Mật khẩu
                 </label>
                 <input
                   type="password"
-                  required
                   value={userFormData?.password || ''}
                   onChange={(e) => onFormDataChange?.({ ...userFormData!, password: e.target.value })}
-                  placeholder="Nhập mật khẩu"
+                  placeholder="Nhập mật khẩu (không bắt buộc)"
                   className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                 />
               </div>
@@ -196,7 +195,7 @@ const UserForm = ({
                   >
                     Khóa tài khoản
                   </button>
-                ) : editingUser.status === 'banned' ? (
+                ) : editingUser.status === 'inactive' ? (
                   <button
                     type="button"
                     onClick={() => {

@@ -65,7 +65,9 @@ export const useUsers = () => {
     email?: string;
     phoneNumber?: string;
     role?: UserRole;
+    roleId?: number;
     departmentId?: number;
+    password?: string;
   }) => {
     setLoading(true);
     setError(null);
@@ -85,7 +87,7 @@ export const useUsers = () => {
   /**
    * Cập nhật trạng thái user (khóa/mở khóa)
    */
-  const updateUserStatus = async (userId: number, status: 'active' | 'inactive' | 'banned') => {
+  const updateUserStatus = async (userId: number, status: 'active' | 'inactive') => {
     setLoading(true);
     setError(null);
     try {

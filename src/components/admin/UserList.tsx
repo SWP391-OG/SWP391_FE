@@ -117,7 +117,7 @@ const UserList = ({
                   return (
                     <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-3.5 text-sm text-gray-900 font-semibold">
-                        {user.username}
+                        {user.userCode}
                       </td>
                       <td className="px-4 py-3.5 text-sm text-gray-900">
                         {user.fullName}
@@ -133,7 +133,7 @@ const UserList = ({
                           <span className={`font-semibold text-sm ${
                             user.status === 'active' ? 'text-green-500' : 'text-red-500'
                           }`}>
-                            {user.status === 'active' ? 'Hoạt động' : user.status === 'banned' ? 'Bị khóa' : 'Ngừng hoạt động'}
+                            {user.status === 'active' ? 'Hoạt động' : 'Dừng hoạt động'}
                           </span>
                         </div>
                       </td>

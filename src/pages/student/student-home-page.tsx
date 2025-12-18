@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Ticket, Category, TicketFromApi } from '../../types';
+import Pagination from '../../components/shared/Pagination';
 import IssueSelectionPage from './issue-selection-page';
 import CreateTicketPage from './create-ticket-page';
 import TicketListPage from './ticket-list-page';
@@ -24,7 +25,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [studentTab, setStudentTab] = useState<StudentTab>('pending');
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
-  const [studentFilterStatus, setStudentFilterStatus] = useState<Ticket['status'] | 'all'>('all');
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
   // State for API tickets
   const [apiTickets, setApiTickets] = useState<Ticket[]>([]);
@@ -40,7 +42,9 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
       
       // Map API response to Ticket format
       const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
+        // Sử dụng ticketCode làm id để hiển thị & tìm kiếm
         id: apiTicket.ticketCode,
+        ticketCode: apiTicket.ticketCode,
         title: apiTicket.title,
         description: apiTicket.description,
         status: mapApiStatus(apiTicket.status),
@@ -132,14 +136,40 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     tabTickets = cancelledTickets;
   }
 
-  // Apply search and filters
-  const displayedTickets = tabTickets.filter((ticket) => {
-    const matchesSearch = ticket.title.toLowerCase().includes(studentSearchQuery.toLowerCase()) ||
-                         ticket.description.toLowerCase().includes(studentSearchQuery.toLowerCase());
-    const matchesStatus = studentFilterStatus === 'all' || ticket.status === studentFilterStatus;
+  // Apply search
+  const filteredTickets = tabTickets.filter((ticket) => {
+    const query = studentSearchQuery.toLowerCase().trim();
+    if (!query) return true;
 
-    return matchesSearch && matchesStatus;
+    // Cho phép tìm theo mã ticket (ticketCode/id), tiêu đề, mô tả
+    const code =
+      (ticket.ticketCode && ticket.ticketCode.toLowerCase()) ||
+      (ticket.id && String(ticket.id).toLowerCase()) ||
+      '';
+    const title = ticket.title?.toLowerCase?.() || '';
+    const description = ticket.description?.toLowerCase?.() || '';
+
+    return (
+      code.includes(query) ||
+      title.includes(query) ||
+      description.includes(query)
+    );
   });
+
+  // Client-side pagination for displayed tickets
+  const totalCount = filteredTickets.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const safePageNumber = Math.min(pageNumber, totalPages);
+  const startIndex = (safePageNumber - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const displayedTickets = filteredTickets.slice(startIndex, endIndex);
+  const hasPrevious = safePageNumber > 1;
+  const hasNext = safePageNumber < totalPages;
+
+  // Reset về trang 1 khi đổi tab hoặc thay đổi từ khóa tìm kiếm
+  useEffect(() => {
+    setPageNumber(1);
+  }, [studentTab, studentSearchQuery]);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -393,35 +423,17 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
               </button>
             </div>
 
-            {/* Search and Filters */}
+            {/* Search */}
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-6">
-              <div className="grid grid-cols-[2fr_1fr] gap-4 items-end">
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700">Tìm kiếm</label>
-                  <input
-                    type="text"
-                    placeholder="Tìm theo tiêu đề hoặc mô tả..."
-                    value={studentSearchQuery}
-                    onChange={(e) => setStudentSearchQuery(e.target.value)}
-                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-sm font-semibold text-gray-700">Trạng thái</label>
-                  <select
-                    value={studentFilterStatus}
-                    onChange={(e) => setStudentFilterStatus(e.target.value as Ticket['status'] | 'all')}
-                    className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg bg-white cursor-pointer transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="all">Tất cả</option>
-                    <option value="open">Mới tạo</option>
-                    <option value="assigned">Đã được giao việc</option>
-                    <option value="in-progress">Đang xử lý</option>
-                    <option value="resolved">Chờ đánh giá</option>
-                    <option value="closed">Đã hoàn thành</option>
-                    <option value="cancelled">Đã hủy</option>
-                  </select>
-                </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-semibold text-gray-700">Tìm kiếm</label>
+                <input
+                  type="text"
+                  placeholder="Tìm theo mã ticket, tiêu đề hoặc mô tả..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  className="py-3 px-4 text-base border-2 border-gray-200 rounded-lg transition-all duration-200 box-border focus:outline-none focus:border-blue-500"
+                />
               </div>
             </div>
           </div>
@@ -565,6 +577,25 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Pagination - giống admin ticket management, nằm dưới danh sách */}
+          {totalCount > 0 && (
+            <div className="mt-6">
+              <Pagination
+                pageNumber={safePageNumber}
+                pageSize={pageSize}
+                totalPages={totalPages}
+                totalCount={totalCount}
+                hasPrevious={hasPrevious}
+                hasNext={hasNext}
+                onPageChange={setPageNumber}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPageNumber(1);
+                }}
+              />
             </div>
           )}
           </>
