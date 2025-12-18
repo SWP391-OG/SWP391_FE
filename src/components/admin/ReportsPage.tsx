@@ -11,6 +11,7 @@ interface ReportsPageProps {
   departments: Department[];
   users: User[];
   adminDepartments: Department[];
+  ticketTotalCount?: number; // Total count from server for statistics
 }
 
 type DateFilterType = 'all' | '7days' | 'month' | 'custom';
@@ -20,6 +21,7 @@ const ReportsPage = ({
   categories,
   departments,
   adminDepartments,
+  ticketTotalCount = 0,
 }: ReportsPageProps) => {
   // State for date filtering - Default to 7 days
   const [dateFilter, setDateFilter] = useState<DateFilterType>('7days');
@@ -91,13 +93,23 @@ const ReportsPage = ({
 
   // Total tickets statistics
   const totalTicketsCount = useMemo(() => {
-    return adminTickets.length;
-  }, [adminTickets]);
+    // Use server total count if available, otherwise use filtered tickets count
+    return ticketTotalCount > 0 ? ticketTotalCount : adminTickets.length;
+  }, [adminTickets, ticketTotalCount]);
 
-  // Cancelled and Completed tickets statistics - ALL STATUSES
+  // Cancelled and Completed tickets statistics - ALL STATUSES (count from FILTERED tickets by date range)
   const ticketStatusReport = useMemo(() => {
-    // Count by all statuses
-    const completedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
+    // Debug: Log all statuses to see what we have
+    const statusCounts: Record<string, number> = {};
+    adminTickets.forEach(t => {
+      const status = String(t.status).toLowerCase();
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    console.log('📊 Filtered ticket statuses (by date range):', statusCounts);
+    console.log('📊 Total filtered tickets:', adminTickets.length);
+    
+    // Count by all statuses from FILTERED tickets (apply date range filter)
+    const closedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
     const resolvedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'resolved').length;
     const pendingReviewTickets = resolvedTickets; // resolved = chờ đánh giá
     const assignedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'assigned').length;
@@ -105,16 +117,29 @@ const ReportsPage = ({
     const cancelledTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'cancelled').length;
     const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
     const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
+    
+    const totalFilteredCount = closedTickets + resolvedTickets + assignedTickets + newTickets + cancelledTickets + inProgressTickets + acknowledgedTickets;
+    console.log('📊 Status breakdown (filtered):', {
+      closed: closedTickets,
+      resolved: resolvedTickets,
+      assigned: assignedTickets,
+      new: newTickets,
+      cancelled: cancelledTickets,
+      inProgress: inProgressTickets,
+      acknowledged: acknowledgedTickets,
+      total: totalFilteredCount
+    });
 
-    // Calculate percentages
-    const completedPercentage = totalTicketsCount > 0 ? Math.round((completedTickets / totalTicketsCount) * 100) : 0;
-    const cancelledPercentage = totalTicketsCount > 0 ? Math.round((cancelledTickets / totalTicketsCount) * 100) : 0;
+    // Calculate percentages based on filtered count
+    const completedPercentage = totalFilteredCount > 0 ? Math.round((closedTickets / totalFilteredCount) * 100) : 0;
+    const cancelledPercentage = totalFilteredCount > 0 ? Math.round((cancelledTickets / totalFilteredCount) * 100) : 0;
 
     // Build status data - Include ALL statuses (even with 0 tickets) with fixed order
     const statusData = [
-      { name: 'Đã Hoàn thành', value: completedTickets, color: '#10b981', key: 'completed' },
+      { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
+      { name: 'Đang xử lý', value: inProgressTickets, color: '#f59e0b', key: 'in-progress' },
       { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
       { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
     ]; // Show all statuses always
@@ -126,8 +151,8 @@ const ReportsPage = ({
       : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb', key: 'empty' }];
 
     return {
-      totalTickets: totalTicketsCount,
-      completedTickets,
+      totalTickets: totalFilteredCount,
+      completedTickets: closedTickets,
       pendingReviewTickets,
       assignedTickets,
       newTickets,
@@ -140,7 +165,7 @@ const ReportsPage = ({
       pieData: pieChartData,
       pieDataFiltered
     };
-  }, [adminTickets, totalTicketsCount]);
+  }, [adminTickets]);
 
   // Category statistics - most frequent issues
   const categoryStatistics = useMemo(() => {

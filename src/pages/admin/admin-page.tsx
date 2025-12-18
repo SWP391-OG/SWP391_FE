@@ -36,15 +36,33 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const { locations, loading: locationsLoading, createLocation, updateLocation, loadLocations } = useLocations();
   const { users, loading: usersLoading, createUser, updateUser, updateUserStatus, getStaffUsers, getStudentUsers, loadUsers } = useUsers();
 
-  // State for API tickets
+  // State for API tickets (server-side pagination)
   const [apiTickets, setApiTickets] = useState<TicketFromApi[]>([]);
+  const [allTicketsForReports, setAllTicketsForReports] = useState<TicketFromApi[]>([]); // All tickets for reports (no pagination)
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
   const [ticketSearchQuery, setTicketSearchQuery] = useState('');
   const [ticketFilterStatus, setTicketFilterStatus] = useState<string>('all');
   const [ticketPageNumber, setTicketPageNumber] = useState(1);
   const [ticketPageSize, setTicketPageSize] = useState(10);
-  // Fetch tickets from API
+  const [ticketTotalCount, setTicketTotalCount] = useState(0);
+  const [ticketTotalPages, setTicketTotalPages] = useState(0);
+  const [ticketHasNext, setTicketHasNext] = useState(false);
+  const [ticketHasPrevious, setTicketHasPrevious] = useState(false);
+
+  // Fetch all tickets for reports (no pagination)
+  const fetchAllTicketsForReports = async () => {
+    try {
+      console.log('📥 Fetching all tickets for reports...');
+      const response = await ticketService.getAllTicketsFromApi(1, 1000); // Fetch with large pageSize to get all
+      console.log('✅ Fetched all tickets for reports:', response);
+      setAllTicketsForReports(response.data.items);
+    } catch (error) {
+      console.error('❌ Error fetching all tickets for reports:', error);
+    }
+  };
+
+  // Fetch tickets from API (server-side pagination)
   const fetchTickets = async (pageNumber: number = 1, pageSize: number = 10) => {
     setLoadingTickets(true);
     setTicketsError(null);
@@ -52,7 +70,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
       const response = await ticketService.getAllTicketsFromApi(pageNumber, pageSize);
       console.log('✅ Fetched tickets from API:', response);
       setApiTickets(response.data.items);
-      // Note: Using client-side pagination now, so we don't need to store paginationState
+      setTicketTotalCount(response.data.totalCount);
+      setTicketTotalPages(response.data.totalPages);
+      setTicketHasNext(response.data.hasNext);
+      setTicketHasPrevious(response.data.hasPrevious);
     } catch (error) {
       console.error('❌ Error fetching tickets:', error);
       setTicketsError(error instanceof Error ? error.message : 'Failed to fetch tickets');
@@ -62,8 +83,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   };
 
   useEffect(() => {
-    fetchTickets(1, 10);
-  }, []); // Run once on mount with page 1 and size 10
+    fetchTickets(ticketPageNumber, ticketPageSize);
+  }, [ticketPageNumber, ticketPageSize]); // Fetch when page or pageSize changes
 
   // Debug categories
   console.log('📊 Admin Page - Categories:', {
@@ -93,6 +114,13 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [selectedTicketForReview, setSelectedTicketForReview] = useState<Ticket | TicketFromApi | null>(null);
+
+  // Fetch all tickets when entering reports tab (after activeTab is defined)
+  useEffect(() => {
+    if (activeTab === 'reports') {
+      fetchAllTicketsForReports();
+    }
+  }, [activeTab]);
 
   // Form state
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -530,6 +558,10 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   }}
                   pageNumber={ticketPageNumber}
                   pageSize={ticketPageSize}
+                  totalCount={ticketTotalCount}
+                  totalPages={ticketTotalPages}
+                  hasNext={ticketHasNext}
+                  hasPrevious={ticketHasPrevious}
                   onPageChange={handleTicketPageChange}
                   onPageSizeChange={handleTicketPageSizeChange}
                 />
@@ -761,11 +793,12 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'reports' && (
             <div className="h-full overflow-y-auto">
               <ReportsPage
-                tickets={apiTickets}
+                tickets={allTicketsForReports}
                 categories={categories}
                 departments={departments}
                 users={users}
                 adminDepartments={adminDepartments}
+                ticketTotalCount={ticketTotalCount}
               />
             </div>
           )}

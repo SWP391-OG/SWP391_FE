@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { Ticket, TicketFromApi } from '../../types';
 import { ticketService } from '../../services/ticketService';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface TicketListPageProps {
   onViewDetail: (ticket: Ticket) => void;
@@ -123,7 +124,13 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   };
 
   // Status labels
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string, resolveDeadline?: string) => {
+    // Check if ticket is overdue
+    const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+    if (isOverdue) {
+      return '⚠️ Đã quá hạn';
+    }
+    
     // For closed tickets, always show "Đã hoàn thành"
     if (status === 'closed') {
       return 'Đã hoàn thành';
@@ -307,7 +314,7 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                     <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                     <div className="flex gap-4 flex-wrap items-center">
                       <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                        {getStatusLabel(ticket.status)}
+                        {getStatusLabel(ticket.status, ticket.resolveDeadline)}
                       </span>
                       {ticket.categoryId && (
                         <span className="flex items-center gap-2 text-sm text-gray-500">

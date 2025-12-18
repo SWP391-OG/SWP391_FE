@@ -1,5 +1,6 @@
 import type { Ticket, Location, TicketFromApi } from '../../types';
 import Pagination from '../shared/Pagination';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface TicketsTableProps {
   tickets: Ticket[] | TicketFromApi[];
@@ -12,9 +13,13 @@ interface TicketsTableProps {
   filterStatus?: string;
   onSearchChange?: (query: string) => void;
   onFilterStatusChange?: (status: string) => void;
-  // Pagination props
+  // Pagination props (server-side)
   pageNumber?: number;
   pageSize?: number;
+  totalCount?: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 }
@@ -34,59 +39,16 @@ const TicketsTable = ({
   onFilterStatusChange,
   pageNumber = 1,
   pageSize = 10,
+  totalCount = 0,
+  totalPages = 0,
+  hasNext = false,
+  hasPrevious = false,
   onPageChange,
   onPageSizeChange,
 }: TicketsTableProps) => {
-  // Filter tickets by search query and status
-  const filteredTickets = tickets.filter((ticket) => {
-    const isFromApi = isTicketFromApi(ticket);
-    const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
-    const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
-    
-    // Filter by status
-    if (filterStatus !== 'all') {
-      const ticketStatus = ticket.status.toUpperCase();
-      const filterStatusUpper = filterStatus.toUpperCase();
-      
-      // Map filter values to API status values (both uppercase and lowercase)
-      const statusMap: Record<string, string[]> = {
-        'NEW': ['NEW', 'OPEN'],
-        'ASSIGNED': ['ASSIGNED', 'ACKNOWLEDGED'],
-        'IN_PROGRESS': ['IN_PROGRESS', 'IN-PROGRESS'],
-        'RESOLVED': ['RESOLVED'],
-        'CLOSED': ['CLOSED'],
-        'CANCELLED': ['CANCELLED'],
-      };
-      
-      const matchingStatuses = statusMap[filterStatusUpper] || [filterStatusUpper];
-      if (!matchingStatuses.some(s => ticketStatus === s)) {
-        return false;
-      }
-    }
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesCode = ticketCode?.toLowerCase().includes(query);
-      const matchesTitle = ticket.title?.toLowerCase().includes(query);
-      const matchesLocation = locationName?.toLowerCase().includes(query);
-      
-      if (!matchesCode && !matchesTitle && !matchesLocation) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
-
-  // Calculate pagination for filtered tickets (client-side)
-  const filteredTotalCount = filteredTickets.length;
-  const filteredTotalPages = Math.ceil(filteredTotalCount / pageSize);
-  const startIndex = (pageNumber - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
-  const filteredHasPrevious = pageNumber > 1;
-  const filteredHasNext = pageNumber < filteredTotalPages;
+  // Server-side pagination: tickets already come paginated from API
+  // No need for client-side filtering/pagination
+  const paginatedTickets = tickets;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -210,9 +172,14 @@ const TicketsTable = ({
                   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
                   const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
                   const status = ticket.status;
-                  const statusInfo = getStatusInfo(status);
                   const resolveDeadline = isFromApi ? ticket.resolveDeadline : (ticket.resolveDeadline || ticket.slaDeadline || ticket.createdAt);
                   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
+
+                  // Check if ticket is overdue
+                  const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+                  const statusInfo = isOverdue 
+                    ? { bg: 'bg-red-100', text: 'text-red-800', label: '⚠️ Đã quá hạn' } 
+                    : getStatusInfo(status);
 
                   return (
                     <tr key={isFromApi ? ticket.ticketCode : ticket.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => onViewTicket(ticket)}>
@@ -290,10 +257,10 @@ const TicketsTable = ({
           <Pagination
             pageNumber={pageNumber}
             pageSize={pageSize}
-            totalPages={filteredTotalPages}
-            totalCount={filteredTotalCount}
-            hasPrevious={filteredHasPrevious}
-            hasNext={filteredHasNext}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
           />

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Ticket } from '../../types';
-import { isTicketOverdue, getTimeUntilDeadline } from '../../utils/dateUtils';
+import { isTicketOverdue, getTimeUntilDeadline, isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface ITStaffPageProps {
   tickets: Ticket[];
@@ -129,6 +129,9 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                     'CANCELLED': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
                   }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
 
+                  // Check if ticket is overdue and not completed
+                  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+
                   // Calculate SLA status using timezone-aware function
                   const overdue = isTicketOverdue(ticket.resolveDeadline);
                   const { hours: hoursRemaining } = getTimeUntilDeadline(ticket.resolveDeadline);
@@ -187,7 +190,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                           background: statusInfo.bg,
                           color: statusInfo.color,
                         }}>
-                          {statusInfo.text}
+                          {isOverdue ? '⚠️ Đã quá hạn' : statusInfo.text}
                         </span>
                       </td>
                       <td style={{ padding: '1rem' }}>

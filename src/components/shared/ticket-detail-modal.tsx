@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -25,6 +26,9 @@ const TicketDetailModal = ({
 }: TicketDetailModalProps) => {
   // Parse images from ticket (handles both imageUrl string and images array)
   const ticketImages = parseTicketImages(ticket);
+
+  // Check if ticket is overdue
+  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status);
 
   // State for feedback form - initialize from ticket
   const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
@@ -117,11 +121,31 @@ const TicketDetailModal = ({
               {ticket.status === 'open' && '🔵 Mới tạo'}
               {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '� chờ đánh giá'}
+              {ticket.status === 'resolved' && '🔵 chờ đánh giá'}
               {ticket.status === 'closed' && '✅ Đã hoàn thành'}
               {ticket.status === 'cancelled' && '🔴 Đã hủy'}
             </span>
+            {isOverdue && (
+              <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                ⚠️ Đã quá hạn
+              </span>
+            )}
           </div>
+
+          {/* Overdue notification */}
+          {isOverdue && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-xl">🚨</div>
+                <div>
+                  <div className="font-semibold text-red-800 mb-1">Ticket đã bị quá hạn</div>
+                  <div className="text-sm text-red-700">
+                    Ticket này đã vượt quá hạn xử lý. Vui lòng ưu tiên hoàn thành ticket này trong thời gian sớm nhất.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-8">

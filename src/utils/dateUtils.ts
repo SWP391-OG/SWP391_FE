@@ -127,3 +127,27 @@ export const getTimeUntilDeadline = (
 
   return { hours, minutes, isOverdue: false };
 };
+
+/**
+ * Check if ticket is overdue and not completed (not resolved or closed)
+ * This is used to display "Đã quá hạn" status for in-progress tickets
+ * @param resolveDeadline - ISO deadline string from backend
+ * @param status - Current ticket status
+ * @returns true if deadline has passed AND ticket is not in resolved/closed/cancelled status
+ */
+export const isTicketOverdueAndNotCompleted = (
+  resolveDeadline: string | undefined | null,
+  status: string | undefined | null
+): boolean => {
+  if (!resolveDeadline || !status) return false;
+
+  // Only show overdue for in-progress, acknowledged, or assigned tickets
+  // Don't show for resolved, closed, or cancelled tickets
+  const activeStatuses = ['in-progress', 'in_progress', 'IN_PROGRESS', 'acknowledged', 'ACKNOWLEDGED', 'assigned', 'ASSIGNED'];
+  if (!activeStatuses.some(s => status.toLowerCase() === s.toLowerCase())) {
+    return false;
+  }
+
+  // Check if deadline has passed
+  return isTicketOverdue(resolveDeadline);
+};
