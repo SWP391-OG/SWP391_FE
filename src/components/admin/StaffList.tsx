@@ -1,9 +1,8 @@
-import type { User, Department } from '../../types';
+import type { User } from '../../types';
 import Pagination from '../shared/Pagination';
 
 interface StaffListProps {
   staffUsers: User[];
-  departments: Department[];
   loading?: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -18,7 +17,6 @@ interface StaffListProps {
 
 const StaffList = ({
   staffUsers,
-  departments,
   loading = false,
   searchQuery,
   onSearchChange,
@@ -132,11 +130,6 @@ const StaffList = ({
                     return null;
                   }
                   
-                  const roleInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
-                    'it-staff': { text: 'IT Staff', bg: 'bg-blue-100', textColor: 'text-blue-800' },
-                    'facility-staff': { text: 'Facility Staff', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
-                  };
-                  const roleInfo = roleInfoMap[staff.role] || { text: staff.role, bg: 'bg-gray-100', textColor: 'text-gray-700' };
                   const statusInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
                     'active': { text: 'Hoạt động', bg: 'bg-green-100', textColor: 'text-green-800' },
                     'inactive': { text: 'Ngừng hoạt động', bg: 'bg-red-100', textColor: 'text-red-800' },

@@ -681,7 +681,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'staff' && (
             <StaffList
               staffUsers={getStaffUsers}
-              departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
               onSearchChange={(query) => {
