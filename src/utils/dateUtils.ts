@@ -141,9 +141,9 @@ export const isTicketOverdueAndNotCompleted = (
 ): boolean => {
   if (!resolveDeadline || !status) return false;
 
-  // Only show overdue for in-progress, acknowledged, or assigned tickets
+  // Only show overdue for in-progress or assigned tickets
   // Don't show for resolved, closed, or cancelled tickets
-  const activeStatuses = ['in-progress', 'in_progress', 'IN_PROGRESS', 'acknowledged', 'ACKNOWLEDGED', 'assigned', 'ASSIGNED'];
+  const activeStatuses = ['in-progress', 'in_progress', 'IN_PROGRESS', 'assigned', 'ASSIGNED'];
   if (!activeStatuses.some(s => status.toLowerCase() === s.toLowerCase())) {
     return false;
   }

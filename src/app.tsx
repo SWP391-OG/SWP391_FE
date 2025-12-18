@@ -125,7 +125,7 @@ function App() {
         return prevTickets.map(ticket => {
           // Chỉ escalate tickets đang mở hoặc đang xử lý và quá hạn
           if (
-            (ticket.status === 'open' || ticket.status === 'acknowledged' || ticket.status === 'in-progress') &&
+            (ticket.status === 'open' || ticket.status === 'in-progress') &&
             ticket.slaTracking?.deadline &&
             new Date(ticket.slaTracking.deadline) < now &&
             !ticket.slaTracking.timeline.some(e => e.action.includes('escalated'))

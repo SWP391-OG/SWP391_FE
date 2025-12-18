@@ -411,7 +411,7 @@ const CreateTicketPage = ({ category, onBack, onSubmit }: CreateTicketPageProps)
                   <div className="text-sm text-gray-700">
                     Trạng thái: <span className="font-bold text-blue-600">
                       {duplicateTicket.status === 'open' ? 'Mở' :
-                       duplicateTicket.status === 'acknowledged' ? 'Đã xác nhận' :
+                       duplicateTicket.status === 'assigned' ? 'Đã giao việc' :
                        duplicateTicket.status === 'in-progress' ? 'Đang xử lý' :
                        duplicateTicket.status === 'resolved' ? 'chờ đánh giá' :
                        duplicateTicket.status === 'closed' ? 'Đã hoàn thành' : duplicateTicket.status}

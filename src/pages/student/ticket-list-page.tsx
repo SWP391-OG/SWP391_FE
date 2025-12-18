@@ -97,7 +97,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     const statusOrder: Record<string, number> = {
       'open': 1,
       'assigned': 2,
-      'acknowledged': 2,
       'in-progress': 3,
       'resolved': 4,
       'closed': 5,
@@ -116,7 +115,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
     assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
-    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -138,7 +136,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     const statusLabelsMap: Record<string, string> = {
       open: 'Mới tạo',
       assigned: 'Đã được giao việc',
-      acknowledged: 'Mới tạo',
       created: 'Mới tạo',
       'in-progress': 'Đang xử lý',
       resolved: 'chờ đánh giá',

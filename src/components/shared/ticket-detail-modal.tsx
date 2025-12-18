@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
-import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline, formatDateToVN } from '../../utils/dateUtils';
+import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline } from '../../utils/dateUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -63,7 +63,6 @@ const TicketDetailModal = ({
   // Status colors
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
-    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     'in_progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
@@ -171,15 +170,15 @@ const TicketDetailModal = ({
           )}
 
           {/* Assigned but Overdue Notification - Dành cho Admin/Staff */}
-          {!isStudentView && isOverdue && (ticket.assignedToCode || ticket.assignedToName) && 
-           (ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS' || ticket.status === 'acknowledged' || ticket.status === 'ACKNOWLEDGED') && (
+          {!isStudentView && isOverdue && (ticket.assignedTo || ticket.assignedToName) && 
+           (ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS') && (
             <div className="mb-8 p-5 bg-orange-50 border-2 border-orange-400 rounded-lg">
               <div className="flex items-start gap-3">
                 <div className="text-3xl">⚠️</div>
                 <div className="flex-1">
                   <div className="font-bold text-orange-900 mb-2 text-lg">Cảnh báo: Ticket quá hạn không được xử lí</div>
                   <div className="text-sm text-orange-800 mb-3 leading-relaxed">
-                    Ticket này đã được giao cho <strong>{ticket.assignedToName || ticket.assignedToCode}</strong> nhưng đã vượt quá thời hạn xử lý mà vẫn chưa hoàn thành.
+                    Ticket này đã được giao cho <strong>{ticket.assignedToName || ticket.assignedTo}</strong> nhưng đã vượt quá thời hạn xử lý mà vẫn chưa hoàn thành.
                   </div>
                   <div className="text-sm font-semibold text-orange-900 p-3 bg-white border border-orange-200 rounded">
                     ❌ <strong>Hành động bắt buộc:</strong> Vui lòng hủy ticket hoặc liên hệ ngay với người xử lý để giải quyết vấn đề này.

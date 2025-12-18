@@ -280,7 +280,7 @@ export const ticketService = {
     const ticket = this.getById(ticketId);
     if (!ticket) throw new Error('Ticket not found');
     
-    const newStatus = ticket.status === 'open' ? 'acknowledged' : ticket.status;
+    const newStatus = ticket.status === 'open' ? 'assigned' : ticket.status;
     return this.update(ticketId, {
       assignedTo: staffId,
       assignedToName: staffName,

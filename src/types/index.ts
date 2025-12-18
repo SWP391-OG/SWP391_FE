@@ -300,12 +300,10 @@ export interface SLATimelineEvent {
 
 export interface SLATracking {
   createdAt: string;
-  acknowledgedAt?: string;
   startedAt?: string;
   resolvedAt?: string;
   closedAt?: string;
   deadline: string;
-  responseTime?: number; // Time to acknowledge in minutes
   resolutionTime?: number; // Time to resolve in minutes
   isOverdue: boolean;
   overdueBy?: number; // Minutes overdue
@@ -313,7 +311,7 @@ export interface SLATracking {
 }
 
 // Ticket types
-export type TicketStatus = 'open' | 'assigned' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
 
 // API Response Types for Tickets
 export interface TicketFromApi {

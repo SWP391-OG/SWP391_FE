@@ -330,8 +330,8 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
   };
 
   const handleApproveTicket = (ticketId: string) => {
-    // Chấp nhận ticket: chuyển từ 'open' sang 'acknowledged'
-    updateTicketStatus(ticketId, 'acknowledged');
+    // Chấp nhận ticket: chuyển từ 'open' sang 'assigned'
+    updateTicketStatus(ticketId, 'assigned');
   };
 
   const handleRejectTicket = (ticketId: string, reason: string) => {

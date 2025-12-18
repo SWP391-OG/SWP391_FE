@@ -117,7 +117,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   // Filter tickets by tab
   const pendingTickets = studentTickets.filter(t => t.status === 'open');
   const processingTickets = studentTickets.filter(t => 
-    t.status === 'assigned' || t.status === 'acknowledged' || t.status === 'in-progress'
+    t.status === 'assigned' || t.status === 'in-progress'
   );
   const waitingFeedbackTickets = studentTickets.filter(t => t.status === 'resolved');
   const completedTickets = studentTickets.filter(t => t.status === 'closed');

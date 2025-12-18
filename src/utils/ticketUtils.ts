@@ -40,7 +40,7 @@ export const checkDuplicateTicket = (
 ): Ticket | null => {
   // Chỉ kiểm tra tickets đang mở hoặc đang xử lý
   const activeTickets = existingTickets.filter(t => 
-    t.status === 'open' || t.status === 'acknowledged' || t.status === 'in-progress'
+    t.status === 'open' || t.status === 'in-progress'
   );
 
   // So sánh với từng ticket hiện có

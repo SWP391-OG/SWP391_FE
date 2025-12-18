@@ -14,7 +14,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
     return {
       total: tickets.length,
       open: tickets.filter(t => t.status === 'open').length,
-      acknowledged: tickets.filter(t => t.status === 'acknowledged').length,
       inProgress: tickets.filter(t => t.status === 'in-progress').length,
       resolved: tickets.filter(t => t.status === 'resolved').length,
       closed: tickets.filter(t => t.status === 'closed').length,
@@ -33,10 +32,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
         <div className="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200">
           <div className="text-2xl font-bold text-blue-600">{stats.open}</div>
           <div className="text-sm text-blue-600 mt-1">Mở</div>
-        </div>
-        <div className="bg-purple-50 rounded-xl p-4 shadow-sm border border-purple-200">
-          <div className="text-2xl font-bold text-purple-600">{stats.acknowledged}</div>
-          <div className="text-sm text-purple-600 mt-1">Đã xác nhận</div>
         </div>
         <div className="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-200">
           <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
@@ -112,7 +107,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                     open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     'NEW': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     assigned: { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
-                    'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'ASSIGNED': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
                     'IN_PROGRESS': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
@@ -220,7 +214,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                                 open: 'Mở',
                                 'NEW': 'Mới tạo',
                                 assigned: 'Đã giao việc',
-                                'acknowledged': 'Đã xác nhận',
                                 'ASSIGNED': 'Đã giao việc',
                                 'in-progress': 'Đang xử lý',
                                 'IN_PROGRESS': 'Đang xử lý',
@@ -240,7 +233,6 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                             }}
                           >
                             <option value="open">Mở</option>
-                            <option value="acknowledged">Đã xác nhận</option>
                             <option value="in-progress">Đang xử lý</option>
                             <option value="resolved">chờ đánh giá</option>
                             <option value="closed">Đã hoàn thành</option>
