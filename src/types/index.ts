@@ -71,6 +71,7 @@ export interface UserUpdateDto {
   phoneNumber?: string;
   roleId?: number;
   departmentId?: number;
+  passwordHash?: string;          // Mật khẩu (optional)
   // status KHÔNG gửi trong update (dùng updateStatus riêng)
 }
 

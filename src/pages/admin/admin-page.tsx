@@ -681,7 +681,6 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
           {activeTab === 'staff' && (
             <StaffList
               staffUsers={getStaffUsers}
-              departments={adminDepartments}
               loading={usersLoading}
               searchQuery={staffSearchQuery}
               onSearchChange={(query) => {
@@ -1138,8 +1137,11 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   email: staffFormData.username || staffFormData.email, // username chính là email
                   phoneNumber: staffFormData.phoneNumber || undefined,
                   role: staffFormData.role,
+                  roleId: undefined,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
+                  password: staffFormData.password || undefined, // Optional password update
                 });
+                alert('✅ Cập nhật staff thành công!');
               } else {
                 // Create new staff
                 // Trong StaffForm, field "username" có label "Tên đăng nhập (Email) *", nên dùng username làm email
@@ -1152,6 +1154,7 @@ const AdminPage = ({ currentAdminId = 'admin-001' }: AdminPageProps) => {
                   role: staffFormData.role,
                   departmentId: staffFormData.departmentId ? (isNaN(parseInt(staffFormData.departmentId)) ? undefined : parseInt(staffFormData.departmentId)) : undefined,
                 });
+                alert('✅ Thêm staff mới thành công!');
                 
                 setStaffPageNumber(1);
               }
