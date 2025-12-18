@@ -3,7 +3,7 @@ import { ticketService } from '../../services/ticketService';
 import AssignedTicketsList from '../../components/staff/AssignedTicketsList';
 import type { TicketFromApi } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
-import { formatDateToVN } from '../../utils/dateUtils';
+import { formatDateToVN, getTimeUntilDeadline, isTicketOverdue } from '../../utils/dateUtils';
 const StaffPage = () => {
   const [tickets, setTickets] = useState<TicketFromApi[]>([]);
   const [loading, setLoading] = useState(true);
@@ -375,6 +375,27 @@ const StaffPage = () => {
                   <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
                     <div className="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wide">⏰ Hạn xử lý</div>
                     <div className="text-base font-semibold text-gray-800">{formatDateToVN(selectedTicket.resolveDeadline)}</div>
+                    {/* Countdown for staff */}
+                    {isTicketOverdue(selectedTicket.resolveDeadline) ? (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <div className="text-sm text-red-600 font-semibold flex items-center gap-2">
+                          <span>🚨</span>
+                          <span>Đã quá hạn</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        {(() => {
+                          const { hours, minutes } = getTimeUntilDeadline(selectedTicket.resolveDeadline);
+                          return (
+                            <div className="text-sm text-green-600 font-semibold flex items-center gap-2">
+                              <span>✅</span>
+                              <span>Còn {hours} giờ {minutes} phút</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                   </div>
 
                   {/* Ngày hoàn thành */}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
-import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
+import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline, formatDateToVN } from '../../utils/dateUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -157,6 +157,38 @@ const TicketDetailModal = ({
             <div className="text-base text-gray-600 leading-[1.8]">{ticket.description}</div>
           </div>
 
+          {/* Overdue Notification Box - Detail View */}
+          {isOverdue && (
+            <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🚨</div>
+                <div>
+                  <div className="font-semibold text-red-800 mb-1">Ticket đã quá hạn</div>
+                  <div className="text-sm text-red-700">Vui lòng ưu tiên hoàn thành.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Assigned but Overdue Notification - Dành cho Admin/Staff */}
+          {!isStudentView && isOverdue && (ticket.assignedToCode || ticket.assignedToName) && 
+           (ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS' || ticket.status === 'acknowledged' || ticket.status === 'ACKNOWLEDGED') && (
+            <div className="mb-8 p-5 bg-orange-50 border-2 border-orange-400 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <div className="font-bold text-orange-900 mb-2 text-lg">Cảnh báo: Ticket quá hạn không được xử lí</div>
+                  <div className="text-sm text-orange-800 mb-3 leading-relaxed">
+                    Ticket này đã được giao cho <strong>{ticket.assignedToName || ticket.assignedToCode}</strong> nhưng đã vượt quá thời hạn xử lý mà vẫn chưa hoàn thành.
+                  </div>
+                  <div className="text-sm font-semibold text-orange-900 p-3 bg-white border border-orange-200 rounded">
+                    ❌ <strong>Hành động bắt buộc:</strong> Vui lòng hủy ticket hoặc liên hệ ngay với người xử lý để giải quyết vấn đề này.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Information */}
           <div className="mb-8">
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -191,6 +223,31 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">
                     {formatDateTime(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '')}
                   </div>
+                  {/* Countdown - Chỉ hiển thị cho Staff (khi không phải isStudentView) */}
+                  {!isStudentView && (
+                    <>
+                      {isTicketOverdue(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) ? (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="text-sm text-red-600 font-semibold flex items-center gap-2">
+                            <span>🚨</span>
+                            <span>Đã quá hạn</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {(() => {
+                            const { hours, minutes } = getTimeUntilDeadline(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt);
+                            return (
+                              <div className="text-sm text-green-600 font-semibold flex items-center gap-2">
+                                <span>✅</span>
+                                <span>Còn {hours} giờ {minutes} phút</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
               {(ticket.assignedTo || ticket.assignedToName) && (

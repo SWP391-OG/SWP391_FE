@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { TicketFromApi } from '../../types';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface AssignedTicketsListProps {
   tickets: TicketFromApi[];
@@ -14,6 +15,14 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
     ticket.ticketCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.locationName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Separate overdue tickets from normal tickets
+  const overdueTickets = filteredTickets.filter(ticket => 
+    isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status)
+  );
+  const normalTickets = filteredTickets.filter(ticket => 
+    !isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status)
   );
 
   // Format date
@@ -91,17 +100,116 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
         />
       </div>
 
-      {/* Tickets List */}
+      {/* Overdue Tickets Section */}
+      {overdueTickets.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border-2 border-red-300 overflow-hidden">
+          <div className="p-6 border-b border-red-200 bg-red-50">
+            <h3 className="text-xl font-bold text-red-800 flex items-center gap-2">
+              🚨 Tickets Quá Hạn Xử Lí ({overdueTickets.length})
+            </h3>
+          </div>
+          
+          <div className="divide-y divide-red-200">
+            {overdueTickets.map((ticket) => {
+              const statusInfo = getStatusColor(ticket.status);
+              const remainingTime = getRemainingTime(ticket.resolveDeadline, ticket.status);
+              
+              return (
+                <div
+                  key={ticket.ticketCode}
+                  className="p-6 hover:bg-red-50 transition-colors border-l-4 border-red-500 bg-red-50"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Left Section - Ticket Info */}
+                    <div className="flex-1 space-y-3">
+                      {/* Ticket Code & Status */}
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-sm font-semibold text-blue-600">
+                          {ticket.ticketCode}
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusInfo.bg} ${statusInfo.text}`}>
+                          {statusInfo.label}
+                        </span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${remainingTime.bg} ${remainingTime.color}`}>
+                          ⏱️ {remainingTime.text}
+                        </span>
+                      </div>
+                      
+                      {/* Title */}
+                      <h4 className="text-lg font-semibold text-gray-900">
+                        {ticket.title}
+                      </h4>
+                      
+                      {/* Description */}
+                      <p className="text-gray-600 line-clamp-2">
+                        {ticket.description}
+                      </p>
+
+                      {/* Overdue Notification Box */}
+                      <div className="mt-3 p-4 bg-red-100 border-l-4 border-red-600 rounded">
+                        <div className="flex items-start gap-3">
+                          <div className="text-xl">🚨</div>
+                          <div>
+                            <div className="font-bold text-red-900 text-sm">Ticket đã quá hạn xử lí, hãy vui lòng xử lí nhanh!</div>
+                            <div className="text-sm text-red-800 mt-1">Vui lòng ưu tiên hoàn thành ticket này ngay.</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Note - if exists */}
+                      {ticket.note && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
+                          <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
+                        </div>
+                      )}
+                      
+                      {/* Meta Info */}
+                      <div className="flex items-center gap-6 text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span>{ticket.locationName}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Hạn: {formatDateTime(ticket.resolveDeadline)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Right Section - Action Button */}
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => onViewDetail(ticket)}
+                        className="px-6 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                      >
+                        Xem chi tiết
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Normal Tickets List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-xl font-bold text-gray-900">
-            Tickets được giao ({filteredTickets.length})
+            Tickets được giao ({normalTickets.length})
           </h3>
         </div>
         
-        {filteredTickets.length > 0 ? (
+        {normalTickets.length > 0 ? (
           <div className="divide-y divide-gray-200">
-            {filteredTickets.map((ticket) => {
+            {normalTickets.map((ticket) => {
               const statusInfo = getStatusColor(ticket.status);
               const remainingTime = getRemainingTime(ticket.resolveDeadline, ticket.status);
               

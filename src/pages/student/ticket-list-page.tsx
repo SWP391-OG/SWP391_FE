@@ -313,9 +313,15 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                     <div className="text-[0.85rem] font-semibold text-gray-500 mb-2">{ticket.id}</div>
                     <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                     <div className="flex gap-4 flex-wrap items-center">
-                      <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                        {getStatusLabel(ticket.status, ticket.resolveDeadline)}
-                      </span>
+                      {isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status) ? (
+                        <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold bg-red-100 text-red-800`}>
+                          ⚠️ Quá hạn
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
+                          {getStatusLabel(ticket.status, ticket.resolveDeadline)}
+                        </span>
+                      )}
                       {ticket.categoryId && (
                         <span className="flex items-center gap-2 text-sm text-gray-500">
                           <span>🔧</span>
@@ -335,6 +341,19 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                 <p className="text-[0.95rem] text-gray-500 leading-relaxed line-clamp-2 overflow-hidden">
                   {ticket.description}
                 </p>
+
+                {/* Overdue Notification Box */}
+                {isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status) && (
+                  <div className="mt-3 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                    <div className="flex items-start gap-3">
+                      <div className="text-xl">🚨</div>
+                      <div>
+                        <div className="font-semibold text-red-800 text-sm">Ticket đã quá hạn</div>
+                        <div className="text-sm text-red-700 mt-1">Vui lòng ưu tiên hoàn thành.</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm">
