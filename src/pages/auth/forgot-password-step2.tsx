@@ -1,3 +1,4 @@
+// Bước 2 - Quên mật khẩu: nhập mã reset + mật khẩu mới để đặt lại
 import { useState } from 'react';
 import { authService } from '../../services/authService';
 
@@ -14,6 +15,7 @@ const ForgotPasswordStep2 = ({
   onBack,
   onNavigateToLogin 
 }: ForgotPasswordStep2Props) => {
+  // State quản lý mã reset + mật khẩu mới và trạng thái UI
   const [formData, setFormData] = useState({
     resetCode: '',
     newPassword: '',
@@ -23,6 +25,7 @@ const ForgotPasswordStep2 = ({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Cập nhật form khi người dùng nhập dữ liệu
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -32,6 +35,7 @@ const ForgotPasswordStep2 = ({
     setSuccess('');
   };
 
+  // Kiểm tra hợp lệ: bắt buộc có mã reset và mật khẩu đủ độ dài
   const validateForm = () => {
     if (!formData.resetCode.trim()) {
       setError('Vui lòng nhập mã reset!');
@@ -46,6 +50,7 @@ const ForgotPasswordStep2 = ({
     return true;
   };
 
+  // Gửi yêu cầu reset mật khẩu tới backend, nếu thành công thì callback về trang login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

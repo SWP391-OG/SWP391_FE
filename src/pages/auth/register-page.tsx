@@ -1,15 +1,19 @@
+// Trang Đăng ký tài khoản: gửi thông tin đăng ký và chuyển sang bước xác thực email
 import { useState } from 'react';
 import { authService } from '../../services/authService';
 import VerifyEmailPage from './verify-email-page';
 
+// Props nhận callback để điều hướng sau khi đăng ký + verify thành công
 interface RegisterPageProps {
   onRegisterSuccess: () => void;
   onNavigateToLogin?: () => void;
 }
 
 const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProps) => {
+  // step: 'register' = màn hình nhập form, 'verify' = màn hình nhập mã xác thực
   const [step, setStep] = useState<'register' | 'verify'>('register');
   const [registeredEmail, setRegisteredEmail] = useState('');
+  // State form đăng ký
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,6 +27,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Cập nhật state khi người dùng nhập form
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -31,6 +36,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     setError('');
   };
 
+  // Kiểm tra hợp lệ các trường trong form trước khi gửi API đăng ký
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
@@ -67,6 +73,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     return true;
   };
 
+  // Gửi request đăng ký tới backend, nếu thành công thì chuyển sang bước verify email
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -92,6 +99,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     }
   };
 
+  // Sau khi verify email thành công: reset form và callback về login
   const handleVerifySuccess = () => {
     // Reset state
     setStep('register');

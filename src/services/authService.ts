@@ -1,7 +1,8 @@
+// Service xử lý toàn bộ luồng xác thực (login, register, verify email, quên mật khẩu, logout)
 import type { User, UserRole } from '../types';
 import { apiClient } from './api';
 
-// Response types từ backend API
+// Kiểu dữ liệu response cho API đăng nhập từ backend
 interface LoginApiResponse {
   status: boolean;
   message: string;
@@ -15,7 +16,7 @@ interface LoginApiResponse {
   errors: string[];
 }
 
-interface RegisterApiResponse {
+// Kiểu dữ liệu response cho API đăng ký
   status: boolean;
   message: string;
   data?: {
@@ -25,7 +26,7 @@ interface RegisterApiResponse {
   errors: string[];
 }
 
-// Helper để convert role từ backend sang frontend format
+// Helper để convert vai trò từ backend ("Admin", "Staff", "Student") sang UserRole ở frontend
 const mapRoleFromBackend = (backendRole: string): UserRole => {
   const roleMap: Record<string, UserRole> = {
     'Admin': 'admin',
@@ -41,10 +42,10 @@ const mapRoleFromBackend = (backendRole: string): UserRole => {
 
 export const authService = {
   /**
-   * Login với backend API
-   * @param email - Email đăng nhập
-   * @param password - Mật khẩu
-   * @returns User object hoặc null nếu thất bại
+   * Đăng nhập với backend API
+   * - Gửi email/mật khẩu
+   * - Nhận token + thông tin user
+   * - Lưu token vào localStorage và map sang User (frontend)
    */
   async login(email: string, password: string): Promise<User | null> {
     try {
@@ -69,10 +70,10 @@ export const authService = {
         fullName: data.fullName 
       });
       
-      // Lưu token vào localStorage
+      // Lưu token vào localStorage để sử dụng cho các request sau
       localStorage.setItem('auth_token', data.token);
       
-      // Map role từ backend
+      // Map role từ backend sang UserRole frontend
       const mappedRole = mapRoleFromBackend(data.role);
       
       // Map response từ backend sang User type của frontend
@@ -113,12 +114,9 @@ export const authService = {
   },
 
   /**
-   * Register với backend API
-   * @param email - Email đăng ký
-   * @param password - Mật khẩu
-   * @param fullName - Họ và tên
-   * @param phoneNumber - Số điện thoại
-   * @returns success status và message
+   * Đăng ký tài khoản mới với backend API
+   * - Gửi thông tin người dùng
+   * - Backend gửi email xác thực cho user
    */
   async register(
     email: string,
@@ -175,7 +173,7 @@ export const authService = {
   },
 
   /**
-   * Logout - xóa token
+   * Logout - xóa token và thông tin user khỏi localStorage
    */
   logout(): void {
     localStorage.removeItem('auth_token');
@@ -183,7 +181,7 @@ export const authService = {
   },
 
   /**
-   * Get current user từ token
+   * Lấy user hiện tại từ localStorage (đã lưu sau khi login)
    */
   getCurrentUser(): User | null {
     const token = localStorage.getItem('auth_token');
@@ -202,16 +200,14 @@ export const authService = {
   },
 
   /**
-   * Check if user is authenticated
+   * Kiểm tra trạng thái đã đăng nhập hay chưa (dựa vào token trong localStorage)
    */
   isAuthenticated(): boolean {
     return !!localStorage.getItem('auth_token');
   },
 
   /**
-   * Forgot password - bước 1: gửi email để nhận reset code
-   * @param email - Email đăng ký
-   * @returns success status và message
+   * Quên mật khẩu - Bước 1: gửi email để backend gửi mã reset
    */
   async forgotPassword(email: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -252,11 +248,8 @@ export const authService = {
   },
 
   /**
-   * Reset password - bước 2: đặt lại mật khẩu với reset code
-   * @param email - Email đăng ký
-   * @param resetCode - Mã reset được gửi qua email
-   * @param newPassword - Mật khẩu mới
-   * @returns success status và message
+   * Đặt lại mật khẩu - Bước 2
+   * - Gửi email, resetCode và mật khẩu mới lên backend
    */
   async resetPassword(
     email: string,
@@ -305,10 +298,7 @@ export const authService = {
   },
 
   /**
-   * Verify email - xác thực email sau khi đăng ký
-   * @param email - Email đăng ký
-   * @param verificationCode - Mã xác thực được gửi qua email
-   * @returns success status và message
+   * Xác thực email sau khi đăng ký bằng verificationCode
    */
   async verifyEmail(email: string, verificationCode: string): Promise<{ success: boolean; message: string }> {
     try {
@@ -352,9 +342,7 @@ export const authService = {
   },
 
   /**
-   * Resend verification email
-   * @param email - Email để gửi lại mã xác thực
-   * @returns success status và message
+   * Gửi lại email chứa mã xác thực nếu người dùng chưa nhận được
    */
   async resendVerificationEmail(email: string): Promise<{ success: boolean; message: string }> {
     try {

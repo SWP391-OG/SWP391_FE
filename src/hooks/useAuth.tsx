@@ -1,0 +1,3 @@
+// Hook tiện ích (hiện tại để trống) có thể dùng để gom logic đăng nhập/đăng xuất sau này
+// Ví dụ: lưu user vào context, lắng nghe thay đổi token,...
+

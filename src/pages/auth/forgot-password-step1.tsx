@@ -1,3 +1,4 @@
+// Bước 1 - Quên mật khẩu: nhập email và yêu cầu gửi mã reset về email
 import { useState } from 'react';
 import { authService } from '../../services/authService';
 
@@ -7,11 +8,13 @@ interface ForgotPasswordStep1Props {
 }
 
 const ForgotPasswordStep1 = ({ onNext, onNavigateToLogin }: ForgotPasswordStep1Props) => {
+  // State quản lý input email + thông báo lỗi / thành công
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Kiểm tra định dạng email cơ bản trước khi gọi API
   const validateEmail = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -21,6 +24,7 @@ const ForgotPasswordStep1 = ({ onNext, onNavigateToLogin }: ForgotPasswordStep1P
     return true;
   };
 
+  // Gửi request quên mật khẩu lên backend, nếu thành công thì chuyển sang bước 2
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

@@ -1,3 +1,4 @@
+// Trang gửi lại mã xác thực email sau đăng ký
 import { useState } from 'react';
 import { authService } from '../../services/authService';
 
@@ -12,11 +13,13 @@ const ResendVerificationPage = ({
   onBack,
   onNavigateToLogin 
 }: ResendVerificationPageProps) => {
+  // State quản lý email và trạng thái hiển thị thông báo
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Kiểm tra định dạng email trước khi gọi API
   const validateEmail = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
@@ -26,6 +29,7 @@ const ResendVerificationPage = ({
     return true;
   };
 
+  // Gọi API resend verification; nếu thành công thì callback về VerifyEmailPage
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');

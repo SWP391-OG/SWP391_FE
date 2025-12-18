@@ -1,3 +1,4 @@
+// Trang xác thực email sau khi đăng ký: nhập mã verify hoặc chuyển sang màn hình gửi lại mã
 import { useState, useEffect } from 'react';
 import { authService } from '../../services/authService';
 import ResendVerificationPage from './resend-verification-page';
@@ -8,6 +9,7 @@ interface VerifyEmailPageProps {
   onNavigateToLogin?: () => void;
 }
 
+// step = 'verify': nhập mã; step = 'resend': chuyển sang form gửi lại mã
 type VerifyStep = 'verify' | 'resend';
 
 const VerifyEmailPage = ({ email, onVerifySuccess, onNavigateToLogin }: VerifyEmailPageProps) => {
@@ -16,9 +18,10 @@ const VerifyEmailPage = ({ email, onVerifySuccess, onNavigateToLogin }: VerifyEm
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  // Email hiện tại dùng để verify (có thể thay đổi nếu user resend bằng email khác)
   const [currentEmail, setCurrentEmail] = useState(email);
 
-  // Close on ESC key
+  // Đóng về màn login khi nhấn phím ESC
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -29,6 +32,7 @@ const VerifyEmailPage = ({ email, onVerifySuccess, onNavigateToLogin }: VerifyEm
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onNavigateToLogin]);
 
+  // Gửi yêu cầu verify email lên backend, nếu thành công thì callback về trang login
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -53,6 +57,7 @@ const VerifyEmailPage = ({ email, onVerifySuccess, onNavigateToLogin }: VerifyEm
     }
   };
 
+  // Khi gửi lại mã thành công: cập nhật email và quay lại bước verify
   const handleResendSuccess = (resendEmail: string) => {
     setCurrentEmail(resendEmail);
     setVerificationCode('');
