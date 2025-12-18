@@ -1,6 +1,20 @@
 import type { User, UserRole } from '../types';
 import { apiClient } from './api';
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 🔐 [AUTH SERVICE] - Quản lý authentication & authorization
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Login: xác thực email + password, lưu token
+// - Register: tạo tài khoản mới cho sinh viên
+// - Logout: xóa token khỏi localStorage
+// - Role mapping: chuyển đổi role từ backend sang frontend
+// ════════════════════════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// 📝 [API RESPONSE TYPES] - Định nghĩa các response types từ backend
+// ─────────────────────────────────────────────────────────────────────────────────
+
 // Response types từ backend API
 interface LoginApiResponse {
   status: boolean;
@@ -25,6 +39,10 @@ interface RegisterApiResponse {
   errors: string[];
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────
+// 🔄 [ROLE MAPPING] - Convert role từ backend sang frontend format
+// ─────────────────────────────────────────────────────────────────────────────────
+
 // Helper để convert role từ backend sang frontend format
 const mapRoleFromBackend = (backendRole: string): UserRole => {
   const roleMap: Record<string, UserRole> = {
@@ -40,6 +58,10 @@ const mapRoleFromBackend = (backendRole: string): UserRole => {
 };
 
 export const authService = {
+  // ───────────────────────────────────────────────────────────────────────────────
+  // 🔐 [LOGIN] - Xác thực người dùng
+  // ───────────────────────────────────────────────────────────────────────────────
+  
   /**
    * Login với backend API
    * @param email - Email đăng nhập
@@ -51,6 +73,7 @@ export const authService = {
       console.log('🔐 Attempting login with email:', email);
       console.log('🌐 API Base URL:', import.meta.env.VITE_API_BASE_URL);
       
+      // Gọi /auth/login endpoint
       const response = await apiClient.post<LoginApiResponse>('/auth/login', {
         email,
         password,
@@ -69,10 +92,10 @@ export const authService = {
         fullName: data.fullName 
       });
       
-      // Lưu token vào localStorage
+      // Lưu token vào localStorage (sẽ dùng cho các API request sau này)
       localStorage.setItem('auth_token', data.token);
       
-      // Map role từ backend
+      // Map role từ backend ("Admin"/"Staff"/"Student") sang frontend enum
       const mappedRole = mapRoleFromBackend(data.role);
       
       // Map response từ backend sang User type của frontend

@@ -7,11 +7,24 @@ interface CategoryCardProps {
   onSelect?: (category: Category) => void;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 🏷️ [CATEGORY CARD] - Card hiển thị một category/issue type
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Hiển thị thông tin category (tên, mô tả)
+// - Highlight nếu được chọn
+// - Click để chọn category
+// ════════════════════════════════════════════════════════════════════════════════════
+
 const CategoryCard: React.FC<CategoryCardProps> = ({ 
   category, 
   isSelected = false,
   onSelect 
 }) => {
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎯 [EVENT HANDLER] - Xử lý click
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const handleClick = () => {
     if (onSelect) {
       onSelect(category);

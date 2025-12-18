@@ -2,6 +2,21 @@ import type { Ticket, GetAllTicketsResponse } from '../types';
 import { loadTickets, saveTickets } from '../utils/localStorage';
 import { apiClient } from './api';
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 🎫 [TICKET SERVICE] - Quản lý ticket-related operations
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Lấy tickets: tất cả (admin), của sinh viên, được assign cho staff
+// - Tạo ticket mới
+// - Update ticket status, feedback, rating
+// - Assign ticket: tự động hoặc thủ công
+// - Close ticket
+// ════════════════════════════════════════════════════════════════════════════════════
+
+// ─────────────────────────────────────────────────────────────────────────────────
+// 📝 [REQUEST/RESPONSE TYPES] - Định nghĩa các data types
+// ─────────────────────────────────────────────────────────────────────────────────
+
 // Request/Response types for API
 interface CreateTicketRequest {
   title: string;
@@ -43,7 +58,15 @@ interface CreateTicketResponse {
 }
 
 export const ticketService = {
-  // Lấy tất cả tickets từ API (cho Admin)
+  // ───────────────────────────────────────────────────────────────────────────────
+  // 📥 [FETCH TICKETS] - Lấy danh sách tickets từ API
+  // ───────────────────────────────────────────────────────────────────────────────
+  
+  /**
+   * Lấy tất cả tickets từ API (cho Admin)
+   * @param pageNumber - Số trang (1-indexed)
+   * @param pageSize - Số items trên mỗi trang
+   */
   async getAllTicketsFromApi(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
     try {
       const response = await apiClient.get<GetAllTicketsResponse>(
@@ -56,7 +79,11 @@ export const ticketService = {
     }
   },
 
-  // Lấy tickets của student hiện tại từ API
+  /**
+   * Lấy tickets của student hiện tại từ API
+   * @param pageNumber - Số trang (1-indexed)
+   * @param pageSize - Số items trên mỗi trang
+   */
   async getMyTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
     try {
       const response = await apiClient.get<GetAllTicketsResponse>(
@@ -69,7 +96,11 @@ export const ticketService = {
     }
   },
 
-  // Lấy tickets được assign cho staff hiện tại từ API
+  /**
+   * Lấy tickets được assign cho staff hiện tại từ API
+   * @param pageNumber - Số trang (1-indexed)
+   * @param pageSize - Số items trên mỗi trang
+   */
   async getMyAssignedTickets(pageNumber: number = 1, pageSize: number = 10): Promise<GetAllTicketsResponse> {
     try {
       const response = await apiClient.get<GetAllTicketsResponse>(
@@ -82,7 +113,10 @@ export const ticketService = {
     }
   },
 
-  // Lấy ticket theo mã ticket code
+  /**
+   * Lấy ticket theo mã ticket code
+   * @param ticketCode - Mã ticket (ví dụ: "T001")
+   */
   async getTicketByCode(ticketCode: string): Promise<{ status: boolean; message: string; data: Ticket; errors: string[] }> {
     try {
       const response = await apiClient.get<{ status: boolean; message: string; data: Ticket; errors: string[] }>(
@@ -95,7 +129,14 @@ export const ticketService = {
     }
   },
 
-  // Assign ticket tự động (cho Admin) - PATCH method
+  // ───────────────────────────────────────────────────────────────────────────────
+  // 🤝 [ASSIGN TICKETS] - Phân công ticket cho staff
+  // ───────────────────────────────────────────────────────────────────────────────
+  
+  /**
+   * Assign ticket tự động (cho Admin) - hệ thống tự chọn staff phù hợp
+   * @param ticketCode - Mã ticket
+   */
   async assignTicketAuto(ticketCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
       const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
@@ -109,7 +150,11 @@ export const ticketService = {
     }
   },
 
-  // Assign ticket thủ công (cho Admin) - PATCH method
+  /**
+   * Assign ticket thủ công (cho Admin) - admin chọn staff cụ thể
+   * @param ticketCode - Mã ticket
+   * @param manualStaffCode - Mã staff được chọn
+   */
   async assignTicketManual(ticketCode: string, manualStaffCode: string): Promise<{ status: boolean; message: string; data: unknown; errors: string[] }> {
     try {
       const response = await apiClient.patch<{ status: boolean; message: string; data: unknown; errors: string[] }>(
