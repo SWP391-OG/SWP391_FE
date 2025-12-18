@@ -16,6 +16,7 @@ export interface User {
   role: UserRole; // DB: role_id (FK) - Vai trò trong hệ thống
   roleId?: string; // DB: role_id (FK) - Thêm để tương thích với DB
   departmentId?: string; // DB: department_id (FK) - Bộ phận làm việc (NULL nếu là Student hoặc Sys Admin)
+  departmentName?: string; // Tên bộ phận từ API
   status: UserStatus; // DB: status - Trạng thái tài khoản (Active, Pending, Banned)
   isActive?: boolean; // DB: is_active (Soft Delete) - Cờ đánh dấu tài khoản còn hoạt động
   avatar?: string; // Frontend only - không có trong DB
@@ -33,6 +34,7 @@ export interface UserDto {
   phoneNumber: string | null;
   roleId: number;
   departmentId: number | null;
+  departmentName?: string; // Tên bộ phận từ API
   status: string; // "ACTIVE" | "INACTIVE" | "BANNED"
   createdAt: string | null;
 }

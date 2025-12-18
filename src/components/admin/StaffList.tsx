@@ -32,9 +32,7 @@ const StaffList = ({
   const filteredStaff = staffUsers.filter((staff: User) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
-    const staffIdStr = String(staff.id);
-    const dept = departments.find(d => d.staffIds?.includes(staffIdStr));
-    const deptName = dept?.name || '';
+    const deptName = (staff as any).departmentName || '';
     const roleInfoMap: Record<string, string> = {
       'it-staff': 'IT Staff',
       'facility-staff': 'Facility Staff',
@@ -42,7 +40,7 @@ const StaffList = ({
     const roleText = roleInfoMap[staff.role] || staff.role;
     
     return (
-      staff.username?.toLowerCase().includes(query) ||
+      staff.userCode?.toLowerCase().includes(query) ||
       staff.fullName?.toLowerCase().includes(query) ||
       staff.email?.toLowerCase().includes(query) ||
       roleText.toLowerCase().includes(query) ||
@@ -129,8 +127,6 @@ const StaffList = ({
                 </tr>
               ) : (
                 paginatedFilteredStaff.map((staff: User) => {
-                  const staffIdStr = String(staff.id);
-                  const dept = departments.find(d => d.staffIds?.includes(staffIdStr));
                   const roleInfoMap: Record<string, { text: string; bg: string; textColor: string }> = {
                     'it-staff': { text: 'IT Staff', bg: 'bg-blue-100', textColor: 'text-blue-800' },
                     'facility-staff': { text: 'Facility Staff', bg: 'bg-yellow-100', textColor: 'text-yellow-800' },
@@ -146,7 +142,7 @@ const StaffList = ({
                   return (
                     <tr key={staff.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-4 py-4 text-sm text-gray-600 font-medium">
-                        {staff.username}
+                        {staff.userCode}
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-900 font-semibold">
                         {staff.fullName}
@@ -160,7 +156,7 @@ const StaffList = ({
                         </span>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-600">
-                        {dept?.name || '-'}
+                        {staff.departmentName || '-'}
                       </td>
                       <td className="px-4 py-4">
                         <span className={`inline-flex px-3 py-1.5 rounded-md text-sm font-semibold ${statusInfo.bg} ${statusInfo.textColor}`}>

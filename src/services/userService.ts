@@ -143,6 +143,9 @@ export const userService = {
       if (!userData.email || !userData.email.trim()) {
         throw new Error('Email là bắt buộc');
       }
+      if (!userData.password || !userData.password.trim()) {
+        throw new Error('Mật khẩu (password) là bắt buộc');
+      }
       if (!userData.role) {
         throw new Error('Vai trò (role) là bắt buộc');
       }
@@ -269,7 +272,7 @@ export const userService = {
         errors: string[];
       }
       
-      const response = await apiClient.patch<UserStatusUpdateResponse>('/User', requestData);
+      const response = await apiClient.patch<UserStatusUpdateResponse>('/User/status', requestData);
       
       if (!response.status) {
         console.error('❌ Failed to update user status:', response);
@@ -320,6 +323,7 @@ export const userService = {
       role: ROLE_ID_MAP[dto.roleId] || 'student',
       roleId: dto.roleId.toString(),
       departmentId: dto.departmentId?.toString(),
+      departmentName: dto.departmentName || undefined,
       status: dto.status.toLowerCase() as 'active' | 'inactive' | 'banned',
       createdAt: dto.createdAt || undefined,
     };
