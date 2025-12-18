@@ -239,7 +239,7 @@ export const locationService = {
       
       console.log('📍 PATCH /Location/status request body:', JSON.stringify(requestData, null, 2));
       console.log('📍 Request data validation:', {
-        locationId: requestData.locationId,
+        id: requestData.locationId,
         idType: typeof requestData.locationId,
         idIsInteger: Number.isInteger(requestData.locationId),
         status: requestData.status

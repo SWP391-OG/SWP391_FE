@@ -76,14 +76,13 @@ const StaffForm = ({
           </div>
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
-              Mật khẩu *
+              Mật khẩu 
             </label>
             <input
               type="password"
-              required
               value={staffFormData.password}
               onChange={(e) => onFormDataChange({ ...staffFormData, password: e.target.value })}
-              placeholder="Nhập mật khẩu"
+              placeholder="Nhập mật khẩu (không bắt buộc)"
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
@@ -112,7 +111,8 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
-          <div className="mb-6">
+         
+          {/* <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Vai trò *
             </label>
@@ -122,10 +122,11 @@ const StaffForm = ({
               onChange={(e) => onFormDataChange({ ...staffFormData, role: e.target.value as UserRole })}
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             >
+              <option value="">Chọn vai trò</option>
               <option value="it-staff">IT Staff</option>
               <option value="facility-staff">Facility Staff</option>
             </select>
-          </div>
+          </div> */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Bộ phận *
@@ -160,7 +161,7 @@ const StaffForm = ({
                 Quản lý tài khoản
               </h4>
               <div className="flex gap-4 flex-wrap">
-                <button
+                {/* <button
                   type="button"
                   onClick={() => {
                     const newPassword = prompt('Nhập mật khẩu mới:');
@@ -172,7 +173,7 @@ const StaffForm = ({
                   className="px-6 py-3 border border-blue-500 rounded-lg bg-white text-blue-500 font-semibold cursor-pointer hover:bg-blue-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Cập nhật mật khẩu
-                </button>
+                </button> */}
                 {editingStaff.status === 'active' ? (
                   <button
                     type="button"
