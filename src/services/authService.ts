@@ -17,6 +17,7 @@ interface LoginApiResponse {
 }
 
 // Kiểu dữ liệu response cho API đăng ký
+interface RegisterApiResponse {
   status: boolean;
   message: string;
   data?: {
