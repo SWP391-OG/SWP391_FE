@@ -5,6 +5,7 @@ import { format, subDays, startOfMonth } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import type { Ticket, Category, Department, User, TicketFromApi } from '../../types';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 // Props nhận dữ liệu đã được load từ AdminPage
 interface ReportsPageProps {
@@ -122,7 +123,13 @@ const ReportsPage = ({
     const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
     const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
     
-    const totalFilteredCount = closedTickets + resolvedTickets + assignedTickets + newTickets + cancelledTickets + inProgressTickets + acknowledgedTickets;
+    // Count overdue tickets - tickets đang xử lý nhưng quá hạn
+    const overdueTickets = adminTickets.filter(t => {
+      const deadline = (t as any).resolveDeadline || (t as any).slaDeadline;
+      return isTicketOverdueAndNotCompleted(deadline, t.status);
+    }).length;
+    
+    const totalFilteredCount = closedTickets + resolvedTickets + assignedTickets + newTickets + cancelledTickets + inProgressTickets + acknowledgedTickets + overdueTickets;
     console.log('📊 Status breakdown (filtered):', {
       closed: closedTickets,
       resolved: resolvedTickets,
@@ -140,6 +147,7 @@ const ReportsPage = ({
 
     // Chuẩn bị data hiển thị chi tiết từng trạng thái (kể cả khi value = 0)
     const statusData = [
+      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#a855f7', key: 'overdue', isHighlight: true },
       { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
@@ -163,6 +171,7 @@ const ReportsPage = ({
       cancelledTickets,
       inProgressTickets,
       acknowledgedTickets,
+      overdueTickets,
       completedPercentage,
       cancelledPercentage,
       statusData,
@@ -429,22 +438,28 @@ const ReportsPage = ({
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Status Details Grid - Show ALL 5 statuses including zeros */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
+              {/* Status Details Grid - Show ALL statuses including zeros */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full">
                 {ticketStatusReport.statusData.map((item, index) => {
                   const percentage = ticketStatusReport.totalTickets > 0
                     ? Math.round((item.value / ticketStatusReport.totalTickets) * 100)
                     : 0;
+                  const isHighlight = 'isHighlight' in item && item.isHighlight === true;
+                  
                   return (
                     <div 
                       key={index} 
-                      className="p-4 rounded-lg border-l-4 transition hover:shadow-md" 
-                      style={{ borderColor: item.color, backgroundColor: item.color + '15' }}
+                      className={`p-4 rounded-lg transition hover:shadow-lg ${isHighlight ? 'border-2 shadow-lg' : 'border-l-4'}`}
+                      style={{ 
+                        borderColor: item.color, 
+                        backgroundColor: isHighlight ? item.color + '25' : item.color + '15',
+                        boxShadow: isHighlight ? `0 4px 16px ${item.color}50` : 'none'
+                      }}
                     >
-                      <div className="text-xs font-medium" style={{ color: item.color }}>
-                        {item.name}
+                      <div className={`text-xs font-bold ${isHighlight ? 'uppercase tracking-widest' : 'font-semibold'}`} style={{ color: item.color }}>
+                        {isHighlight && '🚨 '}{item.name}
                       </div>
-                      <div className="text-3xl font-bold mt-2" style={{ color: item.color }}>
+                      <div className={`${isHighlight ? 'text-4xl' : 'text-3xl'} font-bold mt-2`} style={{ color: item.color }}>
                         {item.value}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">

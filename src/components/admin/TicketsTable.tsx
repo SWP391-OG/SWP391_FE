@@ -57,6 +57,7 @@ const TicketsTable = ({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -183,7 +184,7 @@ const TicketsTable = ({
                   // Check if ticket is overdue
                   const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
                   const statusInfo = isOverdue 
-                    ? { bg: 'bg-red-100', text: 'text-red-800', label: '⚠️ Đã quá hạn' } 
+                    ? { bg: 'bg-purple-100 border border-purple-500 shadow-lg', text: 'text-purple-700 font-bold', label: '⚡ ĐÃ QUÁ HẠN' } 
                     : getStatusInfo(status);
 
                   return (

@@ -228,3 +228,90 @@ export const isTicketOverdueAndNotCompleted = (
   // Check if deadline has passed
   return isTicketOverdue(resolveDeadline);
 };
+
+/**
+ * � Format ISO UTC timestamps trong text sang giờ Việt Nam
+ * Tìm và thay thế tất cả timestamps ISO (VD: 2025-12-19T01:13:30Z) sang định dạng Việt Nam
+ * 
+ * @param text - Text có chứa ISO timestamps
+ * @returns Text với timestamps đã được format sang giờ Việt Nam
+ * 
+ * @example
+ * convertUTCTimestampsToVN('[CANCELLED] deadline at 2025-12-19T01:13:30.0876203Z')
+ * → '[CANCELLED] deadline at 08:13 19/12/2025'
+ */
+export const convertUTCTimestampsToVN = (text: string | null | undefined): string => {
+  if (!text) return '';
+
+  // Regex để match ISO datetime format: YYYY-MM-DDTHH:MM:SS[.milliseconds]Z
+  // Ví dụ: 2025-12-19T01:13:30.0876203Z hoặc 2025-12-19T01:13:30Z
+  const isoDateRegex = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/g;
+
+  return text.replace(isoDateRegex, (match) => {
+    try {
+      // Format timestamp to Vietnam time
+      const formatted = formatDateToVN(match, 'datetime');
+      return formatted;
+    } catch (error) {
+      // Nếu có lỗi, trả về timestamp gốc
+      console.warn('❌ Error converting timestamp:', match, error);
+      return match;
+    }
+  });
+};
+
+/**
+ * 🚨 Tạo ghi chú tự động cho ticket overdue
+ * Dùng để thêm thông báo về trạng thái overdue vào note của ticket
+ * 
+ * @param ticket - Ticket object
+ * @param existingNote - Ghi chú hiện tại từ staff/admin
+ * @returns Ghi chú mới với thông báo overdue (nếu ticket overdue), hoặc ghi chú hiện tại
+ * 
+ * @example
+ * generateOverdueNote(ticket, 'Đang xử lý...')
+ * → "⚠️ TICKET ĐÃ QUÁ HẠN\n\nĐang xử lý..."
+ */
+export const generateOverdueNote = (
+  ticket: {
+    resolveDeadline?: string;
+    slaDeadline?: string;
+    status?: string;
+  },
+  existingNote?: string | null
+): string => {
+  const deadline = ticket.resolveDeadline || ticket.slaDeadline;
+  
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 🎯 KIỂM TRA TICKET CÓ OVERDUE KHÔNG
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  if (isTicketOverdueAndNotCompleted(deadline, ticket.status)) {
+    // Tạo overdue notice
+    const overdueNotice = '🚨 ⚠️ TICKET ĐÃ QUÁ HẠN GIẢI QUYẾT';
+    
+    // Nếu có ghi chú hiện tại, thêm overdue notice ở đầu
+    if (existingNote && existingNote.trim()) {
+      // ─────────────────────────────────────────────────────────────────────────
+      // 🔄 FORMAT UTC TIMESTAMPS → GIỜ VIỆT NAM
+      // ─────────────────────────────────────────────────────────────────────────
+      const formattedNote = convertUTCTimestampsToVN(existingNote);
+      
+      // Kiểm tra xem note đã chứa overdue notice chưa để không bị duplicate
+      if (!formattedNote.includes('TICKET ĐÃ QUÁ HẠN')) {
+        return `${overdueNotice}\n\n${formattedNote}`;
+      }
+      return formattedNote;
+    }
+    
+    // Không có ghi chú hiện tại, chỉ trả về overdue notice
+    return overdueNotice;
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 🔄 FORMAT UTC TIMESTAMPS → GIỜ VIỆT NAM cho ghi chú bình thường
+  // ─────────────────────────────────────────────────────────────────────────────
+  
+  const formattedExistingNote = convertUTCTimestampsToVN(existingNote);
+  return formattedExistingNote || '';
+};

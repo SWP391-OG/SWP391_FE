@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import type { Ticket, TicketFromApi, Category } from '../../types';
 import { ticketService } from '../../services/ticketService';
 import { parseTicketImages } from '../../utils/ticketUtils';
+import { isTicketOverdueAndNotCompleted, generateOverdueNote, convertUTCTimestampsToVN } from '../../utils/dateUtils';
 
 // Kiểu dữ liệu staff được truyền vào để assign ticket
 interface Staff {
@@ -310,6 +311,51 @@ const TicketReviewModal = ({
               </div>
             </div>
           )}
+
+          {/* Overdue Warning Section */}
+          {(() => {
+            const resolveDeadline = (ticket as any).resolveDeadline || (ticket as any).slaDeadline;
+            const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, ticket.status);
+            const overdueNote = generateOverdueNote(
+              { 
+                resolveDeadline, 
+                status: ticket.status, 
+                slaDeadline: resolveDeadline
+              },
+              (ticket as any).note || (ticket as any).notes
+            );
+
+            if (isOverdue || (overdueNote && overdueNote.includes('TICKET ĐÃ QUÁ HẠN'))) {
+              return (
+                <div className="bg-gradient-to-br from-red-50 to-white border-2 border-red-300 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                    🚨 ⚠️ THÔNG BÁO QUAN TRỌNG
+                  </h3>
+                  <div className="text-red-800 bg-white p-4 rounded-lg border border-red-300 whitespace-pre-wrap font-medium">
+                    {overdueNote}
+                  </div>
+                </div>
+              );
+            }
+            
+            // Hiển thị ghi chú thông thường nếu có
+            if ((ticket as any).note || (ticket as any).notes) {
+              const rawNote = (ticket as any).note || (ticket as any).notes;
+              const formattedNote = convertUTCTimestampsToVN(rawNote);
+              return (
+                <div className="bg-gradient-to-br from-emerald-50 to-white border-2 border-emerald-200 rounded-xl p-6">
+                  <h3 className="text-lg font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                    📝 Ghi Chú
+                  </h3>
+                  <div className="text-emerald-800 bg-white p-4 rounded-lg border border-emerald-300 whitespace-pre-wrap font-medium">
+                    {formattedNote}
+                  </div>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
 
           {/* Description Section */}
           <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-200 rounded-xl p-6">

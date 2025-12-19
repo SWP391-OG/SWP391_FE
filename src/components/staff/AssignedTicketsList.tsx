@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { TicketFromApi } from '../../types';
-import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
+import { isTicketOverdueAndNotCompleted, generateOverdueNote } from '../../utils/dateUtils';
 
 // Props cho component AssignedTicketsList
 interface AssignedTicketsListProps {
@@ -178,13 +178,37 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
                         </div>
                       </div>
                       
-                      {/* Note - if exists */}
-                      {ticket.note && (
-                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
-                          <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
-                        </div>
-                      )}
+                      {/* Note Section - with overdue warning if applicable */}
+                      {(() => {
+                        const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+                        const overdueNote = generateOverdueNote(
+                          { 
+                            resolveDeadline: ticket.resolveDeadline, 
+                            status: ticket.status 
+                          },
+                          ticket.note
+                        );
+
+                        if (isOverdue || (overdueNote && overdueNote.includes('TICKET ĐÃ QUÁ HẠN'))) {
+                          return (
+                            <div className="mt-2 p-3 bg-red-50 border border-red-300 rounded-lg">
+                              <div className="text-xs font-semibold text-red-700 mb-1">🚨 ⚠️ THÔNG BÁO QUAN TRỌNG</div>
+                              <div className="text-sm text-red-800 font-medium whitespace-pre-wrap line-clamp-3">{overdueNote}</div>
+                            </div>
+                          );
+                        }
+
+                        if (ticket.note) {
+                          return (
+                            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
+                              <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
                       
                       {/* Meta Info */}
                       <div className="flex items-center gap-6 text-sm text-gray-500">
@@ -266,13 +290,37 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
                         {ticket.description}
                       </p>
                       
-                      {/* Note - if exists */}
-                      {ticket.note && (
-                        <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
-                          <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
-                        </div>
-                      )}
+                      {/* Note Section - with overdue warning if applicable */}
+                      {(() => {
+                        const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+                        const overdueNote = generateOverdueNote(
+                          { 
+                            resolveDeadline: ticket.resolveDeadline, 
+                            status: ticket.status 
+                          },
+                          ticket.note
+                        );
+
+                        if (isOverdue || (overdueNote && overdueNote.includes('TICKET ĐÃ QUÁ HẠN'))) {
+                          return (
+                            <div className="mt-2 p-3 bg-red-50 border border-red-300 rounded-lg">
+                              <div className="text-xs font-semibold text-red-700 mb-1">🚨 ⚠️ THÔNG BÁO QUAN TRỌNG</div>
+                              <div className="text-sm text-red-800 font-medium whitespace-pre-wrap line-clamp-3">{overdueNote}</div>
+                            </div>
+                          );
+                        }
+
+                        if (ticket.note) {
+                          return (
+                            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="text-xs font-semibold text-blue-600 mb-1">📝 Ghi chú giải quyết</div>
+                              <div className="text-sm text-blue-800 line-clamp-2">{ticket.note}</div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
                       
                       {/* Meta Info */}
                       <div className="flex items-center gap-6 text-sm text-gray-500">

@@ -1,4 +1,5 @@
 import type { Ticket, TicketFromApi } from '../../types';
+import { isTicketOverdueAndNotCompleted, generateOverdueNote, convertUTCTimestampsToVN } from '../../utils/dateUtils';
 
 // Props cho component NotificationTicketDetail
 interface NotificationTicketDetailProps {
@@ -130,6 +131,48 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
              
             </div>
           </div>
+
+          {/* Overdue Warning Section - hiển thị nếu ticket bị overdue */}
+          {(() => {
+            const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+            const overdueNote = generateOverdueNote(
+              { 
+                resolveDeadline, 
+                status, 
+                slaDeadline: resolveDeadline 
+              },
+              (ticket as any).note || (ticket as any).notes
+            );
+
+            if (isOverdue || overdueNote.includes('TICKET ĐÃ QUÁ HẠN')) {
+              return (
+                <div className="mb-8 p-6 rounded-lg bg-red-50 border-2 border-red-300">
+                  <h3 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                    🚨 ⚠️ THÔNG BÁO QUAN TRỌNG
+                  </h3>
+                  <p className="text-red-800 font-medium whitespace-pre-wrap">
+                    {convertUTCTimestampsToVN(overdueNote)}
+                  </p>
+                </div>
+              );
+            }
+
+            // Hiển thị ghi chú thông thường nếu có
+            if ((ticket as any).note || (ticket as any).notes) {
+              return (
+                <div className="mb-8 p-6 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <h3 className="text-lg font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                    📝 Ghi chú
+                  </h3>
+                  <p className="text-emerald-900 font-medium whitespace-pre-wrap">
+                    {convertUTCTimestampsToVN((ticket as any).note || (ticket as any).notes)}
+                  </p>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
         </div>
 
       

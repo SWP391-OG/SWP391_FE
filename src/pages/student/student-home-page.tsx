@@ -7,7 +7,7 @@ import TicketListPage from './ticket-list-page';
 import EditTicketPage from './edit-ticket-page';
 import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import { ticketService } from '../../services/ticketService';
-import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
+import { isTicketOverdueAndNotCompleted, convertUTCTimestampsToVN } from '../../utils/dateUtils';
 
 // ════════════════════════════════════════════════════════════════════════════════════
 // 👨‍🎓 [STUDENT HOME PAGE] - Dashboard chính cho sinh viên
@@ -581,7 +581,7 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                             ? 'text-red-800' 
                             : 'text-green-800'
                         }`}>
-                          {ticket.note}
+                          {convertUTCTimestampsToVN(ticket.note)}
                         </div>
                       </div>
                     )}

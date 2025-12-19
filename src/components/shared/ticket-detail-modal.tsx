@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
-import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline } from '../../utils/dateUtils';
+import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline, generateOverdueNote } from '../../utils/dateUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -282,14 +282,25 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
                 </div>
               )}
-              {(ticket.note || ticket.notes) && (
-                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-emerald-50'}`}>
-                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-emerald-700'}`}>
-                    {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
-                  </div>
-                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-emerald-900'}`}>{ticket.note || ticket.notes}</div>
-                </div>
-              )}
+              {(() => {
+                const finalNote = generateOverdueNote(ticket, ticket.note || ticket.notes);
+                const isOverdueNote = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status);
+                const isCancelled = ticket.status === 'cancelled';
+                
+                if (finalNote) {
+                  return (
+                    <div className={`p-4 rounded-lg col-span-2 ${isOverdueNote ? 'bg-red-50 border-2 border-red-300' : isCancelled ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                      <div className={`text-[0.85rem] font-semibold mb-1 ${isOverdueNote ? 'text-red-700' : isCancelled ? 'text-red-600' : 'text-emerald-700'}`}>
+                        {isOverdueNote ? '🚨 ⚠️ THÔNG BÁO QUAN TRỌNG' : isCancelled ? '🔴 Lý do hủy' : '📝 Ghi chú'}
+                      </div>
+                      <div className={`text-base font-medium whitespace-pre-wrap ${isOverdueNote ? 'text-red-800' : isCancelled ? 'text-red-800' : 'text-emerald-900'}`}>
+                        {finalNote}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               {ticket.resolvedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Được giải quyết vào</div>
