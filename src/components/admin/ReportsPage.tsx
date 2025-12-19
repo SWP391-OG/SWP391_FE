@@ -123,8 +123,21 @@ const ReportsPage = ({
     const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
     const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
     
-    // Count overdue tickets - tickets quá hạn (deadline < hiện tại AND chưa hoàn thành)
+    // Count overdue tickets - tickets quá hạn (có status OVERDUE từ backend HOẶC deadline < hiện tại AND chưa hoàn thành)
     const overdueTickets = adminTickets.filter(t => {
+      // First check if backend already marked it as OVERDUE
+      if (String(t.status).toLowerCase() === 'overdue') {
+        return true;
+      }
+      
+      // Also check if ticket was cancelled by system due to SLA
+      const note = (t as any).note || '';
+      if (String(t.status).toLowerCase() === 'cancelled' && 
+          (note.includes('[CANCELLED BY SYSTEM]') || note.includes('exceeded SLA deadline'))) {
+        return true;
+      }
+      
+      // Otherwise check normal overdue logic
       const deadline = (t as any).resolveDeadline || (t as any).slaDeadline;
       const resolvedAt = (t as any).resolvedAt;
       return isTicketOverdueAndNotCompleted(deadline, t.status, resolvedAt);
@@ -360,11 +373,17 @@ const ReportsPage = ({
       {/* Total Tickets Statistics - All Statuses */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-xl font-semibold text-gray-900 mb-4">Thống kê Tổng số Tickets</h3>
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
           {/* Tổng số Tickets */}
           <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
             <div className="text-xs text-blue-600 font-medium mb-1">Tổng số Tickets</div>
             <div className="text-3xl font-bold text-blue-900">{ticketStatusReport.totalTickets}</div>
+          </div>
+
+          {/* Quá hạn */}
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200 shadow-md">
+            <div className="text-xs text-red-600 font-medium mb-1">⚠️ Quá hạn</div>
+            <div className="text-3xl font-bold text-red-900">{ticketStatusReport.overdueTickets}</div>
           </div>
 
           {/* Đã Hoàn thành */}
@@ -392,9 +411,9 @@ const ReportsPage = ({
           </div>
 
           {/* Đã hủy */}
-          <div className="bg-red-50 rounded-lg p-4 border border-red-200">
-            <div className="text-xs text-red-600 font-medium mb-1">Đã hủy</div>
-            <div className="text-3xl font-bold text-red-900">{ticketStatusReport.cancelledTickets}</div>
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-300">
+            <div className="text-xs text-gray-600 font-medium mb-1">Đã hủy</div>
+            <div className="text-3xl font-bold text-gray-900">{ticketStatusReport.cancelledTickets}</div>
           </div>
         </div>
       </div>

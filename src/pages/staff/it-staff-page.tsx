@@ -129,10 +129,15 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                     'CLOSED': { bg: '#d1fae5', color: '#065f46', text: 'Đã hoàn thành' },
                     cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
                     'CANCELLED': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
+                    'OVERDUE': { bg: '#fee2e2', color: '#991b1b', text: 'Quá hạn' },
+                    overdue: { bg: '#fee2e2', color: '#991b1b', text: 'Quá hạn' },
                   }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
 
                   // Kiểm tra ticket có quá hạn và chưa hoàn thành không
-                  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+                  // Check backend status first, then calculate
+                  const isOverdue = ticket.status.toUpperCase() === 'OVERDUE' || 
+                    (ticket.note?.includes('[CANCELLED BY SYSTEM]') && ticket.note?.includes('exceeded SLA deadline')) ||
+                    isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
 
                   // Tính toán trạng thái SLA (Service Level Agreement) dựa trên thời gian còn lại đến deadline
                   // - 'ok': Còn đủ thời gian (>= 6 giờ)
@@ -236,8 +241,8 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                                 'ASSIGNED': 'Đã giao việc',
                                 'in-progress': 'Đang xử lý',
                                 'IN_PROGRESS': 'Đang xử lý',
-                                resolved: 'chờ đánh giá',
-                                'RESOLVED': 'chờ đánh giá',
+                                resolved: 'Chờ đánh giá',
+                                'RESOLVED': 'Chờ đánh giá',
                                 closed: 'Đã hoàn thành',
                                 'CLOSED': 'Đã hoàn thành',
                                 cancelled: 'Đã hủy',
@@ -254,7 +259,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                           >
                             <option value="open">Mở</option>
                             <option value="in-progress">Đang xử lý</option>
-                            <option value="resolved">chờ đánh giá</option>
+                            <option value="resolved">Chờ đánh giá</option>
                             <option value="closed">Đã hoàn thành</option>
                           </select>
                           
