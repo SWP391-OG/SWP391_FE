@@ -4,32 +4,51 @@ import AssignedTicketsList from '../../components/staff/AssignedTicketsList';
 import type { TicketFromApi } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
 import { formatDateToVN, getTimeUntilDeadline, isTicketOverdue } from '../../utils/dateUtils';
+
+// Trang quản lý tickets được giao cho staff
+// - Hiển thị danh sách tickets được admin giao cho staff hiện tại
+// - Cho phép staff cập nhật trạng thái ticket (ASSIGNED -> IN_PROGRESS -> RESOLVED)
+// - Hiển thị modal chi tiết ticket với thông tin đầy đủ
+// - Yêu cầu nhập ghi chú khi chuyển ticket sang trạng thái RESOLVED
 const StaffPage = () => {
+  // Danh sách tickets được giao cho staff hiện tại
   const [tickets, setTickets] = useState<TicketFromApi[]>([]);
+  // Trạng thái đang tải dữ liệu từ API
   const [loading, setLoading] = useState(true);
+  // Thông báo lỗi nếu có khi tải dữ liệu
   const [error, setError] = useState<string | null>(null);
+  // Ticket được chọn để xem chi tiết trong modal
   const [selectedTicket, setSelectedTicket] = useState<TicketFromApi | null>(null);
+  // Trạng thái đang cập nhật status của ticket (để disable button khi đang xử lý)
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  // Hiển thị dialog nhập ghi chú khi chuyển ticket sang RESOLVED
   const [showNoteDialog, setShowNoteDialog] = useState(false);
+  // Nội dung ghi chú giải quyết ticket
   const [resolutionNote, setResolutionNote] = useState('');
+  // Lỗi validation khi nhập ghi chú (nếu để trống)
   const [noteError, setNoteError] = useState<string | null>(null);
 
-  // Fetch assigned tickets
+  // Tự động tải danh sách tickets khi component mount
   useEffect(() => {
     fetchAssignedTickets();
   }, []);
 
+  // Lấy danh sách tickets được giao cho staff hiện tại từ API
+  // - Gọi API /Ticket/my-assigned-tickets với pagination (page 1, size 100)
+  // - Cập nhật state tickets với dữ liệu từ API
+  // - Xử lý lỗi 403 (không có quyền) và các lỗi khác
   const fetchAssignedTickets = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // GỌI TRỰC TIẾP API - Tạm thời để debug
+      // Gọi API để lấy danh sách tickets được giao cho staff hiện tại
       console.log('🔍 Calling API: /Ticket/my-assigned-tickets');
       const response = await ticketService.getMyAssignedTickets(1,100);
       
       console.log('✅ API Response:', response);
       
+      // Nếu API trả về thành công, cập nhật danh sách tickets
       if (response.status) {
         setTickets(response.data.items);
       } else {
@@ -44,6 +63,7 @@ const StaffPage = () => {
         url: error?.config?.url
       });
       
+      // Xử lý lỗi 403: người dùng không có quyền truy cập (không phải staff)
       if (error?.response?.status === 403) {
         setError('Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản Staff.');
       } else {
@@ -54,37 +74,46 @@ const StaffPage = () => {
     }
   };
 
+  // Mở modal xem chi tiết ticket khi staff click "Xem chi tiết"
   const handleViewDetail = (ticket: TicketFromApi) => {
     setSelectedTicket(ticket);
   };
 
+  // Đóng modal chi tiết ticket
   const handleCloseDetail = () => {
     setSelectedTicket(null);
   };
 
+  // Cập nhật trạng thái ticket khi staff click "Bắt đầu sửa chữa" hoặc "Hoàn thành"
+  // - ASSIGNED -> IN_PROGRESS: Staff bắt đầu xử lý ticket
+  // - IN_PROGRESS -> RESOLVED: Staff hoàn thành, hiển thị dialog nhập ghi chú giải quyết
+  // - RESOLVED: Không cho phép cập nhật nữa (chờ đánh giá từ user)
   const handleUpdateStatus = async () => {
     if (!selectedTicket) return;
 
     try {
       setIsUpdatingStatus(true);
       
-      // Xác định trạng thái tiếp theo
+      // Xác định trạng thái tiếp theo dựa vào trạng thái hiện tại
       let nextStatus: 'IN_PROGRESS' | 'RESOLVED' = 'IN_PROGRESS';
       
+      // Nếu ticket đang ở trạng thái ASSIGNED, chuyển sang IN_PROGRESS (bắt đầu xử lý)
       if (selectedTicket.status === 'ASSIGNED') {
         nextStatus = 'IN_PROGRESS';
       } else if (selectedTicket.status === 'IN_PROGRESS') {
+        // Nếu ticket đang ở trạng thái IN_PROGRESS, chuyển sang RESOLVED
+        // Nhưng cần nhập ghi chú giải quyết trước, nên hiển thị dialog
         nextStatus = 'RESOLVED';
-        // Nếu chuyển sang RESOLVED, hiển thị dialog nhập note
         setShowNoteDialog(true);
         setIsUpdatingStatus(false);
         return;
       } else {
-        // Ticket đã RESOLVED, không làm gì
+        // Ticket đã RESOLVED hoặc CLOSED, không cho phép cập nhật nữa
         alert('Ticket đã được giải quyết');
         return;
       }
 
+      // Gọi API để cập nhật trạng thái ticket
       console.log(`🔄 Current status: ${selectedTicket.status}`);
       console.log(`🔄 Next status: ${nextStatus}`);
       console.log(`📤 Updating ticket ${selectedTicket.ticketCode} status to ${nextStatus}`);
@@ -94,10 +123,11 @@ const StaffPage = () => {
       
       console.log('📥 API Response:', response);
       
+      // Nếu cập nhật thành công, cập nhật state tickets và selectedTicket
       if (response.status) {
         console.log('✅ Status updated successfully');
         
-        // Cập nhật ticket trong danh sách
+        // Cập nhật ticket trong danh sách tickets với trạng thái mới
         setTickets(prevTickets => 
           prevTickets.map(t => 
             t.ticketCode === selectedTicket.ticketCode 
@@ -106,10 +136,10 @@ const StaffPage = () => {
           )
         );
         
-        // Cập nhật selectedTicket
+        // Cập nhật selectedTicket với trạng thái mới để modal hiển thị đúng
         setSelectedTicket({ ...selectedTicket, status: nextStatus });
         
-        // Hiển thị thông báo thành công
+        // Hiển thị thông báo thành công tùy theo trạng thái mới
         const statusText = nextStatus === 'IN_PROGRESS' ? 'đang sửa chữa' : 'đã hoàn thành';
         alert(`Cập nhật trạng thái thành công! Ticket ${statusText}.`);
         
@@ -130,9 +160,14 @@ const StaffPage = () => {
     }
   };
 
+  // Xác nhận hoàn thành ticket với ghi chú giải quyết
+  // - Validate ghi chú không được để trống
+  // - Gọi API cập nhật ticket sang RESOLVED kèm theo note
+  // - Cập nhật state tickets và đóng dialog/modal
   const handleConfirmResolution = async () => {
     if (!selectedTicket) return;
 
+    // Kiểm tra ghi chú không được để trống
     if (!resolutionNote.trim()) {
       setNoteError('Vui lòng nhập ghi chú giải quyết');
       return;
@@ -142,6 +177,7 @@ const StaffPage = () => {
       setIsUpdatingStatus(true);
       setNoteError(null);
 
+      // Gọi API để cập nhật ticket sang RESOLVED với ghi chú giải quyết
       console.log(`📤 Updating ticket ${selectedTicket.ticketCode} to RESOLVED with note`);
       
       const response = await ticketService.updateTicketStatus(
@@ -152,10 +188,11 @@ const StaffPage = () => {
       
       console.log('📥 API Response:', response);
       
+      // Nếu cập nhật thành công, cập nhật state và đóng dialog
       if (response.status) {
         console.log('✅ Status updated with note successfully');
         
-        // Cập nhật ticket trong danh sách
+        // Cập nhật ticket trong danh sách với trạng thái RESOLVED và note
         setTickets(prevTickets => 
           prevTickets.map(t => 
             t.ticketCode === selectedTicket.ticketCode 
@@ -164,16 +201,16 @@ const StaffPage = () => {
           )
         );
         
-        // Cập nhật selectedTicket
+        // Cập nhật selectedTicket với trạng thái RESOLVED và note
         setSelectedTicket({ ...selectedTicket, status: 'RESOLVED', note: resolutionNote });
         
-        // Đóng dialog
+        // Đóng dialog nhập ghi chú và reset state
         setShowNoteDialog(false);
         setResolutionNote('');
         
         alert('Cập nhật trạng thái thành công! Ticket đã hoàn thành.');
         
-        // Đóng modal sau 1 giây
+        // Đóng modal chi tiết sau 1 giây
         setTimeout(() => {
           handleCloseDetail();
         }, 1000);
@@ -188,13 +225,13 @@ const StaffPage = () => {
     }
   };
 
-  // Stats
+  // Tính toán thống kê tickets theo từng trạng thái để hiển thị trên các thẻ stats
   const stats = {
-    total: tickets.length,
-    assigned: tickets.filter(t => t.status === 'ASSIGNED').length,
-    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length,
-    resolved: tickets.filter(t => t.status === 'RESOLVED').length,
-    closed: tickets.filter(t => t.status === 'CLOSED').length,
+    total: tickets.length, // Tổng số tickets
+    assigned: tickets.filter(t => t.status === 'ASSIGNED').length, // Số tickets đã được giao
+    inProgress: tickets.filter(t => t.status === 'IN_PROGRESS').length, // Số tickets đang xử lý
+    resolved: tickets.filter(t => t.status === 'RESOLVED').length, // Số tickets chờ đánh giá
+    closed: tickets.filter(t => t.status === 'CLOSED').length, // Số tickets đã hoàn thành
   };
 
   if (loading) {

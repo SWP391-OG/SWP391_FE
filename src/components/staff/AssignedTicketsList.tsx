@@ -2,30 +2,39 @@ import { useState } from 'react';
 import type { TicketFromApi } from '../../types';
 import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// Props cho component AssignedTicketsList
 interface AssignedTicketsListProps {
-  tickets: TicketFromApi[];
-  onViewDetail: (ticket: TicketFromApi) => void;
+  tickets: TicketFromApi[]; // Danh sách tickets được giao cho staff
+  onViewDetail: (ticket: TicketFromApi) => void; // Callback khi staff click "Xem chi tiết"
 }
 
+// Component hiển thị danh sách tickets được giao cho staff
+// - Hiển thị tickets quá hạn ở trên cùng với màu đỏ để dễ nhận biết
+// - Hiển thị tickets bình thường ở dưới
+// - Có chức năng tìm kiếm theo mã ticket, tiêu đề, địa điểm
+// - Hiển thị thời gian còn lại cho mỗi ticket
 const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps) => {
+  // Từ khóa tìm kiếm để lọc tickets
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter tickets based on search
+  // Lọc tickets dựa vào từ khóa tìm kiếm (tìm trong mã ticket, tiêu đề, tên địa điểm)
   const filteredTickets = tickets.filter(ticket => 
     ticket.ticketCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     ticket.locationName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Separate overdue tickets from normal tickets
+  // Tách tickets quá hạn (chưa hoàn thành) ra riêng để hiển thị ưu tiên ở trên cùng
   const overdueTickets = filteredTickets.filter(ticket => 
     isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status)
   );
+  // Tickets bình thường (chưa quá hạn hoặc đã hoàn thành)
   const normalTickets = filteredTickets.filter(ticket => 
     !isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status)
   );
 
-  // Format date
+  // Format ngày giờ theo định dạng Việt Nam (dd/mm/yyyy, hh:mm)
+  // Xử lý timezone Asia/Ho_Chi_Minh và thêm 'Z' nếu thiếu để đảm bảo parse đúng
   const formatDateTime = (dateString: string) => {
     const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
     const date = new Date(normalizedDateString);
@@ -39,7 +48,13 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
     }).format(date);
   };
 
-  // Calculate remaining time
+  // Tính toán thời gian còn lại đến deadline và trả về text, màu sắc phù hợp
+  // - Nếu ticket đã hoàn thành (RESOLVED/CLOSED/CANCELLED): hiển thị "Hoàn thành" màu xanh
+  // - Nếu quá hạn: hiển thị "Quá hạn" màu đỏ
+  // - Nếu còn < 1 giờ: hiển thị số phút màu đỏ
+  // - Nếu còn < 4 giờ: hiển thị giờ + phút màu cam
+  // - Nếu còn < 24 giờ: hiển thị số giờ màu vàng
+  // - Nếu còn >= 24 giờ: hiển thị số ngày màu xanh
   const getRemainingTime = (deadline: string, status: string) => {
     // Nếu ticket đã hoàn thành, không hiển thị deadline nữa
     if (status === 'RESOLVED' || status === 'CLOSED' || status === 'CANCELLED') {
@@ -47,34 +62,40 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
     }
     
     const now = new Date();
-    // Normalize timestamp by adding Z if missing (backend returns without Z)
+    // Thêm 'Z' nếu thiếu để đảm bảo parse đúng (backend có thể trả về không có Z)
     const normalizedDeadline = deadline.includes('Z') ? deadline : `${deadline}Z`;
     const deadlineDate = new Date(normalizedDeadline);
     const diff = deadlineDate.getTime() - now.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     
+    // Quá hạn: màu đỏ
     if (diff < 0) {
       return { text: 'Quá hạn', color: 'text-red-600', bg: 'bg-red-50' };
     }
     
+    // Còn < 1 giờ: hiển thị phút, màu đỏ (ưu tiên cao)
     if (hours < 1) {
       return { text: `${minutes}m`, color: 'text-red-600', bg: 'bg-red-50' };
     }
     
+    // Còn < 4 giờ: hiển thị giờ + phút, màu cam (cần chú ý)
     if (hours < 4) {
       return { text: `${hours}h ${minutes}m`, color: 'text-orange-600', bg: 'bg-orange-50' };
     }
     
+    // Còn < 24 giờ: hiển thị số giờ, màu vàng
     if (hours < 24) {
       return { text: `${hours}h`, color: 'text-yellow-600', bg: 'bg-yellow-50' };
     }
     
+    // Còn >= 24 giờ: hiển thị số ngày, màu xanh (an toàn)
     const days = Math.floor(hours / 24);
     return { text: `${days}d`, color: 'text-green-600', bg: 'bg-green-50' };
   };
 
-  // Status colors
+  // Trả về màu sắc và nhãn hiển thị cho từng trạng thái ticket
+  // Mỗi trạng thái có màu nền, màu chữ và nhãn tiếng Việt tương ứng
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string; label: string }> = {
       'NEW': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới' },
@@ -84,6 +105,7 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
       'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Đã hoàn thành' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
     };
+    // Trả về màu mặc định nếu trạng thái không có trong map
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
   };
 
