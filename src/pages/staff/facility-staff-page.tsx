@@ -124,10 +124,15 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                     'CLOSED': { bg: '#d1fae5', color: '#065f46', text: 'Đã hoàn thành' },
                     cancelled: { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
                     'CANCELLED': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
+                    'OVERDUE': { bg: '#fee2e2', color: '#991b1b', text: 'Quá hạn' },
+                    overdue: { bg: '#fee2e2', color: '#991b1b', text: 'Quá hạn' },
                   }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
 
                   // Kiểm tra ticket có quá hạn và chưa hoàn thành không
-                  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+                  // Check backend status first, then calculate
+                  const isOverdue = ticket.status.toUpperCase() === 'OVERDUE' || 
+                    (ticket.note?.includes('[CANCELLED BY SYSTEM]') && ticket.note?.includes('exceeded SLA deadline')) ||
+                    isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
 
                   // Tính toán trạng thái SLA (Service Level Agreement) dựa trên thời gian còn lại đến deadline
                   // - 'ok': Còn đủ thời gian (>= 6 giờ)

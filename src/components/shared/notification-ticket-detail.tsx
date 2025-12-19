@@ -45,15 +45,20 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
     switch (status.toLowerCase()) {
       case 'open':
       case 'new':
-        return { text: 'Mở', bg: 'bg-blue-100',  icon: '🔵' };
+        return { text: 'Mở', bg: 'bg-orange-100',  icon: '🟠' };
+      case 'assigned':
+        return { text: 'Đã giao', bg: 'bg-yellow-100', icon: '🟡' };
       case 'in-progress':
       case 'in_progress':
-      case 'assigned':
-        return { text: 'Trung bình', bg: 'bg-yellow-100', icon: '🟡' };
+        return { text: 'Đang xử lý', bg: 'bg-amber-100', icon: '🟡' };
       case 'resolved':
-        return { text: 'chờ đánh giá', bg: 'bg-blue-100',  icon: '🔵' };
+        return { text: 'chờ đánh giá', bg: 'bg-purple-100',  icon: '🟣' };
       case 'closed':
-        return { text: 'Đã hoàn thành', bg: 'bg-emerald-100',  icon: '✅' };
+        return { text: 'Đã hoàn thành', bg: 'bg-green-100',  icon: '✅' };
+      case 'overdue':
+        return { text: 'Quá hạn', bg: 'bg-red-100',  icon: '⚠️' };
+      case 'cancelled':
+        return { text: 'Đã hủy', bg: 'bg-gray-100',  icon: '⚪' };
       default:
         return { text: 'Mở', bg: 'bg-gray-100', icon: '⚪' };
     }

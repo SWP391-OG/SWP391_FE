@@ -60,16 +60,17 @@ const TicketDetailModal = ({
     return () => window.removeEventListener('keydown', handleEsc);
   }, [onClose]);
 
-  // Status colors
+  // Status colors - đồng bộ với ReportsPage.tsx
   const statusColors: Record<string, { bg: string; text: string }> = {
-    open: { bg: 'bg-blue-100', text: 'text-blue-800' },
-    assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
+    open: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    assigned: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     'in_progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
-    resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-    closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
-    cancelled: { bg: 'bg-red-100', text: 'text-red-800' },
-    new: { bg: 'bg-blue-100', text: 'text-blue-800' },
+    resolved: { bg: 'bg-purple-100', text: 'text-purple-800' },
+    closed: { bg: 'bg-green-100', text: 'text-green-800' },
+    cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    new: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    overdue: { bg: 'bg-red-100', text: 'text-red-800' },
   };
 
   // Safe get status color with fallback

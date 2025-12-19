@@ -98,12 +98,13 @@ const AssignedTicketsList = ({ tickets, onViewDetail }: AssignedTicketsListProps
   // Mỗi trạng thái có màu nền, màu chữ và nhãn tiếng Việt tương ứng
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string; label: string }> = {
-      'NEW': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới' },
-      'ASSIGNED': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'Đã giao' },
-      'IN_PROGRESS': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đang xử lý' },
-      'RESOLVED': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'chờ đánh giá' },
-      'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-800', label: 'Đã hoàn thành' },
-      'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+      'NEW': { bg: 'bg-orange-100', text: 'text-orange-800', label: 'Mới' },
+      'ASSIGNED': { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Đã giao' },
+      'IN_PROGRESS': { bg: 'bg-amber-100', text: 'text-amber-800', label: 'Đang xử lý' },
+      'RESOLVED': { bg: 'bg-purple-100', text: 'text-purple-800', label: 'chờ đánh giá' },
+      'CLOSED': { bg: 'bg-green-100', text: 'text-green-800', label: 'Đã hoàn thành' },
+      'CANCELLED': { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Đã hủy' },
+      'OVERDUE': { bg: 'bg-red-100', text: 'text-red-800', label: 'Quá hạn' },
     };
     // Trả về màu mặc định nếu trạng thái không có trong map
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-800', label: status };
