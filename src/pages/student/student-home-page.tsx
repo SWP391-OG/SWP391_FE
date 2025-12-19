@@ -22,7 +22,7 @@ import { isTicketOverdueAndNotCompleted, convertUTCTimestampsToVN } from '../../
 // ════════════════════════════════════════════════════════════════════════════════════
 
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
-type StudentTab = 'pending' | 'processing' | 'waiting-feedback' | 'completed' | 'cancelled';
+type StudentTab = 'pending' | 'processing' | 'waiting-feedback' | 'completed' | 'cancelled' | 'overdue';
 
 interface StudentHomePageProps {
   currentUser: { id: string | number; fullName?: string } | null;
@@ -169,6 +169,24 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
   const waitingFeedbackTickets = studentTickets.filter(t => t.status === 'resolved');
   const completedTickets = studentTickets.filter(t => t.status === 'closed');
   const cancelledTickets = studentTickets.filter(t => t.status === 'cancelled');
+  // Filter overdue tickets - tickets chưa hoàn thành và đã quá deadline HOẶC bị hệ thống hủy vì quá hạn
+  const overdueTickets = studentTickets.filter(t => {
+    // Check if ticket was auto-cancelled by system due to SLA deadline
+    const isCancelledBySystem = t.status === 'cancelled' && 
+      (t.note?.includes('[CANCELLED BY SYSTEM]') || 
+       t.note?.includes('exceeded SLA deadline') ||
+       t.notes?.includes('[CANCELLED BY SYSTEM]') ||
+       t.notes?.includes('exceeded SLA deadline'));
+    
+    if (isCancelledBySystem) {
+      return true; // Include system-cancelled overdue tickets
+    }
+    
+    // Otherwise, check normal overdue logic
+    const deadline = t.resolveDeadline || t.slaDeadline || t.deadlineAt;
+    const resolvedAt = t.resolvedAt;
+    return isTicketOverdueAndNotCompleted(deadline, t.status, resolvedAt);
+  });
 
   // Get tickets for current tab
   let tabTickets: Ticket[] = [];
@@ -182,6 +200,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
     tabTickets = completedTickets;
   } else if (studentTab === 'cancelled') {
     tabTickets = cancelledTickets;
+  } else if (studentTab === 'overdue') {
+    tabTickets = overdueTickets;
   }
 
   // Apply search
@@ -264,7 +284,25 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
 
   // Status labels
   // Function to get status label - changes based on tab and status
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (ticket: Ticket) => {
+    // Check if ticket was cancelled by system due to SLA
+    const isCancelledBySystem = ticket.status === 'cancelled' && 
+      (ticket.note?.includes('[CANCELLED BY SYSTEM]') || 
+       ticket.note?.includes('exceeded SLA deadline') ||
+       ticket.notes?.includes('[CANCELLED BY SYSTEM]') ||
+       ticket.notes?.includes('exceeded SLA deadline'));
+    
+    // Check if ticket is overdue
+    const deadline = ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt;
+    const resolvedAt = ticket.resolvedAt;
+    const isOverdue = isTicketOverdueAndNotCompleted(deadline, ticket.status, resolvedAt);
+    
+    // If on overdue tab or ticket is overdue or cancelled by system, show "Quá hạn"
+    if (studentTab === 'overdue' || isOverdue || isCancelledBySystem) {
+      return 'Quá hạn';
+    }
+    
+    const status = ticket.status;
     if (status === 'resolved' && studentTab === 'waiting-feedback') {
       return 'Chờ đánh giá';
     }
@@ -469,6 +507,16 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
               >
                 Bị hủy ({cancelledTickets.length})
               </button>
+              <button
+                className={`py-3 px-6 text-base font-medium transition-all duration-200 border-b-2 ${
+                  studentTab === 'overdue'
+                    ? 'border-red-500 text-red-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+                onClick={() => setStudentTab('overdue')}
+              >
+                ⚠️ Quá hạn ({overdueTickets.length})
+              </button>
             </div>
 
             {/* Search */}
@@ -497,6 +545,8 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                   ? 'Chưa có ticket đang xử lý'
                   : studentTab === 'waiting-feedback'
                   ? 'Chưa có ticket đợi đánh giá'
+                  : studentTab === 'overdue'
+                  ? 'Chưa có ticket quá hạn'
                   : 'Chưa có ticket đã hoàn thành'}
               </h3>
               <p className="text-base text-gray-500">
@@ -526,15 +576,30 @@ const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeed
                         <div className="text-[0.85rem] font-semibold text-gray-500 mb-2">{ticket.id}</div>
                         <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                         <div className="flex gap-4 flex-wrap items-center">
-                          {isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status) ? (
-                            <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold bg-red-100 text-red-800`}>
-                              ⚠️ Quá hạn
-                            </span>
-                          ) : (
-                            <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                              {getStatusLabel(ticket.status)}
-                            </span>
-                          )}
+                          {(() => {
+                            // Check if ticket was cancelled by system due to SLA
+                            const isCancelledBySystem = ticket.status === 'cancelled' && 
+                              (ticket.note?.includes('[CANCELLED BY SYSTEM]') || 
+                               ticket.note?.includes('exceeded SLA deadline') ||
+                               ticket.notes?.includes('[CANCELLED BY SYSTEM]') ||
+                               ticket.notes?.includes('exceeded SLA deadline'));
+                            
+                            const isOverdue = isTicketOverdueAndNotCompleted(
+                              ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt, 
+                              ticket.status, 
+                              ticket.resolvedAt
+                            );
+                            
+                            return (isCancelledBySystem || isOverdue) ? (
+                              <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold bg-red-100 text-red-800`}>
+                                ⚠️ Quá hạn
+                              </span>
+                            ) : (
+                              <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
+                                {getStatusLabel(ticket)}
+                              </span>
+                            );
+                          })()}
                           {ticket.location && (
                             <span className="flex items-center gap-2 text-sm text-gray-500">
                               <span>📍</span>

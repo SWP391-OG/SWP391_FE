@@ -123,10 +123,11 @@ const ReportsPage = ({
     const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
     const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
     
-    // Count overdue tickets - tickets đang xử lý nhưng quá hạn
+    // Count overdue tickets - tickets quá hạn (deadline < hiện tại AND chưa hoàn thành)
     const overdueTickets = adminTickets.filter(t => {
       const deadline = (t as any).resolveDeadline || (t as any).slaDeadline;
-      return isTicketOverdueAndNotCompleted(deadline, t.status);
+      const resolvedAt = (t as any).resolvedAt;
+      return isTicketOverdueAndNotCompleted(deadline, t.status, resolvedAt);
     }).length;
     
     const totalFilteredCount = closedTickets + resolvedTickets + assignedTickets + newTickets + cancelledTickets + inProgressTickets + acknowledgedTickets + overdueTickets;
@@ -147,7 +148,7 @@ const ReportsPage = ({
 
     // Chuẩn bị data hiển thị chi tiết từng trạng thái (kể cả khi value = 0)
     const statusData = [
-      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#a855f7', key: 'overdue', isHighlight: true },
+      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#ef4444', key: 'overdue', isHighlight: true },
       { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },

@@ -191,33 +191,40 @@ export const getTimeUntilDeadline = (
 
 /**
  * 🚨 Kiểm tra ticket quá hạn AND chưa hoàn thành
- * Dùng để hiển thị badge "Đã quá hạn" trên ticket đang xử lý
+ * 
+ * Logic: Ticket bị coi là quá hạn nếu:
+ * 1. deadline < hiện tại (đã qua hạn)
+ * 2. resolvedAt là null/undefined (chưa hoàn thành)
+ * 3. status không phải CLOSED (chưa đóng)
  * 
  * @param resolveDeadline - ISO deadline string từ backend
  * @param status - Trạng thái ticket hiện tại
- * @returns true nếu deadline đã qua VÀ ticket vẫn đang xử lý
+ * @param resolvedAt - Thời gian hoàn thành (để check xem đã fix chưa)
+ * @returns true nếu deadline đã qua VÀ ticket vẫn chưa hoàn thành
  * 
  * @example
- * isTicketOverdueAndNotCompleted('2025-12-20T07:30:00Z', 'in-progress')
- * → true (vì deadline đã qua nhưng ticket chưa completed)
+ * isTicketOverdueAndNotCompleted('2025-12-20T07:30:00Z', 'in-progress', null)
+ * → true (vì deadline đã qua, chưa hoàn thành)
  * 
- * isTicketOverdueAndNotCompleted('2025-12-20T07:30:00Z', 'closed')
- * → false (vì ticket đã closed, không cần báo overdue)
+ * isTicketOverdueAndNotCompleted('2025-12-20T07:30:00Z', 'in-progress', '2025-12-18T10:00:00Z')
+ * → false (vì đã hoàn thành - có resolvedAt)
+ * 
+ * isTicketOverdueAndNotCompleted('2025-12-20T07:30:00Z', 'closed', null)
+ * → false (vì ticket đã closed)
  */
 export const isTicketOverdueAndNotCompleted = (
   resolveDeadline: string | undefined | null,
-  status: string | undefined | null
+  status: string | undefined | null,
+  resolvedAt?: string | undefined | null
 ): boolean => {
   if (!resolveDeadline || !status) return false;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 🎯 CHỈ SHOW OVERDUE CHO TICKET ĐANG XỬ LÝ
+  // 🎯 KHÔNG SHOW OVERDUE CHO TICKET ĐÃ HOÀN THÀNH HOẶC CLOSED
   // ─────────────────────────────────────────────────────────────────────────────
   
-  // Chỉ hiển thị overdue cho tickets còn đang làm việc
-  // Không hiển thị cho resolved, closed, cancelled
-  const activeStatuses = ['in-progress', 'in_progress', 'IN_PROGRESS', 'assigned', 'ASSIGNED'];
-  if (!activeStatuses.some(s => status.toLowerCase() === s.toLowerCase())) {
+  // Nếu ticket đã hoàn thành (resolvedAt có giá trị) hoặc đã closed -> không cần báo overdue
+  if (resolvedAt || String(status).toLowerCase() === 'closed') {
     return false;
   }
 

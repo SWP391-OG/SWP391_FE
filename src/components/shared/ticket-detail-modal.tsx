@@ -28,7 +28,7 @@ const TicketDetailModal = ({
   const ticketImages = parseTicketImages(ticket);
 
   // Check if ticket is overdue
-  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status);
+  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status, ticket.resolvedAt);
 
   // State for feedback form - initialize from ticket
   const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
@@ -126,7 +126,7 @@ const TicketDetailModal = ({
             </span>
             {isOverdue && (
               <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-red-100 text-red-800">
-                ⚠️ Đã quá hạn
+                ⚠️ Quá hạn
               </span>
             )}
           </div>

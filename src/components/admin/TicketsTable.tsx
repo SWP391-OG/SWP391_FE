@@ -81,6 +81,8 @@ const TicketsTable = ({
       'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Đã hoàn thành' },
       'cancelled': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+      'OVERDUE': { bg: 'bg-red-100', text: 'text-red-800', label: 'Quá hạn' },
+      'overdue': { bg: 'bg-red-100', text: 'text-red-800', label: 'Quá hạn' },
     };
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: status };
   };
@@ -117,6 +119,7 @@ const TicketsTable = ({
               <option value="IN_PROGRESS">Đang xử lý</option>
               <option value="RESOLVED">Chờ đánh giá</option>
               <option value="CLOSED">Đã hoàn thành</option>
+              <option value="OVERDUE">Quá hạn</option>
               <option value="CANCELLED">Đã hủy</option>
             </select>
           )}
@@ -179,12 +182,13 @@ const TicketsTable = ({
                   const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
                   const status = ticket.status;
                   const resolveDeadline = isFromApi ? ticket.resolveDeadline : (ticket.resolveDeadline || ticket.slaDeadline || ticket.createdAt);
+                  const resolvedAt = isFromApi ? ticket.resolvedAt : (ticket as any).resolvedAt;
                   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
 
                   // Check if ticket is overdue
-                  const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+                  const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status, resolvedAt);
                   const statusInfo = isOverdue 
-                    ? { bg: 'bg-purple-100 border border-purple-500 shadow-lg', text: 'text-purple-700 font-bold', label: '⚡ ĐÃ QUÁ HẠN' } 
+                    ? { bg: 'bg-red-100 border border-red-500 shadow-lg', text: 'text-red-800 font-bold', label: 'Quá hạn' } 
                     : getStatusInfo(status);
 
                   return (
