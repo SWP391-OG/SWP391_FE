@@ -17,48 +17,76 @@ import NotificationTicketDetail from './components/shared/notification-ticket-de
 import NavbarNew from './components/shared/navbar-new';
 import Footer from './components/shared/footer';
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 📱 [APP COMPONENT] - Main Application Entry Point
+// ════════════════════════════════════════════════════════════════════════════════════
+// Quản lý: Auth & Authorization | Role-based Routing | Global State | Cross-tab Sync
+// ════════════════════════════════════════════════════════════════════════════════════
+
 function App() {
-  // Auth state - Load from localStorage on mount
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🔐 [AUTHENTICATION STATE] - Quản lý trạng thái đăng nhập người dùng
+  // ─────────────────────────────────────────────────────────────────────────────────
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const savedUser = loadCurrentUser();
-    // Directly load saved user from localStorage
+    // Directly load saved user from localStorage (key: fptech_current_user)
     // No need to verify against mock users since user data comes from backend API
     if (savedUser && savedUser.status === 'active' && savedUser.isActive) {
       return savedUser;
     }
     return null;
   });
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎨 [UI STATE] - Quản lý trạng thái giao diện (modal, view)
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Auth view: điều khiển màn hình hiển thị (login/register/forgot-password)
   const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password'>('login');
+  
+  // Profile modal visibility & Ticket detail modal visibility
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showTicketDetailModal, setShowTicketDetailModal] = useState(false);
   const [selectedTicketCode, setSelectedTicketCode] = useState<string | null>(null);
   
-  // Fetch ticket from API by code
+  // Fetch ticket details from API by ticket code - dùng cho ticket detail modal
   const { ticket: selectedTicket } = useTicketByCode(showTicketDetailModal ? selectedTicketCode : null);
   
-  // Mock current user IDs (sẽ thay bằng authentication sau)
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 👤 [ROLE & PERMISSION] - Xác định quyền hạn người dùng (Student/Staff/Admin)
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Mock current admin ID (sẽ thay bằng authentication sau)
   const [currentAdminId] = useState<string>('admin-001'); // IT Admin - quản lý IT Department
   
-  // Derive currentRole from currentUser instead of using state
+  // Derive currentRole từ currentUser (không dùng state riêng) - dễ dàng đồng bộ
   const currentRole = currentUser?.role || 'admin';
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎫 [TICKET DATA] - Quản lý danh sách tickets
+  // ─────────────────────────────────────────────────────────────────────────────────
   
   // Initialize tickets state from mock data (not persisted to localStorage)
   const [tickets, setTickets] = useState<Ticket[]>(() => loadTickets());
   
-  // Note: Tickets are NOT saved to localStorage
-  // Data is managed server-side or loaded from mock data
+  // ⚠️ Note: Tickets are NOT saved to localStorage
+  // Data is managed server-side or loaded from mock data at app startup
 
   // Sync tickets when component updates (no localStorage persistence)
 
-  // Save currentUser to localStorage whenever it changes
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 💾 [PERSISTENCE & SYNC] - Lưu dữ liệu & đồng bộ giữa các tabs
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Save currentUser to localStorage whenever it changes (auto-persist)
   useEffect(() => {
     saveCurrentUser(currentUser);
   }, [currentUser]);
 
-  // Listen for storage changes from other tabs (cross-tab session sync)
+  // Listen for storage changes from other tabs (cross-tab session synchronization)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
-      // When fptech_current_user changes in another tab
+      // Monitor changes to fptech_current_user key
       if (e.key === 'fptech_current_user') {
         // If the new value is null, user logged out from another tab
         if (e.newValue === null) {
@@ -87,16 +115,21 @@ function App() {
     };
   }, []);
 
-  // Login handlers
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎯 [EVENT HANDLERS] - Xử lý các sự kiện (login/logout)
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const handleLogin = (user: User) => {
+    // Update current user state
     setCurrentUser(user);
-    // currentRole is derived from currentUser
+    // currentRole is derived automatically from currentUser
+    // Navigation will happen automatically based on user.role in the render section
   };
 
   const handleLogout = () => {
-    // Clear all auth data (token + user)
+    // Clear all auth data (token + user) từ authService
     authService.logout();
-    // Reset app state
+    // Reset app state to show login screen
     setCurrentUser(null);
     setAuthView('login'); // Return to login page
   };

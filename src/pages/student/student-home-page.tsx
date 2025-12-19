@@ -9,6 +9,18 @@ import TicketDetailModal from '../../components/shared/ticket-detail-modal';
 import { ticketService } from '../../services/ticketService';
 import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 👨‍🎓 [STUDENT HOME PAGE] - Dashboard chính cho sinh viên
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Xem danh sách tickets của sinh viên (pending, processing, completed, v.v.)
+// - Tạo ticket mới (chọn category → nhập thông tin → gửi)
+// - Edit/Update ticket
+// - Xem chi tiết ticket
+// - Đánh giá ticket hoàn thành
+// Luồng: home → issue-selection → create-ticket → ticket-list → edit-ticket
+// ════════════════════════════════════════════════════════════════════════════════════
+
 type StudentView = 'home' | 'issue-selection' | 'create-ticket' | 'ticket-list' | 'edit-ticket';
 type StudentTab = 'pending' | 'processing' | 'waiting-feedback' | 'completed' | 'cancelled';
 
@@ -21,25 +33,60 @@ interface StudentHomePageProps {
 }
 
 const StudentHomePage = ({ currentUser, onTicketCreated, onTicketUpdated, onFeedbackUpdated }: StudentHomePageProps) => {
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎯 [NAVIGATION STATE] - Quản lý điều hướng giữa các view
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Điều khiển view hiện tại: home | issue-selection | create-ticket | ticket-list | edit-ticket
   const [studentView, setStudentView] = useState<StudentView>('home');
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📋 [TICKET CREATION STATE] - Quản lý dữ liệu tạo ticket
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Issue/Category được chọn khi tạo ticket
   const [selectedIssue, setSelectedIssue] = useState<Category | null>(null);
+  
+  // Ticket được chọn để edit/xem chi tiết
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🔍 [FILTERING & SEARCH STATE] - Quản lý lọc & tìm kiếm
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Tab filter: pending | processing | waiting-feedback | completed | cancelled
   const [studentTab, setStudentTab] = useState<StudentTab>('pending');
+  
+  // Search query để tìm kiếm ticket
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📄 [PAGINATION STATE] - Quản lý phân trang
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
-  // State for API tickets
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🌐 [API DATA STATE] - Dữ liệu từ backend API
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // State for API tickets - danh sách tickets từ API
   const [apiTickets, setApiTickets] = useState<Ticket[]>([]);
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [ticketsError, setTicketsError] = useState<string | null>(null);
 
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📥 [FETCH TICKETS] - Lấy tickets của sinh viên từ API
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   // Function to fetch/refresh tickets from API
   const fetchMyTickets = useCallback(async () => {
     try {
       setLoadingTickets(true);
       setTicketsError(null);
-      const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
+      // Get student's tickets từ /Ticket/my-tickets endpoint
+      const response = await ticketService.getMyTickets(1, 100);
       
       // Map API response to Ticket format
       const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({

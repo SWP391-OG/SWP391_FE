@@ -8,12 +8,33 @@ interface IssueSelectionPageProps {
   onBack?: () => void;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 🎯 [ISSUE SELECTION PAGE] - Chọn loại vấn đề/danh mục khi tạo ticket
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Hiển thị danh sách các category/issue types
+// - Tìm kiếm category theo tên
+// - Click để chọn category → chuyển sang trang create-ticket
+// ════════════════════════════════════════════════════════════════════════════════════
+
 const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) => {
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🔍 [SEARCH STATE] - Quản lý tìm kiếm category
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
+  // Category được chọn từ danh sách
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  
+  // Search query để tìm kiếm category theo tên
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📝 [EVENT HANDLERS] - Xử lý sự kiện
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const handleSelectCategory = (category: Category) => {
     setSelectedCategory(category);
+    // Gọi callback để chuyển sang trang create-ticket với category được chọn
     onSelectIssue(category);
   };
 
@@ -45,7 +66,7 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* 🔍 Search Bar */}
         <div className="max-w-2xl mx-auto mb-8">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 w-5 h-5" />
@@ -68,6 +89,7 @@ const IssueSelectionPage = ({ onSelectIssue, onBack }: IssueSelectionPageProps) 
         </div>
 
         <div className="max-w-6xl mx-auto">
+         {/* Category Selector Component */}
           <CategorySelector
             onSelectCategory={handleSelectCategory}
             selectedCategory={selectedCategory}
