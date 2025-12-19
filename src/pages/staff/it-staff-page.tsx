@@ -1,24 +1,30 @@
 import { useMemo } from 'react';
 import type { Ticket } from '../../types';
-import { isTicketOverdue, getTimeUntilDeadline } from '../../utils/dateUtils';
+import { isTicketOverdue, getTimeUntilDeadline, isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// Props cho component ITStaffPage
 interface ITStaffPageProps {
-  tickets: Ticket[];
-  onUpdateStatus: (ticketId: string, status: Ticket['status']) => void;
-  onViewDetail: (ticket: Ticket) => void;
+  tickets: Ticket[]; // Danh sách tickets được giao cho IT Staff
+  onUpdateStatus: (ticketId: string, status: Ticket['status']) => void; // Callback cập nhật trạng thái ticket
+  onViewDetail: (ticket: Ticket) => void; // Callback xem chi tiết ticket
 }
 
+// Trang quản lý tickets dành riêng cho IT Staff
+// - Hiển thị thống kê tickets theo trạng thái
+// - Hiển thị bảng danh sách tickets với khả năng cập nhật trạng thái
+// - Hiển thị thông tin SLA (thời gian còn lại đến deadline)
+// - Cho phép xem chi tiết từng ticket
 const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps) => {
-  // Calculate stats
+  // Tính toán thống kê tickets theo từng trạng thái
+  // Sử dụng useMemo để tránh tính toán lại mỗi lần render
   const stats = useMemo(() => {
     return {
-      total: tickets.length,
-      open: tickets.filter(t => t.status === 'open').length,
-      acknowledged: tickets.filter(t => t.status === 'acknowledged').length,
-      inProgress: tickets.filter(t => t.status === 'in-progress').length,
-      resolved: tickets.filter(t => t.status === 'resolved').length,
-      closed: tickets.filter(t => t.status === 'closed').length,
-      cancelled: tickets.filter(t => t.status === 'cancelled').length,
+      total: tickets.length, // Tổng số tickets
+      open: tickets.filter(t => t.status === 'open').length, // Số tickets mở
+      inProgress: tickets.filter(t => t.status === 'in-progress').length, // Số tickets đang xử lý
+      resolved: tickets.filter(t => t.status === 'resolved').length, // Số tickets chờ đánh giá
+      closed: tickets.filter(t => t.status === 'closed').length, // Số tickets đã hoàn thành
+      cancelled: tickets.filter(t => t.status === 'cancelled').length, // Số tickets đã hủy
     };
   }, [tickets]);
 
@@ -34,10 +40,6 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
         <div className="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200">
           <div className="text-2xl font-bold text-blue-600">{stats.open}</div>
           <div className="text-sm text-blue-600 mt-1">Mở</div>
-        </div>
-        <div className="bg-purple-50 rounded-xl p-4 shadow-sm border border-purple-200">
-          <div className="text-2xl font-bold text-purple-600">{stats.acknowledged}</div>
-          <div className="text-sm text-purple-600 mt-1">Đã xác nhận</div>
         </div>
         <div className="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-200">
           <div className="text-2xl font-bold text-yellow-600">{stats.inProgress}</div>
@@ -113,13 +115,11 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
               </thead>
               <tbody>
                 {tickets.map((ticket) => {
-                  // Normalize status to lowercase with dashes
-                  
+                  // Lấy thông tin màu sắc và nhãn hiển thị cho trạng thái ticket
                   const statusInfo = {
                     open: { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     'NEW': { bg: '#dbeafe', color: '#1e40af', text: 'Mới tạo' },
                     assigned: { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
-                    'acknowledged': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'ASSIGNED': { bg: '#e0e7ff', color: '#3730a3', text: 'Đã giao việc' },
                     'in-progress': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
                     'IN_PROGRESS': { bg: '#fef3c7', color: '#92400e', text: 'Đang xử lý' },
@@ -131,7 +131,15 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                     'CANCELLED': { bg: '#fee2e2', color: '#991b1b', text: 'Đã hủy' },
                   }[ticket.status] || { bg: '#f3f4f6', color: '#374151', text: ticket.status };
 
-                  // Calculate SLA status using timezone-aware function
+                  // Kiểm tra ticket có quá hạn và chưa hoàn thành không
+                  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status);
+
+                  // Tính toán trạng thái SLA (Service Level Agreement) dựa trên thời gian còn lại đến deadline
+                  // - 'ok': Còn đủ thời gian (>= 6 giờ)
+                  // - 'attention': Cần chú ý (2-6 giờ)
+                  // - 'warning': Cảnh báo (< 2 giờ)
+                  // - 'overdue': Đã quá hạn
+                  // - 'completed': Đã hoàn thành đúng hạn
                   const overdue = isTicketOverdue(ticket.resolveDeadline);
                   const { hours: hoursRemaining } = getTimeUntilDeadline(ticket.resolveDeadline);
                   const slaStatus = ticket.status === 'resolved' || ticket.status === 'closed'
@@ -189,7 +197,7 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                           background: statusInfo.bg,
                           color: statusInfo.color,
                         }}>
-                          {statusInfo.text}
+                          {isOverdue ? '⚠️ Đã quá hạn' : statusInfo.text}
                         </span>
                       </td>
                       <td style={{ padding: '1rem' }}>
@@ -220,11 +228,11 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                             value={ticket.status}
                             onChange={(e) => {
                               const newStatus = e.target.value as Ticket['status'];
+                              // Map trạng thái sang text tiếng Việt để hiển thị trong confirm dialog
                               const newStatusText = {
                                 open: 'Mở',
                                 'NEW': 'Mới tạo',
                                 assigned: 'Đã giao việc',
-                                'acknowledged': 'Đã xác nhận',
                                 'ASSIGNED': 'Đã giao việc',
                                 'in-progress': 'Đang xử lý',
                                 'IN_PROGRESS': 'Đang xử lý',
@@ -235,16 +243,16 @@ const ITStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: ITStaffPageProps
                                 cancelled: 'Đã hủy',
                                 'CANCELLED': 'Đã hủy',
                               }[newStatus];
+                              // Xác nhận trước khi cập nhật trạng thái
                               if (confirm(`Bạn có chắc muốn cập nhật trạng thái ticket ${ticket.id} thành "${newStatusText}"?`)) {
                                 onUpdateStatus(ticket.id, newStatus);
                               } else {
-                                // Reset dropdown to original value if cancelled
+                                // Nếu user hủy, reset dropdown về giá trị ban đầu
                                 e.target.value = ticket.status;
                               }
                             }}
                           >
                             <option value="open">Mở</option>
-                            <option value="acknowledged">Đã xác nhận</option>
                             <option value="in-progress">Đang xử lý</option>
                             <option value="resolved">chờ đánh giá</option>
                             <option value="closed">Đã hoàn thành</option>

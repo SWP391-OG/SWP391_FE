@@ -300,12 +300,10 @@ export interface SLATimelineEvent {
 
 export interface SLATracking {
   createdAt: string;
-  acknowledgedAt?: string;
   startedAt?: string;
   resolvedAt?: string;
   closedAt?: string;
   deadline: string;
-  responseTime?: number; // Time to acknowledge in minutes
   resolutionTime?: number; // Time to resolve in minutes
   isOverdue: boolean;
   overdueBy?: number; // Minutes overdue
@@ -313,7 +311,7 @@ export interface SLATracking {
 }
 
 // Ticket types
-export type TicketStatus = 'open' | 'assigned' | 'acknowledged' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
 
 // API Response Types for Tickets
 export interface TicketFromApi {
@@ -406,4 +404,6 @@ export interface Ticket {
   escalatedAt?: string; // DB: escalated_at - Thời gian escalate
   escalationCount?: number; // DB: escalation_count - Số lần escalate
   escalationReason?: string; // DB: escalation_reason - Lý do escalate (VD: SLA miss, reassignment needed)
+  // Overdue status
+  isOverdue?: boolean; // Frontend: Cờ đánh dấu ticket đã quá hạn (calculated based on resolveDeadline và status)
 }

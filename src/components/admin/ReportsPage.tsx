@@ -1,33 +1,39 @@
+// Trang báo cáo trong admin: tổng hợp số liệu tickets theo thời gian, trạng thái, category, department
 import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subDays, startOfMonth } from 'date-fns';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import type { Ticket, Category, Department, User, TicketFromApi } from '../../types';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// Props nhận dữ liệu đã được load từ AdminPage
 interface ReportsPageProps {
   tickets: (Ticket | TicketFromApi)[];
   categories: Category[];
   departments: Department[];
   users: User[];
   adminDepartments: Department[];
+  ticketTotalCount?: number; // Total count from server for statistics
 }
 
 type DateFilterType = 'all' | '7days' | 'month' | 'custom';
 
+// Component chính hiển thị dashboard báo cáo
 const ReportsPage = ({
   tickets,
   categories,
   departments,
   adminDepartments,
+  ticketTotalCount = 0,
 }: ReportsPageProps) => {
-  // State for date filtering - Default to 7 days
+  // State filter theo thời gian - mặc định 7 ngày gần nhất
   const [dateFilter, setDateFilter] = useState<DateFilterType>('7days');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 7));
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Debug logging
+  // Debug logging: log nhanh số lượng dữ liệu đầu vào
   console.log('📊 ReportsPage Data:', {
     ticketsCount: tickets.length,
     categoriesCount: categories.length,
@@ -35,10 +41,10 @@ const ReportsPage = ({
     adminDepartmentsCount: adminDepartments.length,
   });
   
-  // Filter tickets by admin's departments
+  // Lọc tickets theo các bộ phận mà admin hiện tại quản lý
   const adminDepartmentIds = adminDepartments.map(d => d.id);
 
-  // Calculate date range for filtering
+  // Tính toán khoảng thời gian (startDate, endDate) dựa trên loại filter ngày
   const getDateRange = useMemo(() => {
     const today = new Date();
     today.setHours(23, 59, 59, 999);
@@ -62,6 +68,7 @@ const ReportsPage = ({
     return { startDate, endDate: today };
   }, [dateFilter, customStartDate, customEndDate]);
 
+  // Danh sách ticket đã được filter theo department của admin và theo khoảng thời gian
   const adminTickets = useMemo(() => {
     return tickets.filter(ticket => {
       // Handle both API tickets and local tickets
@@ -89,15 +96,25 @@ const ReportsPage = ({
     });
   }, [tickets, categories, adminDepartmentIds, getDateRange]);
 
-  // Total tickets statistics
+  // Tổng số ticket dùng cho thống kê (ưu tiên số count từ server nếu có)
   const totalTicketsCount = useMemo(() => {
-    return adminTickets.length;
-  }, [adminTickets]);
+    // Use server total count if available, otherwise use filtered tickets count
+    return ticketTotalCount > 0 ? ticketTotalCount : adminTickets.length;
+  }, [adminTickets, ticketTotalCount]);
 
-  // Cancelled and Completed tickets statistics - ALL STATUSES
+  // Thống kê theo trạng thái: đếm tất cả trạng thái từ danh sách tickets đã filter theo thời gian
   const ticketStatusReport = useMemo(() => {
-    // Count by all statuses
-    const completedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
+    // Debug: log lại toàn bộ status để dễ kiểm tra
+    const statusCounts: Record<string, number> = {};
+    adminTickets.forEach(t => {
+      const status = String(t.status).toLowerCase();
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
+    console.log('📊 Filtered ticket statuses (by date range):', statusCounts);
+    console.log('📊 Total filtered tickets:', adminTickets.length);
+    
+    // Đếm số lượng ticket cho từng trạng thái dựa trên danh sách đã filter
+    const closedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'closed').length;
     const resolvedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'resolved').length;
     const pendingReviewTickets = resolvedTickets; // resolved = chờ đánh giá
     const assignedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'assigned').length;
@@ -105,45 +122,67 @@ const ReportsPage = ({
     const cancelledTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'cancelled').length;
     const inProgressTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'in-progress' || String(t.status).toLowerCase() === 'in_progress').length;
     const acknowledgedTickets = adminTickets.filter(t => String(t.status).toLowerCase() === 'acknowledged').length;
+    
+    // Count overdue tickets - tickets quá hạn (deadline < hiện tại AND chưa hoàn thành)
+    const overdueTickets = adminTickets.filter(t => {
+      const deadline = (t as any).resolveDeadline || (t as any).slaDeadline;
+      const resolvedAt = (t as any).resolvedAt;
+      return isTicketOverdueAndNotCompleted(deadline, t.status, resolvedAt);
+    }).length;
+    
+    const totalFilteredCount = closedTickets + resolvedTickets + assignedTickets + newTickets + cancelledTickets + inProgressTickets + acknowledgedTickets + overdueTickets;
+    console.log('📊 Status breakdown (filtered):', {
+      closed: closedTickets,
+      resolved: resolvedTickets,
+      assigned: assignedTickets,
+      new: newTickets,
+      cancelled: cancelledTickets,
+      inProgress: inProgressTickets,
+      acknowledged: acknowledgedTickets,
+      total: totalFilteredCount
+    });
 
-    // Calculate percentages
-    const completedPercentage = totalTicketsCount > 0 ? Math.round((completedTickets / totalTicketsCount) * 100) : 0;
-    const cancelledPercentage = totalTicketsCount > 0 ? Math.round((cancelledTickets / totalTicketsCount) * 100) : 0;
+    // Tính phần trăm theo tổng số ticket đã filter
+    const completedPercentage = totalFilteredCount > 0 ? Math.round((closedTickets / totalFilteredCount) * 100) : 0;
+    const cancelledPercentage = totalFilteredCount > 0 ? Math.round((cancelledTickets / totalFilteredCount) * 100) : 0;
 
-    // Build status data - Include ALL statuses (even with 0 tickets) with fixed order
+    // Chuẩn bị data hiển thị chi tiết từng trạng thái (kể cả khi value = 0)
     const statusData = [
-      { name: 'Đã Hoàn thành', value: completedTickets, color: '#10b981', key: 'completed' },
+      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#ef4444', key: 'overdue', isHighlight: true },
+      { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
       { name: 'Đang xử lí', value: inProgressTickets, color: '#06b6d4', key: 'inProgress' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
+      { name: 'Đang xử lý', value: inProgressTickets, color: '#f59e0b', key: 'in-progress' },
       { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
       { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
     ]; // Show all statuses always
 
-    // Build pie chart data with only non-zero values
+    // Data cho biểu đồ tròn: chỉ lấy các trạng thái có số lượng > 0
     const pieDataFiltered = statusData.filter(s => s.value > 0);
     const pieChartData = pieDataFiltered.length > 0 
       ? pieDataFiltered 
       : [{ name: 'Không có dữ liệu', value: 1, color: '#e5e7eb', key: 'empty' }];
 
     return {
-      totalTickets: totalTicketsCount,
-      completedTickets,
+      totalTickets: totalFilteredCount,
+      completedTickets: closedTickets,
       pendingReviewTickets,
       assignedTickets,
       newTickets,
       cancelledTickets,
       inProgressTickets,
       acknowledgedTickets,
+      overdueTickets,
       completedPercentage,
       cancelledPercentage,
       statusData,
       pieData: pieChartData,
       pieDataFiltered
     };
-  }, [adminTickets, totalTicketsCount]);
+  }, [adminTickets]);
 
-  // Category statistics - most frequent issues
+  // Thống kê theo Category: loại lỗi xuất hiện nhiều nhất trong khoảng thời gian đã chọn
   const categoryStatistics = useMemo(() => {
     const categoryCount: Record<string, { count: number; categoryName: string; categoryId: string | number }> = {};
 
@@ -182,7 +221,7 @@ const ReportsPage = ({
       .slice(0, 10); // Top 10 categories
   }, [adminTickets, categories]);
 
-  // Department statistics - departments handling most errors
+  // Thống kê theo Phòng ban: phòng ban xử lý nhiều lỗi nhất
   const departmentStatistics = useMemo(() => {
     const departmentCount: Record<string, { count: number; departmentName: string; departmentId: string | number }> = {};
 
@@ -407,22 +446,28 @@ const ReportsPage = ({
                 </PieChart>
               </ResponsiveContainer>
 
-              {/* Status Details Grid - Show ALL 6 statuses including zeros */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-6 gap-3 w-full">
+              {/* Status Details Grid - Show ALL statuses including zeros */}
+              <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full">
                 {ticketStatusReport.statusData.map((item, index) => {
                   const percentage = ticketStatusReport.totalTickets > 0
                     ? Math.round((item.value / ticketStatusReport.totalTickets) * 100)
                     : 0;
+                  const isHighlight = 'isHighlight' in item && item.isHighlight === true;
+                  
                   return (
                     <div 
                       key={index} 
-                      className="p-4 rounded-lg border-l-4 transition hover:shadow-md" 
-                      style={{ borderColor: item.color, backgroundColor: item.color + '15' }}
+                      className={`p-4 rounded-lg transition hover:shadow-lg ${isHighlight ? 'border-2 shadow-lg' : 'border-l-4'}`}
+                      style={{ 
+                        borderColor: item.color, 
+                        backgroundColor: isHighlight ? item.color + '25' : item.color + '15',
+                        boxShadow: isHighlight ? `0 4px 16px ${item.color}50` : 'none'
+                      }}
                     >
-                      <div className="text-xs font-medium" style={{ color: item.color }}>
-                        {item.name}
+                      <div className={`text-xs font-bold ${isHighlight ? 'uppercase tracking-widest' : 'font-semibold'}`} style={{ color: item.color }}>
+                        {isHighlight && '🚨 '}{item.name}
                       </div>
-                      <div className="text-3xl font-bold mt-2" style={{ color: item.color }}>
+                      <div className={`${isHighlight ? 'text-4xl' : 'text-3xl'} font-bold mt-2`} style={{ color: item.color }}>
                         {item.value}
                       </div>
                       <div className="text-xs text-gray-500 mt-1">

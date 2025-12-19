@@ -2,12 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import type { User, UserRole } from '../../types';
 import { useNotifications, type NotificationItem } from '../../hooks/useNotifications';
 
+// Props cho component NavbarNew
 interface NavbarNewProps {
-  currentUser: User | null;
-  onLogoClick: () => void;
-  onProfileClick: () => void;
-  onLogout: () => void;
-  onNotificationClick?: (ticketCode: string) => void;
+  currentUser: User | null; // User hiện tại đang đăng nhập
+  onLogoClick: () => void; // Callback khi click vào logo
+  onProfileClick: () => void; // Callback khi click vào profile
+  onLogout: () => void; // Callback khi click logout
+  onNotificationClick?: (ticketCode: string) => void; // Callback khi click vào một notification (truyền ticketCode)
 }
 
 const NavbarNew = ({ 
@@ -17,11 +18,14 @@ const NavbarNew = ({
   onLogout,
   onNotificationClick,
 }: NavbarNewProps) => {
+  // State quản lý hiển thị dropdown profile và notification
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  // Refs để detect click outside để đóng dropdown
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   
+  // Hook quản lý notifications: lấy danh sách, đánh dấu đã đọc, toggle hiển thị tất cả/chưa đọc
   const { notifications, showAll, setShowAll, markAllAsRead, markAsRead } = useNotifications();
 
   // Close any open dropdown when clicking outside
@@ -69,8 +73,11 @@ const NavbarNew = ({
     onLogout();
   };
 
+  // Đếm số lượng notifications chưa đọc để hiển thị badge
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Format thời gian "X giây/phút/giờ/ngày trước" từ ISO string
+  // Thêm 'Z' nếu thiếu để đảm bảo parse đúng timezone
   const formatTimeAgo = (iso: string) => {
     // Normalize timestamp by adding Z if missing (backend returns without Z)
     const normalizedIso = iso.includes('Z') ? iso : `${iso}Z`;
@@ -85,6 +92,7 @@ const NavbarNew = ({
     return `${days} ngày trước`;
   };
 
+  // Render icon cho từng loại notification (TICKET_CREATED, TICKET_ASSIGNED, OTHER)
   const renderTypeIcon = (type?: NotificationItem['type']) => {
     switch (type) {
       case 'TICKET_CREATED':
@@ -127,23 +135,24 @@ const NavbarNew = ({
         {/* User Avatar and Menu */}
         {currentUser && (
           <div className="flex items-center gap-6">
-            {/* Bell Icon - Notifications (LEFT) */}
+            {/* Icon chuông thông báo - Notifications (Bên trái) */}
             <div className="relative" ref={notifRef}>
               <button
                 className="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-orange-600 hover:bg-orange-700 transition-colors focus:outline-none"
                 onClick={(e) => {
                   e.stopPropagation();
+                  // Toggle dropdown notification khi click vào icon chuông
                   setShowNotifDropdown(!showNotifDropdown);
                 }}
                 title="Thông báo"
               >
-                {/* Bell icon (white) */}
+                {/* Icon chuông (màu trắng) */}
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L3 17h12z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
 
-                {/* Badge */}
+                {/* Badge hiển thị số lượng notifications chưa đọc (màu đỏ, hiển thị "99+" nếu > 99) */}
                 {unreadCount > 0 && (
                   <span
                     className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white rounded-full bg-red-600"
@@ -154,18 +163,19 @@ const NavbarNew = ({
                 )}
               </button>
 
-              {/* Notifications Dropdown */}
+              {/* Dropdown danh sách notifications */}
               {showNotifDropdown && (
                 <div
                   className="absolute left-0 mt-2 bg-white text-gray-800 rounded-lg shadow-lg border border-gray-200 z-50"
                   style={{ minWidth: 450, maxWidth: 500 }}
                 >
-                  {/* Header */}
+                  {/* Header: Tiêu đề và nút đánh dấu tất cả đã đọc */}
                   <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                     <div className="font-semibold text-lg">Thông báo</div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Đánh dấu tất cả notifications là đã đọc
                         markAllAsRead();
                       }}
                       className="text-xs text-orange-600 hover:underline"
@@ -174,24 +184,29 @@ const NavbarNew = ({
                     </button>
                   </div>
 
-                  {/* Body - list */}
+                  {/* Body: Danh sách notifications (có scroll nếu nhiều) */}
                   <div className="max-h-96 overflow-y-auto">
+                    {/* Hiển thị message nếu không có notification nào */}
                     {notifications.length === 0 && (
                       <div className="p-5 text-sm text-gray-500">Chưa có thông báo</div>
                     )}
+                    {/* Render từng notification item */}
                     {notifications.map((n) => {
                       const isUnread = !n.read;
                       return (
                         <div
                           key={n.id}
+                          // Highlight màu cam nhạt nếu chưa đọc
                           className={`flex gap-4 items-start px-5 py-4 cursor-pointer border-b border-gray-50 hover:bg-gray-50 transition-colors ${isUnread ? 'bg-[#fff3e0]' : 'bg-white'}`}
                           onClick={(e) => {
                             e.stopPropagation();
+                            // Đánh dấu notification này là đã đọc
                             markAsRead(n.id);
-                            // Pass ticketCode to parent component
+                            // Gọi callback onNotificationClick với ticketCode để mở modal chi tiết ticket
                             if (n.ticketCode && onNotificationClick) {
                               onNotificationClick(n.ticketCode);
                             }
+                            // Đóng dropdown sau khi click
                             setShowNotifDropdown(false);
                           }}
                         >
@@ -225,16 +240,17 @@ const NavbarNew = ({
                     })}
                   </div>
 
-                  {/* Footer */}
+                  {/* Footer: Nút toggle giữa xem tất cả và chỉ chưa đọc */}
                   <div className="px-5 py-4 border-t border-gray-100">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        // Toggle giữa hiển thị tất cả notifications và chỉ chưa đọc
                         if (showAll) {
-                          // Nếu đang xem tất cả, quay lại xem chỉ chưa đọc
+                          // Nếu đang xem tất cả, chuyển về chỉ hiển thị chưa đọc
                           setShowAll(false);
                         } else {
-                          // Nếu xem chưa đọc, chuyển sang xem tất cả
+                          // Nếu đang xem chưa đọc, chuyển sang xem tất cả
                           setShowAll(true);
                         }
                       }}

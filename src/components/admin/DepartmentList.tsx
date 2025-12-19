@@ -1,6 +1,8 @@
+// Danh sách Bộ phận trong trang Admin: hỗ trợ tìm kiếm, filter trạng thái và phân trang
 import type { Department } from '../../types';
 import Pagination from '../shared/Pagination';
 
+// Props cho component hiển thị danh sách Bộ phận
 interface DepartmentListProps {
   departments: Department[];
   searchQuery: string;
@@ -16,6 +18,7 @@ interface DepartmentListProps {
   onPageSizeChange?: (size: number) => void;
 }
 
+// Component hiển thị bảng Bộ phận + thanh search/filter + phân trang
 const DepartmentList = ({
   departments,
   searchQuery,
@@ -29,8 +32,9 @@ const DepartmentList = ({
   onPageChange,
   onPageSizeChange,
 }: DepartmentListProps) => {
+  // Lọc danh sách bộ phận theo trạng thái và từ khóa tìm kiếm
   const filteredDepartments = departments.filter((dept) => {
-    // Filter by status
+    // Filter theo trạng thái (Hoạt động / Không hoạt động)
     if (filterStatus !== 'all') {
       const deptStatus = dept.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE';
       if (deptStatus !== filterStatus) {
@@ -38,7 +42,7 @@ const DepartmentList = ({
       }
     }
     
-    // Filter by search query
+    // Filter theo từ khóa search (mã hoặc tên bộ phận)
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesCode = dept.deptCode?.toLowerCase().includes(query);
@@ -50,7 +54,7 @@ const DepartmentList = ({
     return true;
   });
 
-  // Calculate pagination
+  // Tính toán số trang và cắt dữ liệu cho phân trang client-side
   const totalCount = filteredDepartments.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (pageNumber - 1) * pageSize;
@@ -139,7 +143,7 @@ const DepartmentList = ({
                     </span>
                   </td>
                   <td className="px-4 py-4 text-sm text-gray-600">
-                    {dept.createdAt ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(dept.createdAt.includes('Z') ? dept.createdAt : `${dept.createdAt}Z`)) : '-'}
+                    {dept.createdAt ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(dept.createdAt.includes('Z') ? dept.createdAt : `${dept.createdAt}Z`)) : '-'}
                   </td>
                   <td className="px-4 py-4">
                     <button

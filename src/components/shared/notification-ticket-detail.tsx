@@ -1,21 +1,31 @@
 import type { Ticket, TicketFromApi } from '../../types';
+import { isTicketOverdueAndNotCompleted, generateOverdueNote, convertUTCTimestampsToVN } from '../../utils/dateUtils';
 
+// Props cho component NotificationTicketDetail
 interface NotificationTicketDetailProps {
-  ticket: Ticket | TicketFromApi | null;
-  onClose: () => void;
+  ticket: Ticket | TicketFromApi | null; // Ticket cần hiển thị chi tiết (có thể là Ticket hoặc TicketFromApi)
+  onClose: () => void; // Callback khi đóng modal
 }
 
+// Component hiển thị chi tiết ticket trong modal khi user click vào notification
+// - Hiển thị thông tin đầy đủ của ticket (mã, tiêu đề, mô tả, địa điểm, ngày tạo, deadline, trạng thái)
+// - Hỗ trợ cả Ticket và TicketFromApi type
+// - Format ngày giờ theo timezone Việt Nam
 const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailProps) => {
+  // Nếu không có ticket, không render gì
   if (!ticket) return null;
 
-  const ticketCode = (ticket as any).ticketCode || (ticket as any).id;
-  const title = ticket.title || 'No title';
-  const description = ticket.description || 'No description';
-  const locationName = (ticket as any).locationName || (ticket as any).location || 'N/A';
-  const createdAt = ticket.createdAt || new Date().toISOString();
-  const resolveDeadline = (ticket as any).resolveDeadline || (ticket as any).deadlineAt;
-  const status = ((ticket as any).status || 'open').toLowerCase();
+  // Extract các thông tin từ ticket (hỗ trợ cả Ticket và TicketFromApi với các tên field khác nhau)
+  const ticketCode = (ticket as any).ticketCode || (ticket as any).id; // Mã ticket (ticketCode hoặc id)
+  const title = ticket.title || 'No title'; // Tiêu đề ticket
+  const description = ticket.description || 'No description'; // Mô tả ticket
+  const locationName = (ticket as any).locationName || (ticket as any).location || 'N/A'; // Tên địa điểm
+  const createdAt = ticket.createdAt || new Date().toISOString(); // Ngày tạo
+  const resolveDeadline = (ticket as any).resolveDeadline || (ticket as any).deadlineAt; // Deadline xử lý
+  const status = ((ticket as any).status || 'open').toLowerCase(); // Trạng thái ticket (chuyển về lowercase)
 
+  // Format ngày giờ theo định dạng Việt Nam (dd/mm/yyyy, hh:mm)
+  // Xử lý timezone Asia/Ho_Chi_Minh và thêm 'Z' nếu thiếu để đảm bảo parse đúng
   const formatDateTime = (dateString: string) => {
     const normalizedDateString = dateString.includes('Z') ? dateString : `${dateString}Z`;
     const date = new Date(normalizedDateString);
@@ -29,6 +39,8 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
     }).format(date);
   };
 
+  // Trả về thông tin hiển thị cho trạng thái ticket (text, màu nền, icon)
+  // Hỗ trợ nhiều format status khác nhau (open/new, in-progress/in_progress/assigned, resolved, closed)
   const getStatusDisplay = (status: string) => {
     switch (status.toLowerCase()) {
       case 'open':
@@ -47,13 +59,16 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
     }
   };
 
+  // Lấy thông tin hiển thị cho trạng thái ticket
   const statusDisplay = getStatusDisplay(status);
 
   return (
+    // Modal overlay - click bên ngoài để đóng
     <div 
       className="fixed top-0 left-0 right-0 bottom-0 bg-black/50 flex items-center justify-center z-[1000] p-4"
       onClick={onClose}
     >
+      {/* Modal content - stopPropagation để không đóng khi click bên trong */}
       <div 
         className="bg-white rounded-2xl max-w-[900px] w-full max-h-[85vh] overflow-auto shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
         onClick={(e) => e.stopPropagation()}
@@ -116,6 +131,48 @@ const NotificationTicketDetail = ({ ticket, onClose }: NotificationTicketDetailP
              
             </div>
           </div>
+
+          {/* Overdue Warning Section - hiển thị nếu ticket bị overdue */}
+          {(() => {
+            const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+            const overdueNote = generateOverdueNote(
+              { 
+                resolveDeadline, 
+                status, 
+                slaDeadline: resolveDeadline 
+              },
+              (ticket as any).note || (ticket as any).notes
+            );
+
+            if (isOverdue || overdueNote.includes('TICKET ĐÃ QUÁ HẠN')) {
+              return (
+                <div className="mb-8 p-6 rounded-lg bg-red-50 border-2 border-red-300">
+                  <h3 className="text-lg font-bold text-red-700 mb-3 flex items-center gap-2">
+                    🚨 ⚠️ THÔNG BÁO QUAN TRỌNG
+                  </h3>
+                  <p className="text-red-800 font-medium whitespace-pre-wrap">
+                    {convertUTCTimestampsToVN(overdueNote)}
+                  </p>
+                </div>
+              );
+            }
+
+            // Hiển thị ghi chú thông thường nếu có
+            if ((ticket as any).note || (ticket as any).notes) {
+              return (
+                <div className="mb-8 p-6 rounded-lg bg-emerald-50 border border-emerald-200">
+                  <h3 className="text-lg font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                    📝 Ghi chú
+                  </h3>
+                  <p className="text-emerald-900 font-medium whitespace-pre-wrap">
+                    {convertUTCTimestampsToVN((ticket as any).note || (ticket as any).notes)}
+                  </p>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
         </div>
 
       

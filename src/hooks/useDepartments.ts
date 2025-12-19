@@ -1,16 +1,20 @@
+// Hook quản lý state và thao tác CRUD cho Bộ phận (Department) ở phía client
 import { useState, useEffect } from 'react';
 import type { Department, DepartmentRequestDto, DepartmentUpdateDto } from '../types';
 import { departmentService } from '../services/departmentService';
 
 export const useDepartments = () => {
+  // Danh sách bộ phận hiện có trong hệ thống
   const [departments, setDepartments] = useState<Department[]>([]);
+  // Trạng thái đang tải dữ liệu
   const [loading, setLoading] = useState(false);
 
-  // Load departments
+  // Khi hook được sử dụng lần đầu, tự động load danh sách bộ phận
   useEffect(() => {
     loadDepartments();
   }, []);
 
+  // Gọi API lấy toàn bộ danh sách bộ phận và cập nhật state
   const loadDepartments = async () => {
     setLoading(true);
     try {
@@ -25,7 +29,7 @@ export const useDepartments = () => {
     }
   };
 
-  // Tạo department mới
+  // Tạo department mới (gọi API rồi append vào state)
   const createDepartment = async (department: DepartmentRequestDto) => {
     try {
       const newDepartment = await departmentService.create(department);
@@ -37,7 +41,7 @@ export const useDepartments = () => {
     }
   };
 
-  // Cập nhật department
+  // Cập nhật thông tin bộ phận (mã, tên, trạng thái) theo departmentId
   const updateDepartment = async (departmentId: number, updates: DepartmentUpdateDto) => {
     try {
       const updated = await departmentService.update(departmentId, updates);
@@ -54,7 +58,7 @@ export const useDepartments = () => {
     }
   };
 
-  // Cập nhật status của department
+  // Cập nhật trạng thái hoạt động / không hoạt động cho bộ phận
   const updateDepartmentStatus = async (departmentId: number, status: 'ACTIVE' | 'INACTIVE') => {
     try {
       await departmentService.updateStatus(departmentId, status);
@@ -72,7 +76,7 @@ export const useDepartments = () => {
     }
   };
 
-  // Xóa department
+  // Xóa bộ phận theo departmentId
   const deleteDepartment = async (departmentId: number) => {
     try {
       await departmentService.delete(departmentId);
@@ -86,7 +90,7 @@ export const useDepartments = () => {
     }
   };
 
-  // Get departments by admin ID
+  // Lấy danh sách bộ phận thuộc về một admin cụ thể (dùng cho phân quyền)
   const getDepartmentsByAdminId = async (adminId: string) => {
     return departmentService.getByAdminId(adminId);
   };

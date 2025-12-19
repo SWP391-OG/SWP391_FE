@@ -1,16 +1,18 @@
+// Hook quản lý danh sách Tickets được lưu local (localStorage) cho các màn hình nội bộ
 import { useState, useEffect } from 'react';
 import type { Ticket } from '../types';
 import { ticketService } from '../services/ticketService';
 
 export const useTickets = () => {
+  // Danh sách ticket trong local (không phải dữ liệu API paging)
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Load tickets
+  // Load tickets ban đầu và đồng bộ dữ liệu giữa các tab / component
   useEffect(() => {
     loadTickets();
     
-    // Listen for storage events to sync tickets across tabs/components
+    // Lắng nghe sự kiện storage để sync tickets giữa các tab
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'tickets') {
         loadTickets();
@@ -19,7 +21,7 @@ export const useTickets = () => {
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Also check localStorage periodically (every 2 seconds) to catch changes from same tab
+    // Định kỳ (2s) kiểm tra localStorage để bắt được thay đổi trong cùng tab
     const interval = setInterval(() => {
       const currentTickets = ticketService.getAll();
       if (currentTickets.length !== tickets.length || 
@@ -32,8 +34,9 @@ export const useTickets = () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
     };
-  }, [tickets.length]); // Re-run if tickets length changes
+  }, [tickets.length]); // Re-run nếu số lượng ticket thay đổi
 
+  // Load toàn bộ tickets từ ticketService (localStorage)
   const loadTickets = () => {
     setLoading(true);
     try {
@@ -46,7 +49,7 @@ export const useTickets = () => {
     }
   };
 
-  // Tạo ticket mới
+  // Tạo ticket mới (lưu vào localStorage và cập nhật state)
   const createTicket = (ticket: Omit<Ticket, 'id' | 'createdAt' | 'slaTracking'>) => {
     try {
       const newTicket = ticketService.create(ticket);
@@ -58,7 +61,7 @@ export const useTickets = () => {
     }
   };
 
-  // Cập nhật ticket
+  // Cập nhật thông tin ticket theo id
   const updateTicket = (id: string, updates: Partial<Ticket>) => {
     try {
       const updated = ticketService.update(id, updates);
@@ -70,7 +73,7 @@ export const useTickets = () => {
     }
   };
 
-  // Assign ticket to staff
+  // Gán ticket cho staff (cập nhật localStorage + state)
   const assignTicket = (ticketId: string, staffId: string, staffName: string) => {
     try {
       const updated = ticketService.assign(ticketId, staffId, staffName);
@@ -82,7 +85,7 @@ export const useTickets = () => {
     }
   };
 
-  // Update ticket status
+  // Cập nhật trạng thái ticket
   const updateTicketStatus = (ticketId: string, newStatus: Ticket['status']) => {
     try {
       const updated = ticketService.updateStatus(ticketId, newStatus);
@@ -94,7 +97,7 @@ export const useTickets = () => {
     }
   };
 
-  // Update ticket priority
+  // Cập nhật độ ưu tiên ticket
   const updateTicketPriority = (ticketId: string, newPriority: 'low' | 'medium' | 'high' | 'urgent') => {
     try {
       const updated = ticketService.updatePriority(ticketId, newPriority);
@@ -106,7 +109,7 @@ export const useTickets = () => {
     }
   };
 
-  // Cancel ticket
+  // Hủy ticket với lý do
   const cancelTicket = (ticketId: string, reason: string) => {
     try {
       const updated = ticketService.cancel(ticketId, reason);
@@ -118,7 +121,7 @@ export const useTickets = () => {
     }
   };
 
-  // Xóa ticket
+  // Xóa ticket khỏi localStorage
   const deleteTicket = (id: string) => {
     try {
       ticketService.delete(id);
@@ -129,7 +132,7 @@ export const useTickets = () => {
     }
   };
 
-  // Get tickets by user ID
+  // Lấy danh sách ticket theo userId (dùng cho trang "My tickets")
   const getTicketsByUserId = (userId: string) => {
     return ticketService.getByUserId(userId);
   };

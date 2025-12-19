@@ -1,6 +1,8 @@
+// Form xem thông tin / thêm mới Người dùng (student/teacher) trong admin
 import { useState } from 'react';
 import type { User, Ticket } from '../../types';
 
+// Props cho UserForm
 interface UserFormProps {
   editingUser: User | null;
   userFormData?: {
@@ -16,6 +18,7 @@ interface UserFormProps {
   onClose: () => void;
 }
 
+// Component modal dùng để hiển thị chi tiết user hoặc form tạo user mới
 const UserForm = ({
   editingUser,
   userFormData,
@@ -25,11 +28,14 @@ const UserForm = ({
   onToggleBan,
   onClose,
 }: UserFormProps) => {
+  // Bật/tắt phần hiển thị lịch sử tickets của user
   const [showTicketHistory, setShowTicketHistory] = useState(false);
 
+  // Helper format ngày theo múi giờ Việt Nam
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

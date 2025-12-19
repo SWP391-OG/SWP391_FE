@@ -1,31 +1,47 @@
+// Trang Đăng nhập: gọi authService.login và lưu user vào localStorage
 import { useState } from 'react';
 import type { User } from '../../types';
 import { authService } from '../../services/authService';
 import { saveCurrentUser } from '../../utils/localStorage';
 
+// Props nhận callback từ App để cập nhật state user hiện tại và điều hướng
 interface LoginPageProps {
   onLogin: (user: User) => void;
   onNavigateToRegister?: () => void;
   onNavigateToForgotPassword?: () => void;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 🔐 [LOGIN PAGE] - Trang đăng nhập cho tất cả người dùng
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Xác thực người dùng qua email + password
+// - Gọi authService.login() để xác minh thông tin
+// - Lưu user vào localStorage sau khi đăng nhập thành công
+// - Hỗ trợ chuyển hướng đến trang register/forgot-password
+// ════════════════════════════════════════════════════════════════════════════════════
+
 const LoginPage = ({ onLogin, onNavigateToRegister, onNavigateToForgotPassword }: LoginPageProps) => {
+  // State điều khiển giá trị form và trạng thái UI
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Xử lý submit form đăng nhập
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
+      // Gọi API login qua authService
       const user = await authService.login(email, password);
       if (user) {
-        // Lưu user vào localStorage với utility function (key: fptech_current_user)
+        // Lưu user vào localStorage với key 'fptech_current_user'
         saveCurrentUser(user);
+        // Gọi callback để cập nhật currentUser ở app.tsx
         onLogin(user);
       } else {
         setError('Email hoặc mật khẩu không đúng!');

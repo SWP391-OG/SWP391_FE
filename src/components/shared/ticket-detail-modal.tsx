@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Ticket } from '../../types';
 import { parseTicketImages } from '../../utils/ticketUtils';
+import { isTicketOverdueAndNotCompleted, isTicketOverdue, getTimeUntilDeadline, generateOverdueNote } from '../../utils/dateUtils';
 
 interface TicketDetailModalProps {
   ticket: Ticket;
@@ -25,6 +26,9 @@ const TicketDetailModal = ({
 }: TicketDetailModalProps) => {
   // Parse images from ticket (handles both imageUrl string and images array)
   const ticketImages = parseTicketImages(ticket);
+
+  // Check if ticket is overdue
+  const isOverdue = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status, ticket.resolvedAt);
 
   // State for feedback form - initialize from ticket
   const [ratingStars, setRatingStars] = useState<number>(() => ticket.ratingStars || 0);
@@ -59,7 +63,6 @@ const TicketDetailModal = ({
   // Status colors
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
-    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     'in_progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
@@ -117,11 +120,31 @@ const TicketDetailModal = ({
               {ticket.status === 'open' && '🔵 Mới tạo'}
               {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
               {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '� chờ đánh giá'}
+              {ticket.status === 'resolved' && '🔵 chờ đánh giá'}
               {ticket.status === 'closed' && '✅ Đã hoàn thành'}
               {ticket.status === 'cancelled' && '🔴 Đã hủy'}
             </span>
+            {isOverdue && (
+              <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-red-100 text-red-800">
+                ⚠️ Quá hạn
+              </span>
+            )}
           </div>
+
+          {/* Overdue notification */}
+          {isOverdue && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-xl">🚨</div>
+                <div>
+                  <div className="font-semibold text-red-800 mb-1">Ticket đã bị quá hạn</div>
+                  <div className="text-sm text-red-700">
+                    Ticket này đã vượt quá hạn xử lý. Vui lòng ưu tiên hoàn thành ticket này trong thời gian sớm nhất.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-8">
@@ -132,6 +155,38 @@ const TicketDetailModal = ({
             </h3>
             <div className="text-base text-gray-600 leading-[1.8]">{ticket.description}</div>
           </div>
+
+          {/* Overdue Notification Box - Detail View */}
+          {isOverdue && (
+            <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🚨</div>
+                <div>
+                  <div className="font-semibold text-red-800 mb-1">Ticket đã quá hạn</div>
+                  <div className="text-sm text-red-700">Vui lòng ưu tiên hoàn thành.</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Assigned but Overdue Notification - Dành cho Admin/Staff */}
+          {!isStudentView && isOverdue && (ticket.assignedTo || ticket.assignedToName) && 
+           (ticket.status === 'ASSIGNED' || ticket.status === 'IN_PROGRESS') && (
+            <div className="mb-8 p-5 bg-orange-50 border-2 border-orange-400 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">⚠️</div>
+                <div className="flex-1">
+                  <div className="font-bold text-orange-900 mb-2 text-lg">Cảnh báo: Ticket quá hạn không được xử lí</div>
+                  <div className="text-sm text-orange-800 mb-3 leading-relaxed">
+                    Ticket này đã được giao cho <strong>{ticket.assignedToName || ticket.assignedTo}</strong> nhưng đã vượt quá thời hạn xử lý mà vẫn chưa hoàn thành.
+                  </div>
+                  <div className="text-sm font-semibold text-orange-900 p-3 bg-white border border-orange-200 rounded">
+                    ❌ <strong>Hành động bắt buộc:</strong> Vui lòng hủy ticket hoặc liên hệ ngay với người xử lý để giải quyết vấn đề này.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Information */}
           <div className="mb-8">
@@ -167,6 +222,31 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">
                     {formatDateTime(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt || '')}
                   </div>
+                  {/* Countdown - Chỉ hiển thị cho Staff (khi không phải isStudentView) */}
+                  {!isStudentView && (
+                    <>
+                      {isTicketOverdue(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt) ? (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <div className="text-sm text-red-600 font-semibold flex items-center gap-2">
+                            <span>🚨</span>
+                            <span>Đã quá hạn</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          {(() => {
+                            const { hours, minutes } = getTimeUntilDeadline(ticket.resolveDeadline || ticket.slaDeadline || ticket.deadlineAt);
+                            return (
+                              <div className="text-sm text-green-600 font-semibold flex items-center gap-2">
+                                <span>✅</span>
+                                <span>Còn {hours} giờ {minutes} phút</span>
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
               {(ticket.assignedTo || ticket.assignedToName) && (
@@ -202,14 +282,25 @@ const TicketDetailModal = ({
                   <div className="text-base text-gray-800 font-medium">{ticket.contactPhone}</div>
                 </div>
               )}
-              {(ticket.note || ticket.notes) && (
-                <div className={`p-4 rounded-lg col-span-2 ${ticket.status === 'cancelled' ? 'bg-red-50' : 'bg-emerald-50'}`}>
-                  <div className={`text-[0.85rem] font-semibold mb-1 ${ticket.status === 'cancelled' ? 'text-red-600' : 'text-emerald-700'}`}>
-                    {ticket.status === 'cancelled' ? '🔴 Lý do hủy' : '📝 Ghi chú'}
-                  </div>
-                  <div className={`text-base font-medium ${ticket.status === 'cancelled' ? 'text-red-800' : 'text-emerald-900'}`}>{ticket.note || ticket.notes}</div>
-                </div>
-              )}
+              {(() => {
+                const finalNote = generateOverdueNote(ticket, ticket.note || ticket.notes);
+                const isOverdueNote = isTicketOverdueAndNotCompleted(ticket.resolveDeadline || ticket.slaDeadline, ticket.status);
+                const isCancelled = ticket.status === 'cancelled';
+                
+                if (finalNote) {
+                  return (
+                    <div className={`p-4 rounded-lg col-span-2 ${isOverdueNote ? 'bg-red-50 border-2 border-red-300' : isCancelled ? 'bg-red-50' : 'bg-emerald-50'}`}>
+                      <div className={`text-[0.85rem] font-semibold mb-1 ${isOverdueNote ? 'text-red-700' : isCancelled ? 'text-red-600' : 'text-emerald-700'}`}>
+                        {isOverdueNote ? '🚨 ⚠️ THÔNG BÁO QUAN TRỌNG' : isCancelled ? '🔴 Lý do hủy' : '📝 Ghi chú'}
+                      </div>
+                      <div className={`text-base font-medium whitespace-pre-wrap ${isOverdueNote ? 'text-red-800' : isCancelled ? 'text-red-800' : 'text-emerald-900'}`}>
+                        {finalNote}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               {ticket.resolvedAt && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="text-[0.85rem] font-semibold text-gray-500 mb-1">✅ Được giải quyết vào</div>

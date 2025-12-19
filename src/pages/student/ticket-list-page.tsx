@@ -1,24 +1,50 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { Ticket, TicketFromApi } from '../../types';
 import { ticketService } from '../../services/ticketService';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
 interface TicketListPageProps {
   onViewDetail: (ticket: Ticket) => void;
   onBack: () => void;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 📋 [TICKET LIST PAGE] - Xem danh sách tất cả tickets của sinh viên
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Lấy danh sách tickets từ API (/Ticket/my-tickets)
+// - Lọc theo status (all/open/assigned/in-progress/resolved/closed/cancelled)
+// - Tìm kiếm theo title hoặc description
+// - Sắp xếp tickets theo status
+// - Click để xem chi tiết ticket
+// ════════════════════════════════════════════════════════════════════════════════════
+
 const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🔍 [FILTER & SEARCH STATE] - Quản lý tìm kiếm & lọc
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<Ticket['status'] | 'all'>('all');
+  
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📥 [API DATA STATE] - Dữ liệu từ backend API
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 📤 [FETCH TICKETS] - Lấy danh sách tickets từ API
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   // Load tickets from API
   useEffect(() => {
     const fetchTickets = async () => {
       try {
         setLoading(true);
-        const response = await ticketService.getMyTickets(1, 100); // Get student's tickets
+        // Get student's tickets từ /Ticket/my-tickets endpoint
+        const response = await ticketService.getMyTickets(1, 100);
         
         // Map API response to Ticket format
         const mappedTickets: Ticket[] = response.data.items.map((apiTicket: TicketFromApi) => ({
@@ -69,6 +95,10 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     fetchTickets();
   }, []);
 
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🔄 [API STATUS MAPPING] - Convert API status sang UI status
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   // Map API status to UI status
   const mapApiStatus = (apiStatus: string): Ticket['status'] => {
     const statusMap: Record<string, Ticket['status']> = {
@@ -82,6 +112,10 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     return statusMap[apiStatus] || 'open';
   };
 
+  // ─────────────────────────────────────────────────────────────────────────────────
+  // 🎯 [FILTERED & SORTED TICKETS] - Lọc & sắp xếp tickets
+  // ─────────────────────────────────────────────────────────────────────────────────
+  
   // Filter and search tickets
   const filteredTickets = useMemo(() => {
     const filtered = tickets.filter((ticket) => {
@@ -96,7 +130,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     const statusOrder: Record<string, number> = {
       'open': 1,
       'assigned': 2,
-      'acknowledged': 2,
       'in-progress': 3,
       'resolved': 4,
       'closed': 5,
@@ -115,7 +148,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   const statusColors: Record<string, { bg: string; text: string }> = {
     open: { bg: 'bg-blue-100', text: 'text-blue-800' },
     assigned: { bg: 'bg-purple-100', text: 'text-purple-800' },
-    acknowledged: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
     'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
     resolved: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
     closed: { bg: 'bg-gray-100', text: 'text-gray-700' },
@@ -123,7 +155,13 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
   };
 
   // Status labels
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status: string, resolveDeadline?: string) => {
+    // Check if ticket is overdue
+    const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status);
+    if (isOverdue) {
+      return '⚠️ Đã quá hạn';
+    }
+    
     // For closed tickets, always show "Đã hoàn thành"
     if (status === 'closed') {
       return 'Đã hoàn thành';
@@ -131,7 +169,6 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
     const statusLabelsMap: Record<string, string> = {
       open: 'Mới tạo',
       assigned: 'Đã được giao việc',
-      acknowledged: 'Mới tạo',
       created: 'Mới tạo',
       'in-progress': 'Đang xử lý',
       resolved: 'chờ đánh giá',
@@ -306,9 +343,15 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                     <div className="text-[0.85rem] font-semibold text-gray-500 mb-2">{ticket.id}</div>
                     <h3 className="text-lg font-semibold text-gray-800 m-0 mb-2">{ticket.title}</h3>
                     <div className="flex gap-4 flex-wrap items-center">
-                      <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
-                        {getStatusLabel(ticket.status)}
-                      </span>
+                      {isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status) ? (
+                        <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold bg-red-100 text-red-800`}>
+                          ⚠️ Quá hạn
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 py-1 px-3 rounded-xl text-[0.85rem] font-semibold ${statusColors[ticket.status]?.bg || 'bg-gray-100'} ${statusColors[ticket.status]?.text || 'text-gray-800'}`}>
+                          {getStatusLabel(ticket.status, ticket.resolveDeadline)}
+                        </span>
+                      )}
                       {ticket.categoryId && (
                         <span className="flex items-center gap-2 text-sm text-gray-500">
                           <span>🔧</span>
@@ -328,6 +371,19 @@ const TicketListPage = ({ onViewDetail, onBack }: TicketListPageProps) => {
                 <p className="text-[0.95rem] text-gray-500 leading-relaxed line-clamp-2 overflow-hidden">
                   {ticket.description}
                 </p>
+
+                {/* Overdue Notification Box */}
+                {isTicketOverdueAndNotCompleted(ticket.resolveDeadline, ticket.status) && (
+                  <div className="mt-3 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                    <div className="flex items-start gap-3">
+                      <div className="text-xl">🚨</div>
+                      <div>
+                        <div className="font-semibold text-red-800 text-sm">Ticket đã quá hạn</div>
+                        <div className="text-sm text-red-700 mt-1">Vui lòng ưu tiên hoàn thành.</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="flex justify-between items-center pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2 text-sm">

@@ -75,7 +75,7 @@ export const locationService = {
         throw new Error('Campus ID is required and must be a number');
       }
       
-      // Ensure campusId is a number, not string
+      // Đảm bảo campusId là số, không phải chuỗi
       const campusIdNumber = typeof location.campusId === 'string' 
         ? parseInt(location.campusId, 10) 
         : (location.campusId || 0);
@@ -87,7 +87,7 @@ export const locationService = {
       const requestData: LocationRequestDto = {
         locationCode: location.code.trim(),
         locationName: location.name.trim(),
-        campusId: campusIdNumber, // Backend expects campusId as integer
+        campusId: campusIdNumber, // Backend yêu cầu campusId là số nguyên
       };
       
       console.log('📍 Request payload to send:', JSON.stringify(requestData, null, 2));
@@ -103,12 +103,10 @@ export const locationService = {
 
       console.log('✅ Location created successfully');
       
-      // Note: Status update would require the newly created location ID from API response
-      // which is not provided in the current response, so status cannot be updated here
+      // Lưu ý: Cập nhật trạng thái cần ID location mới tạo từ response API
+      // nhưng response hiện tại không cung cấp, nên không thể cập nhật trạng thái ở đây
       
-      // Return newly created location
-      // Note: We don't have locationId yet, so we use code as id
-      // Status will be set via separate API call if needed
+      // Trả về location mới được tạo
       return {
         id: location.code,
         code: location.code,
@@ -134,7 +132,7 @@ export const locationService = {
       const requestData: LocationRequestDto = {
         locationCode: updates.code || '', // Có thể sửa locationCode
         locationName: updates.name || '',
-        campusId: updates.campusId || 0, // Required, nhưng có thể update
+        campusId: updates.campusId || 0, // Bắt buộc, nhưng có thể cập nhật
       };
       
       if (!requestData.campusId || requestData.campusId <= 0) {
@@ -177,13 +175,13 @@ export const locationService = {
         }
       }
       
-      // If status needs to be updated, do it separately via PATCH
+      // Nếu cần cập nhật trạng thái, thực hiện riêng biệt qua PATCH
       if (updates.status) {
         console.log(`📍 Updating status separately: ${updates.status}`);
         try {
           await this.updateStatus(locationId, updates.status);
           console.log('✅ Status updated successfully');
-          // Add a small delay to ensure backend has committed the changes
+          // Thêm một delay nhỏ để đảm bảo backend đã commit các thay đổi
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (statusError) {
           console.error('❌ Failed to update status:', statusError);
@@ -368,7 +366,7 @@ export const locationService = {
    * Helper: Map LocationDto từ API sang Location
    */
   mapDtoToLocation(dto: LocationDto): Location {
-    // Normalize status to uppercase
+    // Chuẩn hóa status thành chữ hoa
     const normalizedStatus = dto.status.toUpperCase();
     const isActive = normalizedStatus === 'ACTIVE';
     

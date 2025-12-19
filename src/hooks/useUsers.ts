@@ -1,10 +1,14 @@
+// Hook quản lý state và thao tác CRUD cho Người dùng (User) trong hệ thống
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { User, UserRole } from '../types';
 import { userService } from '../services/userService';
 
 export const useUsers = () => {
+  // Danh sách toàn bộ user (admin, staff, student, teacher,...)
   const [users, setUsers] = useState<User[]>([]);
+  // Trạng thái loading cho mọi thao tác
   const [loading, setLoading] = useState(false);
+  // Lưu thông báo lỗi (nếu có)
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -24,13 +28,13 @@ export const useUsers = () => {
     }
   }, []);
 
-  // Load khi component mount
+  // Load danh sách user ngay khi hook được mount
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
 
   /**
-   * Tạo user mới
+   * Tạo user mới (gọi API rồi reload lại danh sách)
    */
   const createUser = async (userData: {
     userCode: string;
@@ -57,7 +61,7 @@ export const useUsers = () => {
   };
 
   /**
-   * Cập nhật user
+   * Cập nhật thông tin user (dùng cho Staff, Student,... trong trang admin)
    */
   const updateUser = async (userId: number, updates: {
     userCode?: string;
@@ -85,7 +89,7 @@ export const useUsers = () => {
   };
 
   /**
-   * Cập nhật trạng thái user (khóa/mở khóa)
+   * Cập nhật trạng thái user (active / inactive) - dùng để khóa / mở khóa tài khoản
    */
   const updateUserStatus = async (userId: number, status: 'active' | 'inactive') => {
     setLoading(true);
@@ -103,7 +107,7 @@ export const useUsers = () => {
   };
 
   /**
-   * Xóa user
+   * Xóa user theo userCode
    */
   const deleteUser = async (userCode: string) => {
     setLoading(true);
@@ -121,21 +125,21 @@ export const useUsers = () => {
   };
 
   /**
-   * Filter users by role (computed from users state)
+   * Lọc user theo role (tính toán từ state users hiện tại, không gọi API)
    */
   const getUsersByRole = useCallback((role: UserRole) => {
     return users.filter(u => u.role === role);
   }, [users]);
 
   /**
-   * Get staff users (it-staff, facility-staff) - KHÔNG bao gồm admin
+   * Lấy danh sách staff (it-staff, facility-staff) - KHÔNG bao gồm admin
    */
   const getStaffUsers = useMemo(() => {
     return users.filter(u => u.role === 'it-staff' || u.role === 'facility-staff');
   }, [users]);
 
   /**
-   * Get student/teacher users - KHÔNG bao gồm admin và staff
+   * Lấy danh sách student/teacher - KHÔNG bao gồm admin và staff
    */
   const getStudentUsers = useMemo(() => {
     return users.filter(u => 

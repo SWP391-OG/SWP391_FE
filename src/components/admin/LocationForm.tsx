@@ -1,22 +1,24 @@
+// Form tạo / chỉnh sửa Địa điểm trong admin
 import type { Location } from '../../types';
-
 import type { Campus } from '../../services/campusService';
 
+// Props cho LocationForm
 interface LocationFormProps {
-  editingLocation: Location | null;
+  editingLocation: Location | null; // Location đang được chỉnh sửa (null nếu là tạo mới)
   locationFormData: {
-    code: string;
-    name: string;
-    status: 'active' | 'inactive';
-    campusCode?: string; // Store campusCode for selection
-    campusId?: number; // Store campusId (number) for API request
+    code: string; // Mã địa điểm
+    name: string; // Tên địa điểm
+    status: 'active' | 'inactive'; // Trạng thái (active: hoạt động, inactive: không hoạt động)
+    campusCode?: string; // Mã campus (dùng cho dropdown selection)
+    campusId?: number; // ID campus (số nguyên, dùng để gửi API request)
   };
-  campuses?: Campus[];
-  onFormDataChange: (data: LocationFormProps['locationFormData']) => void;
-  onSubmit: () => void;
-  onClose: () => void;
+  campuses?: Campus[]; // Danh sách campuses để hiển thị trong dropdown
+  onFormDataChange: (data: LocationFormProps['locationFormData']) => void; // Callback khi form data thay đổi
+  onSubmit: () => void; // Callback khi submit form
+  onClose: () => void; // Callback khi đóng modal
 }
 
+// Component modal cho phép admin thêm / sửa một địa điểm
 const LocationForm = ({
   editingLocation,
   locationFormData,
@@ -65,6 +67,7 @@ const LocationForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {/* Dropdown chọn Campus (chỉ hiển thị nếu có danh sách campuses) */}
           {campuses.length > 0 && (
             <div className="mb-6">
               <label className="block mb-2 font-semibold text-gray-700 text-sm">
@@ -75,16 +78,19 @@ const LocationForm = ({
                 value={locationFormData.campusCode || ''}
                 onChange={(e) => {
                   const selectedCampusCode = e.target.value;
+                  // Tìm campus được chọn trong danh sách để lấy campusId
                   const selectedCampus = campuses.find(c => c.campusCode === selectedCampusCode);
+                  // Cập nhật form data với campusCode (để hiển thị) và campusId (để gửi API)
                   onFormDataChange({ 
                     ...locationFormData, 
                     campusCode: selectedCampusCode,
-                    campusId: selectedCampus?.campusId
+                    campusId: selectedCampus?.campusId // Lấy campusId từ campus được chọn
                   });
                 }}
                 className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
               >
                 <option value="">-- Chọn Campus --</option>
+                {/* Render danh sách campuses trong dropdown */}
                 {campuses.map((campus) => (
                   <option key={campus.campusCode} value={campus.campusCode}>
                     {campus.campusName}

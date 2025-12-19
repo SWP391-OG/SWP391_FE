@@ -1,15 +1,29 @@
+// Trang Đăng ký tài khoản: gửi thông tin đăng ký và chuyển sang bước xác thực email
 import { useState } from 'react';
 import { authService } from '../../services/authService';
 import VerifyEmailPage from './verify-email-page';
 
+// Props nhận callback để điều hướng sau khi đăng ký + verify thành công
 interface RegisterPageProps {
   onRegisterSuccess: () => void;
   onNavigateToLogin?: () => void;
 }
 
+// ════════════════════════════════════════════════════════════════════════════════════
+// 📝 [REGISTER PAGE] - Trang đăng ký cho sinh viên
+// ════════════════════════════════════════════════════════════════════════════════════
+// Chức năng:
+// - Nhập thông tin đăng ký: email, mật khẩu, họ tên, số điện thoại
+// - Xác thực form trước khi gửi
+// - Gọi authService.register() để tạo tài khoản
+// - Sau đó chuyển đến trang verify email
+// ════════════════════════════════════════════════════════════════════════════════════
+
 const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProps) => {
+  // step: 'register' = màn hình nhập form, 'verify' = màn hình nhập mã xác thực
   const [step, setStep] = useState<'register' | 'verify'>('register');
   const [registeredEmail, setRegisteredEmail] = useState('');
+  // State form đăng ký
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,6 +37,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Cập nhật state khi người dùng nhập form
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -31,33 +46,35 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     setError('');
   };
 
+  // Kiểm tra hợp lệ các trường trong form trước khi gửi API đăng ký
   const validateForm = () => {
+    // Kiểm tra định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Email không hợp lệ!');
       return false;
     }
-
+    // Kiểm tra độ dài của mật khẩu có ít nhất 6 ký tự hay không
     if (formData.password.length < 6) {
       setError('Mật khẩu phải có ít nhất 6 ký tự!');
       return false;
     }
-
+    // Kiểm tra mật khẩu xác nhận có khớp với mật khẩu ở trên không
     if (formData.password !== formData.confirmPassword) {
       setError('Mật khẩu xác nhận không khớp!');
       return false;
     }
-
+    // Kiểm tra họ tên không được để trống và có ít nhất 2 ký tự
     if (formData.fullName.trim().length < 2) {
       setError('Họ tên phải có ít nhất 2 ký tự!');
       return false;
     }
-
+    // Kiểm tra số điện thoại không được để trống 
     if (!formData.phoneNumber.trim()) {
       setError('Vui lòng nhập số điện thoại!');
       return false;
     }
-
+    // Kiểm tra định dạng của số điện thoại, phải từ 10-11 chữ số
     const phoneRegex = /^[0-9]{10,11}$/;
     if (!phoneRegex.test(formData.phoneNumber)) {
       setError('Số điện thoại phải có 10-11 chữ số!');
@@ -67,15 +84,18 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     return true;
   };
 
+  // Gửi request đăng ký tới backend, nếu thành công thì chuyển sang bước verify email
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
+    // Xác thực form trước khi gửi
     if (!validateForm()) {
       return;
     }
 
     setLoading(true);
+    // Gọi authService để đăng ký tài khoản
     const result = await authService.register(
       formData.email,
       formData.password,
@@ -85,6 +105,7 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     setLoading(false);
 
     if (result.success) {
+      // Lưu email đã đăng ký và chuyển sang trang verify email
       setRegisteredEmail(formData.email);
       setStep('verify');
     } else {
@@ -92,8 +113,9 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
     }
   };
 
+  // Sau khi verify email thành công: reset form và callback về login
   const handleVerifySuccess = () => {
-    // Reset state
+    // Reset state để người dùng có thể đăng nhập
     setStep('register');
     setRegisteredEmail('');
     setFormData({
@@ -290,10 +312,11 @@ const RegisterPage = ({ onRegisterSuccess, onNavigateToLogin }: RegisterPageProp
           </div>
         </div>
       ) : (
+        // Nếu step là verify thì hiển thị trang VerifyEmailPage thay vì form đăng ký
         <VerifyEmailPage 
-          email={registeredEmail}
-          onVerifySuccess={handleVerifySuccess}
-          onNavigateToLogin={onNavigateToLogin}
+          email={registeredEmail} //truyền email đã đăng ký để hiển thị
+          onVerifySuccess={handleVerifySuccess} //callback khi verify thành công
+          onNavigateToLogin={onNavigateToLogin} //cho phép chuyển đến trang login
         />
       )}
     </>

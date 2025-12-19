@@ -1,6 +1,8 @@
+// Danh sách Người dùng (student/teacher) trong admin: tìm kiếm và phân trang
 import type { User } from '../../types';
 import Pagination from '../shared/Pagination';
 
+// Props cho component danh sách Người dùng
 interface UserListProps {
   users: User[];
   loading?: boolean;
@@ -14,6 +16,7 @@ interface UserListProps {
   onPageSizeChange?: (size: number) => void;
 }
 
+// Component hiển thị bảng Người dùng + thanh search + phân trang
 const UserList = ({
   users,
   loading = false,
@@ -25,6 +28,7 @@ const UserList = ({
   onPageChange,
   onPageSizeChange,
 }: UserListProps) => {
+  // Lọc danh sách user theo từ khóa (username, họ tên, email)
   const filteredUsers = users.filter((user: User) => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
@@ -35,7 +39,7 @@ const UserList = ({
     );
   });
 
-  // Calculate pagination
+  // Tính toán phân trang client-side dựa trên danh sách đã lọc
   const totalCount = filteredUsers.length;
   const totalPages = Math.ceil(totalCount / pageSize);
   const startIndex = (pageNumber - 1) * pageSize;

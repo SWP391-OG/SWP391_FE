@@ -165,9 +165,19 @@ export const OverdueTicketsPanel = ({
                   </div>
                 </div>
 
+                {/* Overdue Warning Section */}
+                <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded">
+                  <div className="font-semibold text-red-700 flex items-center gap-2">
+                    🚨 TICKET ĐÃ QUÁ HẠN
+                  </div>
+                  <p className="text-red-600 mt-1 text-sm">
+                    Ticket này đã quá hạn giải quyết. Vui lòng xử lý hoặc escalate ngay.
+                  </p>
+                </div>
+
                 {ticket.note && (
                   <div>
-                    <span className="font-semibold text-gray-700">Ghi chú:</span>
+                    <span className="font-semibold text-gray-700">Ghi chú từ staff:</span>
                     <p className="text-gray-600 mt-1">{ticket.note}</p>
                   </div>
                 )}

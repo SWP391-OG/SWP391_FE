@@ -1,6 +1,9 @@
+// Bảng hiển thị danh sách Tickets trong admin (dữ liệu từ API, phân trang phía server)
 import type { Ticket, Location, TicketFromApi } from '../../types';
 import Pagination from '../shared/Pagination';
+import { isTicketOverdueAndNotCompleted } from '../../utils/dateUtils';
 
+// Props cho component TicketsTable - nhận sẵn dữ liệu đã phân trang từ API
 interface TicketsTableProps {
   tickets: Ticket[] | TicketFromApi[];
   locations: Location[];
@@ -12,18 +15,23 @@ interface TicketsTableProps {
   filterStatus?: string;
   onSearchChange?: (query: string) => void;
   onFilterStatusChange?: (status: string) => void;
-  // Pagination props
+  // Pagination props (server-side)
   pageNumber?: number;
   pageSize?: number;
+  totalCount?: number;
+  totalPages?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
   onPageChange?: (page: number) => void;
   onPageSizeChange?: (size: number) => void;
 }
 
-// Helper function để check xem ticket có phải từ API không
+// Helper function để check xem ticket có phải dạng TicketFromApi (từ backend) không
 const isTicketFromApi = (ticket: Ticket | TicketFromApi): ticket is TicketFromApi => {
   return 'ticketCode' in ticket && 'requesterCode' in ticket;
 };
 
+// Component bảng Tickets: hỗ trợ search, filter trạng thái và điều khiển phân trang server-side
 const TicketsTable = ({
   tickets,
   locations,
@@ -34,63 +42,22 @@ const TicketsTable = ({
   onFilterStatusChange,
   pageNumber = 1,
   pageSize = 10,
+  totalCount = 0,
+  totalPages = 0,
+  hasNext = false,
+  hasPrevious = false,
   onPageChange,
   onPageSizeChange,
 }: TicketsTableProps) => {
-  // Filter tickets by search query and status
-  const filteredTickets = tickets.filter((ticket) => {
-    const isFromApi = isTicketFromApi(ticket);
-    const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
-    const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
-    
-    // Filter by status
-    if (filterStatus !== 'all') {
-      const ticketStatus = ticket.status.toUpperCase();
-      const filterStatusUpper = filterStatus.toUpperCase();
-      
-      // Map filter values to API status values (both uppercase and lowercase)
-      const statusMap: Record<string, string[]> = {
-        'NEW': ['NEW', 'OPEN'],
-        'ASSIGNED': ['ASSIGNED', 'ACKNOWLEDGED'],
-        'IN_PROGRESS': ['IN_PROGRESS', 'IN-PROGRESS'],
-        'RESOLVED': ['RESOLVED'],
-        'CLOSED': ['CLOSED'],
-        'CANCELLED': ['CANCELLED'],
-      };
-      
-      const matchingStatuses = statusMap[filterStatusUpper] || [filterStatusUpper];
-      if (!matchingStatuses.some(s => ticketStatus === s)) {
-        return false;
-      }
-    }
-    
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesCode = ticketCode?.toLowerCase().includes(query);
-      const matchesTitle = ticket.title?.toLowerCase().includes(query);
-      const matchesLocation = locationName?.toLowerCase().includes(query);
-      
-      if (!matchesCode && !matchesTitle && !matchesLocation) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
+  // Phân trang phía server: danh sách tickets đã được API phân trang sẵn
+  // Không filter/paginate thêm ở phía client
+  const paginatedTickets = tickets;
 
-  // Calculate pagination for filtered tickets (client-side)
-  const filteredTotalCount = filteredTickets.length;
-  const filteredTotalPages = Math.ceil(filteredTotalCount / pageSize);
-  const startIndex = (pageNumber - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedTickets = filteredTickets.slice(startIndex, endIndex);
-  const filteredHasPrevious = pageNumber > 1;
-  const filteredHasNext = pageNumber < filteredTotalPages;
-
+  // Helper format ngày giờ theo chuẩn Việt Nam
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -99,6 +66,7 @@ const TicketsTable = ({
     }).format(date);
   };
 
+  // Mapping trạng thái backend -> màu sắc + nhãn tiếng Việt hiển thị trong bảng
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { bg: string; text: string; label: string }> = {
       'open': { bg: 'bg-blue-100', text: 'text-blue-800', label: 'Mới tạo' },
@@ -113,6 +81,8 @@ const TicketsTable = ({
       'CLOSED': { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Đã hoàn thành' },
       'cancelled': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
       'CANCELLED': { bg: 'bg-red-100', text: 'text-red-800', label: 'Đã hủy' },
+      'OVERDUE': { bg: 'bg-red-100', text: 'text-red-800', label: 'Quá hạn' },
+      'overdue': { bg: 'bg-red-100', text: 'text-red-800', label: 'Quá hạn' },
     };
     return statusMap[status] || { bg: 'bg-gray-100', text: 'text-gray-700', label: status };
   };
@@ -149,6 +119,7 @@ const TicketsTable = ({
               <option value="IN_PROGRESS">Đang xử lý</option>
               <option value="RESOLVED">Chờ đánh giá</option>
               <option value="CLOSED">Đã hoàn thành</option>
+              <option value="OVERDUE">Quá hạn</option>
               <option value="CANCELLED">Đã hủy</option>
             </select>
           )}
@@ -210,9 +181,15 @@ const TicketsTable = ({
                   const ticketCode = isFromApi ? ticket.ticketCode : ticket.ticketCode || ticket.id.substring(0, 8);
                   const locationName = isFromApi ? ticket.locationName : (locations.find(l => l.id === ticket.location)?.name || ticket.location || 'N/A');
                   const status = ticket.status;
-                  const statusInfo = getStatusInfo(status);
                   const resolveDeadline = isFromApi ? ticket.resolveDeadline : (ticket.resolveDeadline || ticket.slaDeadline || ticket.createdAt);
+                  const resolvedAt = isFromApi ? ticket.resolvedAt : (ticket as any).resolvedAt;
                   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
+
+                  // Check if ticket is overdue
+                  const isOverdue = isTicketOverdueAndNotCompleted(resolveDeadline, status, resolvedAt);
+                  const statusInfo = isOverdue 
+                    ? { bg: 'bg-red-100 border border-red-500 shadow-lg', text: 'text-red-800 font-bold', label: 'Quá hạn' } 
+                    : getStatusInfo(status);
 
                   return (
                     <tr key={isFromApi ? ticket.ticketCode : ticket.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => onViewTicket(ticket)}>
@@ -290,10 +267,10 @@ const TicketsTable = ({
           <Pagination
             pageNumber={pageNumber}
             pageSize={pageSize}
-            totalPages={filteredTotalPages}
-            totalCount={filteredTotalCount}
-            hasPrevious={filteredHasPrevious}
-            hasNext={filteredHasNext}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            hasPrevious={hasPrevious}
+            hasNext={hasNext}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
           />

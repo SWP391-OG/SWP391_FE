@@ -20,29 +20,33 @@ export const departmentService = {
         return [];
       }
 
-      // Xử lý response: có thể là array hoặc pagination object
+      // Xử lý response: có thể là array trực tiếp hoặc pagination object (có field items)
       let departmentsData: DepartmentDto[];
       if (Array.isArray(response.data)) {
+        // Nếu response.data là array trực tiếp, dùng luôn
         departmentsData = response.data;
       } else if ('items' in response.data && Array.isArray(response.data.items)) {
+        // Nếu response.data là pagination object, lấy mảng từ field items
         departmentsData = response.data.items;
       } else {
+        // Format không hợp lệ, log lỗi và trả về mảng rỗng
         console.error('❌ Invalid response format:', response.data);
         return [];
       }
 
-      // Map DepartmentDto từ API sang Department
+      // Chuyển đổi từng DepartmentDto từ API sang Department format cho frontend
       const departments: Department[] = departmentsData.map((dto: DepartmentDto) => {
+        // Chuẩn hóa status: chuyển về chữ hoa, mặc định là INACTIVE nếu không có
         const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
         return {
-          id: dto.id,                    // Sử dụng id (int32) từ API
-          deptCode: dto.deptCode,
-          deptName: dto.deptName,
-          status: normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-          createdAt: dto.createdAt,
-          // Legacy fields
-          name: dto.deptName,
-          isActive: normalizedStatus === 'ACTIVE',
+          id: dto.id,                    // ID department (số nguyên int32) từ API
+          deptCode: dto.deptCode,        // Mã bộ phận (ví dụ: "IT", "FACILITY")
+          deptName: dto.deptName,        // Tên bộ phận (ví dụ: "IT Department")
+          status: normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE', // Trạng thái (ACTIVE hoặc INACTIVE)
+          createdAt: dto.createdAt,      // Ngày tạo (optional)
+          // Legacy fields: các field cũ để tương thích với code cũ
+          name: dto.deptName,            // Tên bộ phận (giống deptName)
+          isActive: normalizedStatus === 'ACTIVE', // Boolean flag cho trạng thái active
         };
       });
 
@@ -55,15 +59,20 @@ export const departmentService = {
   },
 
   /**
-   * Lấy department theo ID (deptCode)
+   * Lấy department theo ID (có thể là deptCode hoặc id số)
+   * - Tìm kiếm trong danh sách tất cả departments
+   * - Tìm theo deptCode (string) hoặc id (number/string)
+   * - Trả về null nếu không tìm thấy
    */
   async getById(id: string): Promise<Department | null> {
     try {
+      // Lấy tất cả departments từ API
       const allDepartments = await this.getAll();
+      // Tìm department có deptCode hoặc id khớp với id truyền vào
       return allDepartments.find(d => d.deptCode === id || d.id === id) || null;
     } catch (error) {
       console.error('❌ Error finding department by id:', error);
-      return null;
+      return null; // Trả về null nếu có lỗi
     }
   },
 
@@ -89,10 +98,11 @@ export const departmentService = {
       console.log('🏢 Creating department:', department);
       console.log('🏢 Request URL:', `${API_BASE_URL}/Department`);
       
-      // Theo Swagger: chỉ gửi deptCode và deptName (không có status)
+      // Theo Swagger: chỉ gửi deptCode và deptName (không có status khi tạo mới)
+      // Backend sẽ set status mặc định khi tạo department
       const requestData: DepartmentRequestDto = {
-        deptCode: department.deptCode.trim(),
-        deptName: department.deptName.trim(),
+        deptCode: department.deptCode.trim(), // Loại bỏ khoảng trắng thừa ở đầu/cuối
+        deptName: department.deptName.trim(), // Loại bỏ khoảng trắng thừa ở đầu/cuối
       };
       
       interface DepartmentCreateResponse {
@@ -121,45 +131,54 @@ export const departmentService = {
         throw new Error(`${errorMsg}${errorDetails}`);
       }
 
-      // Xử lý response: có thể là DepartmentDto trực tiếp, array, hoặc pagination object
+      // Xử lý response: backend có thể trả về nhiều format khác nhau
+      // - DepartmentDto trực tiếp (object có id, deptCode, deptName)
+      // - Array DepartmentDto[]
+      // - Pagination object { items: DepartmentDto[], ... }
       let dto: DepartmentDto;
       
+      // Kiểm tra response có chứa dữ liệu không
       if (!response.data) {
         throw new Error('Response không chứa dữ liệu (data is null/undefined)');
       }
 
-      // Kiểm tra nếu response.data là DepartmentDto trực tiếp (có id, deptCode, deptName)
+      // Kiểm tra nếu response.data là DepartmentDto trực tiếp (có đầy đủ các field cần thiết)
       if ('id' in response.data && 'deptCode' in response.data && 'deptName' in response.data) {
         dto = response.data as DepartmentDto;
         console.log('✅ Response là DepartmentDto trực tiếp');
       } else if (Array.isArray(response.data)) {
-        // Nếu là array, lấy phần tử đầu tiên
+        // Nếu là array, lấy phần tử đầu tiên (department vừa được tạo)
         if (response.data.length === 0) {
           throw new Error('Response array không chứa dữ liệu department');
         }
         dto = response.data[0];
         console.log('✅ Response là array, lấy phần tử đầu tiên');
       } else if ('items' in response.data && Array.isArray(response.data.items)) {
-        // Nếu là pagination object, lấy từ items
+        // Nếu là pagination object, lấy từ mảng items (lấy phần tử đầu tiên)
         if (response.data.items.length === 0) {
           throw new Error('Response pagination không chứa dữ liệu department');
         }
         dto = response.data.items[0];
         console.log('✅ Response là pagination object, lấy từ items[0]');
       } else {
+        // Format không nhận dạng được
         console.error('❌ Response format không hợp lệ:', response.data);
         throw new Error(`Response format không hợp lệ. Expected DepartmentDto, array, or pagination object, but got: ${JSON.stringify(response.data)}`);
       }
+      
+      // Chuẩn hóa status: chuyển về chữ hoa, mặc định INACTIVE
       const normalizedStatus = dto.status?.toUpperCase() || 'INACTIVE';
+      
+      // Chuyển đổi DepartmentDto sang Department format cho frontend
       const newDepartment: Department = {
-        id: dto.id,                    // Sử dụng id (int32) từ API
-        deptCode: dto.deptCode,
-        deptName: dto.deptName,
-        status: normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE',
-        createdAt: dto.createdAt,
-        // Legacy fields
-        name: dto.deptName,
-        isActive: normalizedStatus === 'ACTIVE',
+        id: dto.id,                    // ID department (số nguyên int32) từ API
+        deptCode: dto.deptCode,        // Mã bộ phận
+        deptName: dto.deptName,        // Tên bộ phận
+        status: normalizedStatus === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE', // Trạng thái (ACTIVE hoặc INACTIVE)
+        createdAt: dto.createdAt,      // Ngày tạo (optional)
+        // Legacy fields: các field cũ để tương thích với code cũ
+        name: dto.deptName,            // Tên bộ phận (giống deptName)
+        isActive: normalizedStatus === 'ACTIVE', // Boolean flag cho trạng thái active
       };
 
       console.log('✅ Department created:', newDepartment);
@@ -221,14 +240,16 @@ export const departmentService = {
         throw new Error(`Invalid departmentId: ${departmentId}. DepartmentId must be a positive integer.`);
       }
       
-      // Validate và chuẩn bị request data
-      const deptCode = updates.deptCode?.trim();
-      const deptName = updates.deptName?.trim();
+      // Validate và chuẩn bị request data: loại bỏ khoảng trắng thừa
+      const deptCode = updates.deptCode?.trim(); // Loại bỏ khoảng trắng ở đầu/cuối mã bộ phận
+      const deptName = updates.deptName?.trim(); // Loại bỏ khoảng trắng ở đầu/cuối tên bộ phận
       
+      // Validate deptCode: không được để trống sau khi trim
       if (!deptCode || deptCode.length === 0) {
         throw new Error('Mã bộ phận (deptCode) là bắt buộc và không được để trống');
       }
       
+      // Validate deptName: không được để trống sau khi trim
       if (!deptName || deptName.length === 0) {
         throw new Error('Tên bộ phận (deptName) là bắt buộc và không được để trống');
       }

@@ -1,5 +1,7 @@
+// Form tạo / chỉnh sửa tài khoản Staff trong trang Admin
 import type { User, UserRole, Department } from '../../types';
 
+// Props cho form Staff
 interface StaffFormProps {
   editingStaff: User | null;
   staffFormData: {
@@ -20,6 +22,7 @@ interface StaffFormProps {
   onClose: () => void;
 }
 
+// Component form hiển thị trong modal để thêm / sửa Staff
 const StaffForm = ({
   editingStaff,
   staffFormData,
@@ -48,6 +51,7 @@ const StaffForm = ({
             onSubmit();
           }}
         >
+          {/* Mã nhân viên (userCode) dùng để map với backend */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Mã nhân viên *
@@ -61,6 +65,7 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {/* Username dùng như Email đăng nhập */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Tên đăng nhập (Email) *
@@ -74,6 +79,7 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {/* Mật khẩu (không bắt buộc khi chỉnh sửa) */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Mật khẩu 
@@ -86,6 +92,7 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {/* Họ tên hiển thị của Staff */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Họ tên *
@@ -99,6 +106,7 @@ const StaffForm = ({
               className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
           </div>
+          {/* Số điện thoại liên hệ của Staff */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Số điện thoại
@@ -127,6 +135,7 @@ const StaffForm = ({
               <option value="facility-staff">Facility Staff</option>
             </select>
           </div> */}
+          {/* Bộ phận mà Staff thuộc về - dùng để filter tickets theo department */}
           <div className="mb-6">
             <label className="block mb-2 font-semibold text-gray-700 text-sm">
               Bộ phận *
@@ -155,6 +164,7 @@ const StaffForm = ({
               )}
             </select>
           </div>
+          {/* Khu vực quản lý tài khoản: khóa / mở khóa Staff, chỉ hiển thị khi đang chỉnh sửa */}
           {editingStaff && onResetPassword && onToggleStatus && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
               <h4 className="text-base font-semibold text-gray-800 mb-4">
