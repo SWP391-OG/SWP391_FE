@@ -338,8 +338,8 @@ const TicketReviewModal = ({
               );
             }
             
-            // Hiển thị ghi chú thông thường nếu có
-            if ((ticket as any).note || (ticket as any).notes) {
+            // Hiển thị ghi chú thông thường nếu có (nhưng không hiển thị nếu ticket đã bị cancelled - đã có section riêng "Lý Do Hủy Ticket")
+            if (((ticket as any).note || (ticket as any).notes) && ticket.status !== 'CANCELLED' && ticket.status !== 'cancelled') {
               const rawNote = (ticket as any).note || (ticket as any).notes;
               const formattedNote = convertUTCTimestampsToVN(rawNote);
               return (
