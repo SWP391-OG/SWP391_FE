@@ -161,14 +161,13 @@ const ReportsPage = ({
 
     // Chuẩn bị data hiển thị chi tiết từng trạng thái (kể cả khi value = 0)
     const statusData = [
-      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#ef4444', key: 'overdue', isHighlight: true },
       { name: 'Đã Hoàn thành', value: closedTickets, color: '#10b981', key: 'completed' },
       { name: 'Chờ đánh giá', value: pendingReviewTickets, color: '#8b5cf6', key: 'pending' },
       { name: 'Đang xử lí', value: inProgressTickets, color: '#06b6d4', key: 'inProgress' },
       { name: 'Đã được giao', value: assignedTickets, color: '#eab308', key: 'assigned' },
-      { name: 'Đang xử lý', value: inProgressTickets, color: '#f59e0b', key: 'in-progress' },
       { name: 'Mới tạo', value: newTickets, color: '#f97316', key: 'new' },
       { name: 'Đã hủy', value: cancelledTickets, color: '#ef4444', key: 'cancelled' },
+      { name: 'Đã Quá Hạn', value: overdueTickets, color: '#ef4444', key: 'overdue', isHighlight: true },
     ]; // Show all statuses always
 
     // Data cho biểu đồ tròn: chỉ lấy các trạng thái có số lượng > 0
@@ -381,12 +380,6 @@ const ReportsPage = ({
             <div className="text-3xl font-bold text-blue-900">{ticketStatusReport.totalTickets}</div>
           </div>
 
-          {/* Quá hạn */}
-          <div className="bg-red-50 rounded-lg p-4 border border-red-200 shadow-md">
-            <div className="text-xs text-red-600 font-medium mb-1">⚠️ Quá hạn</div>
-            <div className="text-3xl font-bold text-red-900">{ticketStatusReport.overdueTickets}</div>
-          </div>
-
           {/* Đã Hoàn thành */}
           <div className="bg-green-50 rounded-lg p-4 border border-green-200">
             <div className="text-xs text-green-600 font-medium mb-1">Đã Hoàn thành</div>
@@ -421,6 +414,12 @@ const ReportsPage = ({
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-300">
             <div className="text-xs text-gray-600 font-medium mb-1">Đã hủy</div>
             <div className="text-3xl font-bold text-gray-900">{ticketStatusReport.cancelledTickets}</div>
+          </div>
+
+          {/* Quá hạn */}
+          <div className="bg-red-50 rounded-lg p-4 border border-red-200 shadow-md">
+            <div className="text-xs text-red-600 font-medium mb-1">⚠️ Quá hạn</div>
+            <div className="text-3xl font-bold text-red-900">{ticketStatusReport.overdueTickets}</div>
           </div>
         </div>
       </div>
