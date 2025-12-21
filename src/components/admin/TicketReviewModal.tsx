@@ -56,6 +56,49 @@ const TicketReviewModal = ({
   const assignedToName = isFromApi ? ticket.assignedToName : ticket.assignedToName || '';
   const requesterName = isFromApi ? ticket.requesterName : ticket.requesterName || '';
   const ticketImages = parseTicketImages(ticket);
+
+  // Status colors - đồng bộ với ticket-detail-modal.tsx
+  const statusColors: Record<string, { bg: string; text: string }> = {
+    open: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    assigned: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
+    'in-progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    'in_progress': { bg: 'bg-amber-100', text: 'text-amber-800' },
+    resolved: { bg: 'bg-purple-100', text: 'text-purple-800' },
+    closed: { bg: 'bg-green-100', text: 'text-green-800' },
+    cancelled: { bg: 'bg-gray-100', text: 'text-gray-700' },
+    new: { bg: 'bg-orange-100', text: 'text-orange-800' },
+    overdue: { bg: 'bg-red-100', text: 'text-red-800' },
+  };
+
+  // Safe get status color with fallback
+  const getSafeStatusColor = (status: string) => {
+    const normalized = (status || 'open').toLowerCase().replace(/_/g, '-');
+    return statusColors[normalized] || { bg: 'bg-gray-100', text: 'text-gray-800' };
+  };
+
+  // Get status display text in Vietnamese
+  const getStatusDisplayText = (status: string) => {
+    const normalizedStatus = (status || 'open').toLowerCase().replace(/_/g, '-');
+    switch (normalizedStatus) {
+      case 'open':
+      case 'new':
+        return '🔵 Mới tạo';
+      case 'assigned':
+        return '🟣 Đã được giao việc';
+      case 'in-progress':
+        return '🟡 Đang xử lý';
+      case 'resolved':
+        return '🔵 Chờ đánh giá';
+      case 'closed':
+        return '✅ Đã hoàn thành';
+      case 'cancelled':
+        return '🔴 Đã hủy';
+      case 'overdue':
+        return '⚠️ Quá hạn';
+      default:
+        return status;
+    }
+  };
   
   // Filter staff theo category của ticket (chỉ staff thuộc đúng department mới được assign)
   const filteredStaffList = useMemo(() => {
@@ -293,10 +336,8 @@ const TicketReviewModal = ({
         <div className="p-8 space-y-8">
           {/* Status Badge */}
           <div className="flex items-center gap-3">
-            <span className="px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 inline-flex items-center gap-2">
-              {ticket.status === 'open' || ticket.status === 'NEW' ? '🔵 Mới tạo' : 
-               ticket.status === 'CANCELLED' || ticket.status === 'cancelled' ? '🚫 Đã hủy' : 
-               ticket.status}
+            <span className={`px-4 py-2 rounded-full text-sm font-semibold inline-flex items-center gap-2 ${getSafeStatusColor(ticket.status).bg} ${getSafeStatusColor(ticket.status).text}`}>
+              {getStatusDisplayText(ticket.status)}
             </span>
           </div>
 

@@ -119,13 +119,20 @@ const TicketDetailModal = ({
           <div className="flex gap-3 flex-wrap mb-4">
             <span className={`inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold ${getSafeStatusColor(ticket.status).bg} ${getSafeStatusColor(ticket.status).text}`}>
               {ticket.status === 'open' && '🔵 Mới tạo'}
+              {ticket.status === 'NEW' && '🔵 Mới tạo'}
               {ticket.status === 'assigned' && '🟣 Đã được giao việc'}
-              {ticket.status === 'in-progress' && '🟡 Đang xử lý'}
-              {ticket.status === 'resolved' && '🔵 chờ đánh giá'}
+              {ticket.status === 'ASSIGNED' && '🟣 Đã được giao việc'}
+              {(ticket.status === 'in-progress' || ticket.status === 'IN_PROGRESS') && '🟡 Đang xử lý'}
+              {ticket.status === 'resolved' && '🔵 Chờ đánh giá'}
+              {ticket.status === 'RESOLVED' && '🔵 Chờ đánh giá'}
               {ticket.status === 'closed' && '✅ Đã hoàn thành'}
+              {ticket.status === 'CLOSED' && '✅ Đã hoàn thành'}
               {ticket.status === 'cancelled' && '🔴 Đã hủy'}
+              {ticket.status === 'CANCELLED' && '🔴 Đã hủy'}
+              {ticket.status === 'overdue' && '⚠️ Quá hạn'}
+              {ticket.status === 'OVERDUE' && '⚠️ Quá hạn'}
             </span>
-            {isOverdue && (
+            {isOverdue && ticket.status !== 'overdue' && ticket.status !== 'OVERDUE' && (
               <span className="inline-flex items-center gap-2 py-2 px-4 rounded-full text-sm font-semibold bg-red-100 text-red-800">
                 ⚠️ Quá hạn
               </span>
