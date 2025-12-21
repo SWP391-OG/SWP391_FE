@@ -311,7 +311,7 @@ export interface SLATracking {
 }
 
 // Ticket types
-export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED';
+export type TicketStatus = 'open' | 'assigned' | 'in-progress' | 'resolved' | 'closed' | 'cancelled' | 'overdue' | 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED' | 'CANCELLED' | 'OVERDUE';
 
 // API Response Types for Tickets
 export interface TicketFromApi {

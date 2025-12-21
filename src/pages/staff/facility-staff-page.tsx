@@ -18,12 +18,18 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
   // Tính toán thống kê tickets theo từng trạng thái
   // Sử dụng useMemo để tránh tính toán lại mỗi lần render
   const stats = useMemo(() => {
+    const overdueTickets = tickets.filter(t => 
+      isTicketOverdueAndNotCompleted(t.resolveDeadline || t.slaDeadline, t.status)
+    );
+    
     return {
       total: tickets.length, // Tổng số tickets
       open: tickets.filter(t => t.status === 'open').length, // Số tickets mở
       inProgress: tickets.filter(t => t.status === 'in-progress').length, // Số tickets đang xử lý
       resolved: tickets.filter(t => t.status === 'resolved').length, // Số tickets chờ đánh giá
       closed: tickets.filter(t => t.status === 'closed').length, // Số tickets đã hoàn thành
+      cancelled: tickets.filter(t => t.status === 'cancelled').length, // Số tickets đã hủy
+      overdue: overdueTickets.length, // Số tickets quá hạn
     };
   }, [tickets]);
 
@@ -31,7 +37,7 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
     <div className="max-w-[1400px] mx-auto p-8">
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
           <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
           <div className="text-sm text-gray-500 mt-1">Tổng số</div>
@@ -51,6 +57,14 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
         <div className="bg-emerald-50 rounded-xl p-4 shadow-sm border border-emerald-200">
           <div className="text-2xl font-bold text-emerald-600">{stats.closed}</div>
           <div className="text-sm text-emerald-600 mt-1">Đã hoàn thành</div>
+        </div>
+        <div className="bg-red-50 rounded-xl p-4 shadow-sm border border-red-200">
+          <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+          <div className="text-sm text-red-600 mt-1">Bị hủy</div>
+        </div>
+        <div className="bg-red-50 rounded-xl p-4 shadow-sm border border-red-200">
+          <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
+          <div className="text-sm text-red-600 mt-1">Quá hạn</div>
         </div>
       </div>
 
@@ -242,6 +256,8 @@ const FacilityStaffPage = ({ tickets, onUpdateStatus, onViewDetail }: FacilitySt
                                 'CLOSED': 'Đã hoàn thành',
                                 cancelled: 'Đã hủy',
                                 'CANCELLED': 'Đã hủy',
+                                overdue: 'Quá hạn',
+                                'OVERDUE': 'Quá hạn',
                               }[newStatus];
                               // Xác nhận trước khi cập nhật trạng thái
                               if (confirm(`Bạn có chắc muốn cập nhật trạng thái ticket ${ticket.id} thành "${newStatusText}"?`)) {
